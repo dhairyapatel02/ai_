@@ -69,6 +69,7 @@ export class GenerateController {
     @Req() req: Request,
     @Query('month') month: string,
     @Query('year') year: string,
+    @Query('force') force: string,
   ) {
     const userId = req.headers['x-user-id'] as string;
     if (!userId) return errorResponse('Not authenticated');
@@ -80,6 +81,7 @@ export class GenerateController {
         userId,
         parseInt(month, 10),
         parseInt(year, 10),
+        force === 'true',
       );
       return successResponse(result);
     } catch (error) {

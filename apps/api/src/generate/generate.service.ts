@@ -66,13 +66,14 @@ export class GenerateService {
     return { document: doc, packet: result };
   }
 
-  async getImpactScore(userId: string, month: number, year: number) {
-    // Check if we already have a cached score
-    const existing = await this.prisma.impactScore.findUnique({
-      where: { userId_month_year: { userId, month, year } },
-    });
+  async getImpactScore(userId: string, month: number, year: number, force = false) {
+    if (!force) {
+      const existing = await this.prisma.impactScore.findUnique({
+        where: { userId_month_year: { userId, month, year } },
+      });
 
-    if (existing) return existing;
+      if (existing) return existing;
+    }
 
     // Generate new score
     const { from, to } = this.getDateRangeForPeriod('monthly', month, year);

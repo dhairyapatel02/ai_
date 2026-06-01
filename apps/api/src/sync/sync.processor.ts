@@ -157,6 +157,23 @@ export class SyncProcessor extends WorkerHost {
         await job.updateProgress(70 + Math.round((i / 15) * 30));
       }
 
+      // Invalidate cached impact scores for the months covered by the sync
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getFullYear();
+      await this.prisma.impactScore.deleteMany({
+        where: {
+          userId,
+          OR: [
+            { month: currentMonth, year: currentYear },
+            {
+              month: currentMonth === 1 ? 12 : currentMonth - 1,
+              year: currentMonth === 1 ? currentYear - 1 : currentYear,
+            },
+          ],
+        },
+      });
+
       this.logger.log(`Sync complete: ${totalCommits} commits, ${totalPRs} PRs, ${totalReviews} reviews`);
       return { totalCommits, totalPRs, totalReviews };
     } catch (error) {
