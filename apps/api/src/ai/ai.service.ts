@@ -58,7 +58,6 @@ export class AIService {
       .join('\n');
 
     const prompt = GENERATE_RESUME_PROMPT
-      .replace('{{role}}', role)
       .replaceAll('{{role}}', role)
       .replace('{{dateRange}}', `${dateRange.from} to ${dateRange.to}`)
       .replace('{{commitsCount}}', String(activityData.commits.length))

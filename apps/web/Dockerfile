@@ -15,6 +15,8 @@ RUN npm run build --workspace=packages/shared
 
 # Build web app
 COPY apps/web ./apps/web
+ARG NEXT_PUBLIC_API_URL=http://localhost:4000/api
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build --workspace=apps/web
 
 # Production

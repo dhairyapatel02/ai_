@@ -26,7 +26,7 @@ export class SyncProcessor extends WorkerHost {
 
     try {
       const integration = await this.prisma.integration.findUniqueOrThrow({
-        where: { id: integrationId },
+        where: { id: integrationId, userId },
       });
       const accessToken = integration.accessToken;
 

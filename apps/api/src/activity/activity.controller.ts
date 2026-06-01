@@ -18,12 +18,16 @@ export class ActivityController {
     const userId = req.headers['x-user-id'] as string;
     if (!userId) return errorResponse('Not authenticated');
 
+    const parsedPage = page ? parseInt(page, 10) : 1;
+    const parsedLimit = limit ? parseInt(limit, 10) : 20;
+    if (isNaN(parsedPage) || isNaN(parsedLimit)) return errorResponse('Invalid page or limit');
+
     const result = await this.activityService.getCommits(
       userId,
       from,
       to,
-      page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 20,
+      parsedPage,
+      parsedLimit,
     );
     return successResponse(result);
   }
@@ -39,12 +43,16 @@ export class ActivityController {
     const userId = req.headers['x-user-id'] as string;
     if (!userId) return errorResponse('Not authenticated');
 
+    const parsedPage = page ? parseInt(page, 10) : 1;
+    const parsedLimit = limit ? parseInt(limit, 10) : 20;
+    if (isNaN(parsedPage) || isNaN(parsedLimit)) return errorResponse('Invalid page or limit');
+
     const result = await this.activityService.getPullRequests(
       userId,
       from,
       to,
-      page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 20,
+      parsedPage,
+      parsedLimit,
     );
     return successResponse(result);
   }
