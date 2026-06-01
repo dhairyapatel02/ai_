@@ -25,7 +25,6 @@ export class SyncService {
     const job = await this.syncQueue.add('sync-github', {
       userId,
       integrationId: integration.id,
-      accessToken: integration.accessToken,
     });
 
     this.logger.log(`Sync job ${job.id} queued for user ${userId}`);
@@ -40,7 +39,7 @@ export class SyncService {
       return { status: 'idle', lastSync: null };
     }
 
-    const latest = userJobs[0];
+    const latest = userJobs.sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))[0];
     const state = await latest.getState();
 
     return {

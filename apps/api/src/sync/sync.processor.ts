@@ -7,7 +7,6 @@ import { GitHubService } from '../github/github.service';
 interface SyncJobData {
   userId: string;
   integrationId: string;
-  accessToken: string;
 }
 
 @Processor('github-sync')
@@ -22,10 +21,15 @@ export class SyncProcessor extends WorkerHost {
   }
 
   async process(job: Job<SyncJobData>) {
-    const { userId, integrationId, accessToken } = job.data;
+    const { userId, integrationId } = job.data;
     this.logger.log(`Starting sync for user ${userId}`);
 
     try {
+      const integration = await this.prisma.integration.findUniqueOrThrow({
+        where: { id: integrationId },
+      });
+      const accessToken = integration.accessToken;
+
       const username = await this.githubService.getUsername(accessToken);
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);

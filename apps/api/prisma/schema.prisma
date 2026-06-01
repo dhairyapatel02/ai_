@@ -179,7 +179,7 @@ model GeneratedDocument {
 }
 
 model ImpactScore {
-  id              String @id @default(cuid())
+  id              String   @id @default(cuid())
   userId          String
   month           Int
   year            Int
@@ -188,6 +188,7 @@ model ImpactScore {
   codeQuality     Float
   collaboration   Float
   leadership      Float
+  highlights      String[] @default([])
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

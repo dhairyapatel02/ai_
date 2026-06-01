@@ -87,6 +87,7 @@ export class GenerateService {
         codeQuality: result.codeQuality,
         collaboration: result.collaboration,
         leadership: result.leadership,
+        highlights: result.highlights ?? [],
       },
       create: {
         userId,
@@ -97,10 +98,11 @@ export class GenerateService {
         codeQuality: result.codeQuality,
         collaboration: result.collaboration,
         leadership: result.leadership,
+        highlights: result.highlights ?? [],
       },
     });
 
-    return { ...score, highlights: result.highlights };
+    return score;
   }
 
   private getDateRangeForPeriod(period: string, month: number, year: number) {
