@@ -81,7 +81,7 @@ export class ActivityService {
       totalReviews,
       totalIssues,
       topRepos,
-      impactScore: impactScore?.overall || null,
+      impactScore: impactScore?.overall ?? null,
     };
   }
 

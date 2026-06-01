@@ -73,10 +73,20 @@ export class SyncProcessor extends WorkerHost {
         const prs = await this.githubService.fetchPullRequests(accessToken, repoName, username, since);
 
         for (const pr of prs) {
-          await this.prisma.pullRequest.create({
-            data: {
+          await this.prisma.pullRequest.upsert({
+            where: {
+              userId_repo_number: { userId, repo: pr.repo, number: pr.number },
+            },
+            update: {
+              title: pr.title,
+              body: pr.body,
+              state: pr.state,
+              mergedAt: pr.mergedAt ? new Date(pr.mergedAt) : null,
+            },
+            create: {
               userId,
               integrationId,
+              number: pr.number,
               title: pr.title,
               body: pr.body,
               state: pr.state,
@@ -84,8 +94,6 @@ export class SyncProcessor extends WorkerHost {
               mergedAt: pr.mergedAt ? new Date(pr.mergedAt) : null,
               timestamp: new Date(pr.createdAt),
             },
-          }).catch(() => {
-            // Skip duplicates
           });
           totalPRs++;
         }
@@ -100,22 +108,27 @@ export class SyncProcessor extends WorkerHost {
         const reviews = await this.githubService.fetchReviews(accessToken, repoName, username, since);
 
         for (const review of reviews) {
-          // Find the PR in our DB
           const dbPR = await this.prisma.pullRequest.findFirst({
-            where: { repo: review.repo, userId },
+            where: { repo: review.repo, userId, number: review.prNumber },
           });
 
           if (dbPR) {
-            await this.prisma.codeReview.create({
-              data: {
+            const timestamp = new Date(review.submittedAt);
+            await this.prisma.codeReview.upsert({
+              where: {
+                userId_prId_timestamp: { userId, prId: dbPR.id, timestamp },
+              },
+              update: {
+                comments: review.body ? 1 : 0,
+                approved: review.state === 'APPROVED',
+              },
+              create: {
                 userId,
                 prId: dbPR.id,
                 comments: review.body ? 1 : 0,
                 approved: review.state === 'APPROVED',
-                timestamp: new Date(review.submittedAt),
+                timestamp,
               },
-            }).catch(() => {
-              // Skip duplicates
             });
             totalReviews++;
           }

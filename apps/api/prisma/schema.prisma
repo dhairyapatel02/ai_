@@ -111,6 +111,7 @@ model PullRequest {
   id            String   @id @default(cuid())
   userId        String
   integrationId String
+  number        Int
   title         String
   body          String?
   state         PRState
@@ -123,6 +124,7 @@ model PullRequest {
   integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   reviews     CodeReview[]
 
+  @@unique([userId, repo, number])
   @@index([userId, timestamp])
   @@map("pull_requests")
 }
@@ -157,6 +159,7 @@ model CodeReview {
   user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   pr   PullRequest @relation(fields: [prId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, prId, timestamp])
   @@index([userId, timestamp])
   @@map("code_reviews")
 }

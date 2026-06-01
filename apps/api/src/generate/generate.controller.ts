@@ -73,6 +73,8 @@ export class GenerateController {
     const userId = req.headers['x-user-id'] as string;
     if (!userId) return errorResponse('Not authenticated');
 
+    if (!month || !year) return errorResponse('month and year are required');
+
     try {
       const result = await this.generateService.getImpactScore(
         userId,
