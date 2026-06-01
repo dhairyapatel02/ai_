@@ -112,30 +112,46 @@ export class SyncProcessor extends WorkerHost {
         const reviews = await this.githubService.fetchReviews(accessToken, repoName, username, since);
 
         for (const review of reviews) {
-          const dbPR = await this.prisma.pullRequest.findFirst({
+          let dbPR = await this.prisma.pullRequest.findFirst({
             where: { repo: review.repo, userId, number: review.prNumber },
           });
 
-          if (dbPR) {
-            const timestamp = new Date(review.submittedAt);
-            await this.prisma.codeReview.upsert({
+          if (!dbPR) {
+            dbPR = await this.prisma.pullRequest.upsert({
               where: {
-                userId_prId_timestamp: { userId, prId: dbPR.id, timestamp },
+                userId_repo_number: { userId, repo: review.repo, number: review.prNumber },
               },
-              update: {
-                comments: review.body ? 1 : 0,
-                approved: review.state === 'APPROVED',
-              },
+              update: {},
               create: {
                 userId,
-                prId: dbPR.id,
-                comments: review.body ? 1 : 0,
-                approved: review.state === 'APPROVED',
-                timestamp,
+                integrationId,
+                number: review.prNumber,
+                title: `PR #${review.prNumber}`,
+                state: 'CLOSED',
+                repo: review.repo,
+                timestamp: new Date(review.submittedAt),
               },
             });
-            totalReviews++;
           }
+
+          const timestamp = new Date(review.submittedAt);
+          await this.prisma.codeReview.upsert({
+            where: {
+              userId_prId_timestamp: { userId, prId: dbPR.id, timestamp },
+            },
+            update: {
+              comments: review.body ? 1 : 0,
+              approved: review.state === 'APPROVED',
+            },
+            create: {
+              userId,
+              prId: dbPR.id,
+              comments: review.body ? 1 : 0,
+              approved: review.state === 'APPROVED',
+              timestamp,
+            },
+          });
+          totalReviews++;
         }
 
         await job.updateProgress(70 + Math.round((i / 15) * 30));
