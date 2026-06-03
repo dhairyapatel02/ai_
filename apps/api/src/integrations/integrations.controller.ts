@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Req } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, Req } from '@nestjs/common';
 import { IntegrationsService } from './integrations.service';
 import { successResponse, errorResponse } from '../common/api-response';
 import { Request } from 'express';
@@ -23,6 +23,24 @@ export class IntegrationsController {
 
     const oauthUrl = this.integrationsService.getGitHubOAuthUrl();
     return successResponse({ url: oauthUrl });
+  }
+
+  @Post('github/callback')
+  async githubCallback(
+    @Req() req: Request,
+    @Body() body: { code: string },
+  ) {
+    const userId = req.headers['x-user-id'] as string;
+    if (!userId) return errorResponse('Not authenticated');
+
+    if (!body.code) return errorResponse('Authorization code is required');
+
+    try {
+      const integration = await this.integrationsService.exchangeGitHubCode(userId, body.code);
+      return successResponse(integration);
+    } catch (error) {
+      return errorResponse(error instanceof Error ? error.message : 'GitHub connection failed');
+    }
   }
 
   @Delete(':id')

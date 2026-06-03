@@ -1,26 +1,63 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImpactScoreCard } from '@/components/impact-score-card';
-import { TrendingUp, Code2, Users, Shield } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import { TrendingUp, Code2, Users, Shield, Loader2 } from 'lucide-react';
 
-const metrics = {
-  productivity: { value: 142, label: 'Commits/Month', trend: '+12%' },
-  quality: { value: '2.1', label: 'Avg PR Size (files)', trend: '-8%' },
-  collaboration: { value: 45, label: 'Reviews/Month', trend: '+15%' },
-  ownership: { value: 8, label: 'Repos Contributed', trend: '+2' },
-};
+interface Summary {
+  totalCommits: number;
+  totalPRs: number;
+  totalReviews: number;
+  totalIssues: number;
+  topRepos: { repo: string; commits: number }[];
+  impactScore: number | null;
+}
 
-const monthlyTrend = [
-  { month: 'Jan', commits: 98, prs: 18, reviews: 32 },
-  { month: 'Feb', commits: 112, prs: 22, reviews: 38 },
-  { month: 'Mar', commits: 125, prs: 25, reviews: 40 },
-  { month: 'Apr', commits: 108, prs: 20, reviews: 35 },
-  { month: 'May', commits: 135, prs: 26, reviews: 42 },
-  { month: 'Jun', commits: 142, prs: 28, reviews: 45 },
-];
+interface ImpactScoreData {
+  overall: number;
+  featureDelivery: number;
+  codeQuality: number;
+  collaboration: number;
+  leadership: number;
+}
 
 export default function KPIsPage() {
+  const { apiFetch, user } = useAuth();
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [impactScore, setImpactScore] = useState<ImpactScoreData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    async function load() {
+      const now = new Date();
+      const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const to = now.toISOString();
+
+      const [summaryRes, scoreRes] = await Promise.all([
+        apiFetch<Summary>(`/activity/summary?from=${from}&to=${to}`),
+        apiFetch<ImpactScoreData>(
+          `/generate/impact-score?month=${now.getMonth() + 1}&year=${now.getFullYear()}`
+        ),
+      ]);
+
+      if (summaryRes.success && summaryRes.data) setSummary(summaryRes.data);
+      if (scoreRes.success && scoreRes.data) setImpactScore(scoreRes.data);
+      setLoading(false);
+    }
+    load();
+  }, [user, apiFetch]);
+
+  if (loading && user) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -36,9 +73,8 @@ export default function KPIsPage() {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.productivity.value}</div>
-            <p className="text-xs text-muted-foreground">{metrics.productivity.label}</p>
-            <p className="text-xs text-green-500 mt-1">{metrics.productivity.trend}</p>
+            <div className="text-2xl font-bold">{summary?.totalCommits ?? 0}</div>
+            <p className="text-xs text-muted-foreground">Commits this month</p>
           </CardContent>
         </Card>
         <Card>
@@ -47,9 +83,8 @@ export default function KPIsPage() {
             <Code2 className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.quality.value}</div>
-            <p className="text-xs text-muted-foreground">{metrics.quality.label}</p>
-            <p className="text-xs text-green-500 mt-1">{metrics.quality.trend} (smaller PRs)</p>
+            <div className="text-2xl font-bold">{summary?.totalPRs ?? 0}</div>
+            <p className="text-xs text-muted-foreground">Pull requests this month</p>
           </CardContent>
         </Card>
         <Card>
@@ -58,9 +93,8 @@ export default function KPIsPage() {
             <Users className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.collaboration.value}</div>
-            <p className="text-xs text-muted-foreground">{metrics.collaboration.label}</p>
-            <p className="text-xs text-green-500 mt-1">{metrics.collaboration.trend}</p>
+            <div className="text-2xl font-bold">{summary?.totalReviews ?? 0}</div>
+            <p className="text-xs text-muted-foreground">Reviews this month</p>
           </CardContent>
         </Card>
         <Card>
@@ -69,52 +103,53 @@ export default function KPIsPage() {
             <Shield className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.ownership.value}</div>
-            <p className="text-xs text-muted-foreground">{metrics.ownership.label}</p>
-            <p className="text-xs text-green-500 mt-1">{metrics.ownership.trend}</p>
+            <div className="text-2xl font-bold">{summary?.topRepos?.length ?? 0}</div>
+            <p className="text-xs text-muted-foreground">Repos contributed</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <ImpactScoreCard
-          score={78}
+          score={impactScore?.overall ?? 0}
           breakdown={{
-            featureDelivery: 82,
-            codeQuality: 75,
-            collaboration: 80,
-            leadership: 65,
+            featureDelivery: impactScore?.featureDelivery ?? 0,
+            codeQuality: impactScore?.codeQuality ?? 0,
+            collaboration: impactScore?.collaboration ?? 0,
+            leadership: impactScore?.leadership ?? 0,
           }}
         />
 
-        {/* Monthly Trend Table */}
+        {/* Top Repos Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Monthly Trends</CardTitle>
+            <CardTitle className="text-lg">Top Repositories</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2">Month</th>
-                    <th className="text-right py-2">Commits</th>
-                    <th className="text-right py-2">PRs</th>
-                    <th className="text-right py-2">Reviews</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {monthlyTrend.map((row) => (
-                    <tr key={row.month} className="border-b last:border-0">
-                      <td className="py-2">{row.month}</td>
-                      <td className="text-right py-2">{row.commits}</td>
-                      <td className="text-right py-2">{row.prs}</td>
-                      <td className="text-right py-2">{row.reviews}</td>
+            {summary?.topRepos && summary.topRepos.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2">Repository</th>
+                      <th className="text-right py-2">Commits</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {summary.topRepos.map((repo) => (
+                      <tr key={repo.repo} className="border-b last:border-0">
+                        <td className="py-2 truncate max-w-[200px]">{repo.repo}</td>
+                        <td className="text-right py-2">{repo.commits}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No data yet. Connect and sync your GitHub to see KPIs.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

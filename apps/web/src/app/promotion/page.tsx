@@ -4,40 +4,31 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GenerateButton } from '@/components/generate-button';
 import { DocumentPreview } from '@/components/document-preview';
+import { useAuth } from '@/lib/auth-context';
 
 export default function PromotionPage() {
+  const { apiFetch } = useAuth();
   const [currentRole, setCurrentRole] = useState('Senior Engineer');
   const [targetRole, setTargetRole] = useState('Staff Engineer');
   const [loading, setLoading] = useState(false);
   const [packet, setPacket] = useState<Record<string, unknown> | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setPacket({
-        whyReady: 'This engineer has consistently demonstrated Staff-level impact through technical leadership, cross-team influence, and significant business value creation over the past 6 months. Their work spans multiple systems and teams, showing the breadth and depth expected at the Staff level.',
-        leadershipEvidence: [
-          'Led architecture review for 3 major system redesigns',
-          'Mentored 3 junior engineers, all promoted within 6 months',
-          'Drove adoption of new testing practices across 4 teams',
-        ],
-        technicalImpact: [
-          'Reduced system latency by 40% through caching architecture redesign',
-          'Shipped 3 major features end-to-end with zero production incidents',
-          'Established company-wide API design standards adopted by 8 teams',
-        ],
-        businessValue: [
-          'Notification system directly attributed to 15% increase in user engagement',
-          'Performance improvements reduced infrastructure costs by $50K/quarter',
-        ],
-        mentorship: [
-          '45 code reviews completed with detailed, educational feedback',
-          'Weekly office hours for junior engineers',
-          'Created internal documentation reducing onboarding time by 40%',
-        ],
-      });
-      setLoading(false);
-    }, 2500);
+    setError(null);
+
+    const res = await apiFetch<{ packet: Record<string, unknown> }>('/generate/promotion', {
+      method: 'POST',
+      body: JSON.stringify({ currentRole, targetRole }),
+    });
+
+    if (res.success && res.data?.packet) {
+      setPacket(res.data.packet);
+    } else {
+      setError(res.error || 'Generation failed. Is the ANTHROPIC_API_KEY configured?');
+    }
+    setLoading(false);
   };
 
   return (
@@ -77,6 +68,7 @@ export default function PromotionPage() {
           <GenerateButton loading={loading} onClick={handleGenerate}>
             Generate Promotion Packet
           </GenerateButton>
+          {error && <p className="text-sm text-red-500">{error}</p>}
         </CardContent>
       </Card>
 

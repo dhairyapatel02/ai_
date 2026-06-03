@@ -7,11 +7,21 @@ import { Request } from 'express';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Post('dev-login')
+  async devLogin(@Body() body: { email?: string; name?: string }) {
+    try {
+      const email = body.email || 'dev@devimpact.ai';
+      const name = body.name || 'Dev User';
+      const user = await this.authService.findOrCreateUser({ email, name });
+      return successResponse(user);
+    } catch (error) {
+      return errorResponse('Login failed');
+    }
+  }
+
   @Post('github')
   async githubCallback(@Body() body: { code: string }) {
     try {
-      // In production, exchange code for token via GitHub OAuth
-      // For now, this is a placeholder for the NextAuth.js flow
       return successResponse({ message: 'GitHub OAuth handled by NextAuth.js on frontend' });
     } catch (error) {
       return errorResponse('GitHub authentication failed');

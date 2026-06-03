@@ -1,27 +1,66 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImpactScoreCard } from '@/components/impact-score-card';
-import { GitCommit, GitPullRequest, Eye, TrendingUp, FileText, ClipboardList } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import { GitCommit, GitPullRequest, Eye, TrendingUp, FileText, ClipboardList, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
-export default function DashboardPage() {
-  // Mock data - will be replaced with API calls
-  const stats = {
-    commits: 142,
-    prsMerged: 28,
-    reviewsDone: 45,
-    impactScore: 78,
-  };
+interface Summary {
+  totalCommits: number;
+  totalPRs: number;
+  totalReviews: number;
+  totalIssues: number;
+  topRepos: { repo: string; commits: number }[];
+  impactScore: number | null;
+}
 
-  const recentActivity = [
-    { type: 'commit', message: 'feat: Add user authentication flow', repo: 'myapp/backend', time: '2h ago' },
-    { type: 'pr', message: 'Implement dashboard analytics', repo: 'myapp/frontend', time: '5h ago' },
-    { type: 'review', message: 'Review: API rate limiting', repo: 'myapp/backend', time: '1d ago' },
-    { type: 'commit', message: 'fix: Resolve memory leak in worker', repo: 'myapp/worker', time: '1d ago' },
-    { type: 'pr', message: 'Add export functionality', repo: 'myapp/frontend', time: '2d ago' },
-  ];
+interface ImpactScoreData {
+  overall: number;
+  featureDelivery: number;
+  codeQuality: number;
+  collaboration: number;
+  leadership: number;
+}
+
+export default function DashboardPage() {
+  const { apiFetch, user } = useAuth();
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [impactScore, setImpactScore] = useState<ImpactScoreData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    async function load() {
+      const now = new Date();
+      const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const to = now.toISOString();
+
+      const [summaryRes, scoreRes] = await Promise.all([
+        apiFetch<Summary>(`/activity/summary?from=${from}&to=${to}`),
+        apiFetch<ImpactScoreData>(
+          `/generate/impact-score?month=${now.getMonth() + 1}&year=${now.getFullYear()}`
+        ),
+      ]);
+
+      if (summaryRes.success && summaryRes.data) setSummary(summaryRes.data);
+      if (scoreRes.success && scoreRes.data) setImpactScore(scoreRes.data);
+      setLoading(false);
+    }
+    load();
+  }, [user, apiFetch]);
+
+  const hasData = summary && (summary.totalCommits > 0 || summary.totalPRs > 0 || summary.totalReviews > 0);
+
+  if (loading && user) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -46,6 +85,20 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {!hasData && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-lg font-medium text-muted-foreground">No activity data yet</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Connect an integration and sync your data to see your engineering impact.
+            </p>
+            <Link href="/connect">
+              <Button className="mt-4">Connect GitHub</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -54,8 +107,7 @@ export default function DashboardPage() {
             <GitCommit className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.commits}</div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
+            <div className="text-2xl font-bold">{summary?.totalCommits ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -64,8 +116,7 @@ export default function DashboardPage() {
             <GitPullRequest className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.prsMerged}</div>
-            <p className="text-xs text-muted-foreground">+4 from last month</p>
+            <div className="text-2xl font-bold">{summary?.totalPRs ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -74,8 +125,7 @@ export default function DashboardPage() {
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.reviewsDone}</div>
-            <p className="text-xs text-muted-foreground">+8 from last month</p>
+            <div className="text-2xl font-bold">{summary?.totalReviews ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -84,8 +134,9 @@ export default function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.impactScore}/100</div>
-            <p className="text-xs text-muted-foreground">Strong performer</p>
+            <div className="text-2xl font-bold">
+              {impactScore ? `${Math.round(impactScore.overall)}/100` : (summary?.impactScore != null ? `${summary.impactScore}/100` : '—')}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -93,36 +144,35 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2">
         {/* Impact Score */}
         <ImpactScoreCard
-          score={stats.impactScore}
+          score={impactScore?.overall ?? summary?.impactScore ?? 0}
           breakdown={{
-            featureDelivery: 82,
-            codeQuality: 75,
-            collaboration: 80,
-            leadership: 65,
+            featureDelivery: impactScore?.featureDelivery ?? 0,
+            codeQuality: impactScore?.codeQuality ?? 0,
+            collaboration: impactScore?.collaboration ?? 0,
+            leadership: impactScore?.leadership ?? 0,
           }}
         />
 
-        {/* Recent Activity */}
+        {/* Top Repos */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Recent Activity</CardTitle>
+            <CardTitle className="text-lg">Top Repositories</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {recentActivity.map((item, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="mt-1">
-                    {item.type === 'commit' && <GitCommit className="h-4 w-4 text-green-500" />}
-                    {item.type === 'pr' && <GitPullRequest className="h-4 w-4 text-purple-500" />}
-                    {item.type === 'review' && <Eye className="h-4 w-4 text-blue-500" />}
+            {summary?.topRepos && summary.topRepos.length > 0 ? (
+              <div className="space-y-3">
+                {summary.topRepos.map((repo) => (
+                  <div key={repo.repo} className="flex items-center justify-between">
+                    <span className="text-sm font-medium truncate">{repo.repo}</span>
+                    <span className="text-sm text-muted-foreground">{repo.commits} commits</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm truncate">{item.message}</p>
-                    <p className="text-xs text-muted-foreground">{item.repo} &middot; {item.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No repository data yet. Sync your GitHub to see top repos.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -5,30 +5,49 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GenerateButton } from '@/components/generate-button';
 import { ResumeBulletCard } from '@/components/resume-bullet-card';
+import { useAuth } from '@/lib/auth-context';
 import { Download, Copy } from 'lucide-react';
 
 const roles = ['backend', 'frontend', 'fullstack', 'devops', 'manager'] as const;
 
+interface ResumeBullet {
+  text: string;
+  category: string;
+  impact: string;
+}
+
 export default function ResumePage() {
+  const { apiFetch } = useAuth();
   const [role, setRole] = useState<string>('fullstack');
-  const [dateFrom, setDateFrom] = useState('2024-01-01');
-  const [dateTo, setDateTo] = useState('2024-06-30');
+  const [dateFrom, setDateFrom] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 6);
+    return d.toISOString().split('T')[0];
+  });
+  const [dateTo, setDateTo] = useState(() => new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
-  const [bullets, setBullets] = useState<{ text: string; category: string; impact: string }[]>([]);
+  const [bullets, setBullets] = useState<ResumeBullet[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     setLoading(true);
-    // Simulate generation - replace with actual API call
-    setTimeout(() => {
-      setBullets([
-        { text: 'Engineered a real-time notification system serving 50K+ daily active users, reducing notification delivery latency by 40% through optimized WebSocket connections and Redis pub/sub architecture.', category: 'features', impact: '40% latency reduction' },
-        { text: 'Led migration of legacy REST APIs to GraphQL, reducing frontend data fetching overhead by 60% and improving page load times across 12 customer-facing dashboards.', category: 'performance', impact: '60% reduction in data fetching' },
-        { text: 'Implemented comprehensive CI/CD pipeline with automated testing, reducing deployment time from 45 minutes to 8 minutes while maintaining 99.9% uptime SLA.', category: 'reliability', impact: '82% faster deployments' },
-        { text: 'Mentored 3 junior engineers through code reviews and pair programming sessions, contributing to team velocity increase of 25% over the quarter.', category: 'collaboration', impact: '25% team velocity increase' },
-        { text: 'Designed and implemented a distributed caching layer using Redis Cluster, handling 100K+ requests/second with sub-millisecond p99 latency.', category: 'performance', impact: '100K+ req/s capacity' },
-      ]);
-      setLoading(false);
-    }, 2000);
+    setError(null);
+
+    const res = await apiFetch<{ bullets: ResumeBullet[] }>('/generate/resume', {
+      method: 'POST',
+      body: JSON.stringify({ dateRange: { from: dateFrom, to: dateTo }, role }),
+    });
+
+    if (res.success && res.data?.bullets) {
+      setBullets(
+        Array.isArray(res.data.bullets)
+          ? res.data.bullets
+          : Object.values(res.data.bullets),
+      );
+    } else {
+      setError(res.error || 'Generation failed. Is the ANTHROPIC_API_KEY configured?');
+    }
+    setLoading(false);
   };
 
   return (
@@ -78,6 +97,7 @@ export default function ResumePage() {
           <GenerateButton loading={loading} onClick={handleGenerate}>
             Generate Resume Bullets
           </GenerateButton>
+          {error && <p className="text-sm text-red-500">{error}</p>}
         </CardContent>
       </Card>
 

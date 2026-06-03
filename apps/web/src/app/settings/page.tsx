@@ -4,8 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/lib/auth-context';
 
 export default function SettingsPage() {
+  const { user } = useAuth();
+
   return (
     <div className="space-y-6">
       <div>
@@ -25,7 +28,7 @@ export default function SettingsPage() {
               <label className="text-sm font-medium">Name</label>
               <input
                 type="text"
-                defaultValue="John Doe"
+                defaultValue={user?.name || ''}
                 className="w-full rounded-md border border-input px-3 py-2 text-sm"
               />
             </div>
@@ -33,7 +36,7 @@ export default function SettingsPage() {
               <label className="text-sm font-medium">Email</label>
               <input
                 type="email"
-                defaultValue="john@example.com"
+                defaultValue={user?.email || ''}
                 disabled
                 className="w-full rounded-md border border-input px-3 py-2 text-sm bg-muted"
               />
@@ -51,7 +54,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3">
-            <Badge variant="default">FREE</Badge>
+            <Badge variant="default">{user?.plan || 'FREE'}</Badge>
             <span className="text-sm text-muted-foreground">5 generations/month, 1 integration</span>
           </div>
           <Separator />
