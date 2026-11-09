@@ -1,0 +1,13 @@
+                List of relations
+ Schema |        Name         | Type  |   Owner   
+--------+---------------------+-------+-----------
+ public | code_reviews        | table | devimpact
+ public | commits             | table | devimpact
+ public | generated_documents | table | devimpact
+ public | impact_scores       | table | devimpact
+ public | integrations        | table | devimpact
+ public | issues              | table | devimpact
+ public | pull_requests       | table | devimpact
+ public | users               | table | devimpact
+(8 rows)
+

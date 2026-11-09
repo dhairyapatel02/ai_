@@ -1,0 +1,64 @@
+
+> devimpact-ai@0.1.0 build
+> npm run build --workspaces
+
+
+> @devimpact/api@0.1.0 build
+> nest build
+
+
+> @devimpact/web@0.1.0 build
+> next build
+
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+  ▲ Next.js 14.2.3
+
+   Creating an optimized production build ...
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Browserslist: caniuse-lite is outdated. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/13) ...
+ ⨯ useSearchParams() should be wrapped in a suspense boundary at page "/connect/callback". Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at l (/home/user/ai_/apps/web/.next/server/chunks/101.js:61:11678)
+    at c (/home/user/ai_/apps/web/.next/server/chunks/101.js:61:22635)
+    at p (/home/user/ai_/apps/web/.next/server/app/connect/callback/page.js:1:2513)
+    at nj (/home/user/ai_/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:46251)
+    at nM (/home/user/ai_/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47571)
+    at nN (/home/user/ai_/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+    at nI (/home/user/ai_/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47010)
+    at nM (/home/user/ai_/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47717)
+    at nM (/home/user/ai_/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:61546)
+    at nN (/home/user/ai_/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+
+Error occurred prerendering page "/connect/callback". Read more: https://nextjs.org/docs/messages/prerender-error
+
+   Generating static pages (3/13) 
+   Generating static pages (6/13) 
+   Generating static pages (9/13) 
+ ✓ Generating static pages (13/13)
+
+> Export encountered errors on following paths:
+	/connect/callback/page: /connect/callback
+npm error Lifecycle script `build` failed with error:
+npm error code 1
+npm error path /home/user/ai_/apps/web
+npm error workspace @devimpact/web@0.1.0
+npm error location /home/user/ai_/apps/web
+npm error command failed
+npm error command sh -c next build
+
+
+> @devimpact/shared@0.1.0 build
+> tsc
+
+EXIT 1

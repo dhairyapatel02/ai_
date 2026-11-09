@@ -1,0 +1,6 @@
+"Senior Engineer" => "Current Role: Senior Engineer\nTarget Role: Staff"
+"Senior $& Engineer" => "Current Role: Senior {{currentRole}} Engineer\nTarget Role: Staff"
+"Senior $' Engineer" => "Current Role: Senior \nTarget Role: Staff Engineer\nTarget Role: {{targetRole}}"
+"Senior $` Engineer" => "Current Role: Senior Current Role:  Engineer\nTarget Role: Staff"
+"Pay $$5" => "Current Role: Pay $5\nTarget Role: Staff"
+fixed => "Current Role: Senior $& Engineer\nTarget Role: {{targetRole}}"

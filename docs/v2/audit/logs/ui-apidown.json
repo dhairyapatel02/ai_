@@ -1,0 +1,822 @@
+[
+  {
+    "page": "root",
+    "url": "/",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1736,
+    "screenshot": "apidown-1440-root.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/dashboard",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Dashboard"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Resume",
+      "Generate Appraisal",
+      "Connect GitHub"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Dashboard Your engineering impact at a glance Generate Resume Generate Appraisal No activity data yet Connect an integration and sync your data to see your engineering impact. Connect GitHub Commits This Month 0 PRs Merged 0 Reviews Done 0 Impact Score — Impact Score 0 Features 0 Qualit"
+  },
+  {
+    "page": "dashboard",
+    "url": "/dashboard",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1706,
+    "screenshot": "apidown-1440-dashboard.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/dashboard",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Dashboard"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Resume",
+      "Generate Appraisal",
+      "Connect GitHub"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Dashboard Your engineering impact at a glance Generate Resume Generate Appraisal No activity data yet Connect an integration and sync your data to see your engineering impact. Connect GitHub Commits This Month 0 PRs Merged 0 Reviews Done 0 Impact Score — Impact Score 0 Features 0 Qualit"
+  },
+  {
+    "page": "connect",
+    "url": "/connect",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1669,
+    "screenshot": "apidown-1440-connect.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/connect",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Integrations"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Connect",
+      "Coming Soon",
+      "Coming Soon",
+      "Coming Soon"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Integrations Connect your developer tools to sync activity data GitHub Connect your GitHub account to sync commits, PRs, and code reviews. Idle Connect GitLab Connect your GitLab account to sync merge requests and commits. Idle Coming Soon Jira Connect Jira to sync issues, story points,"
+  },
+  {
+    "page": "connect-callback",
+    "url": "/connect/callback",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1723,
+    "screenshot": "apidown-1440-connect-callback.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/connect/callback",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 GitHub Connection No authorization code received from GitHub."
+  },
+  {
+    "page": "connect-callback-code",
+    "url": "/connect/callback?code=bogus",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1672,
+    "screenshot": "apidown-1440-connect-callback-code.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/integrations/github/callback net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/integrations/github/callback net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/connect/callback?code=bogus",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 GitHub Connection Network error"
+  },
+  {
+    "page": "resume",
+    "url": "/resume",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1665,
+    "screenshot": "apidown-1440-resume.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/resume",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Resume Generator"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Resume Bullets"
+    ],
+    "inputs": 3,
+    "unlabeledInputs": 3,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Resume Generator Generate professional resume bullet points from your engineering activity Configuration From To Role Backend Frontend Fullstack Devops Manager Generate Resume Bullets"
+  },
+  {
+    "page": "appraisal",
+    "url": "/appraisal",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1657,
+    "screenshot": "apidown-1440-appraisal.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/appraisal",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Appraisal Report"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Appraisal"
+    ],
+    "inputs": 3,
+    "unlabeledInputs": 3,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Appraisal Report Generate performance appraisal documents from your activity data Configuration Period Monthly Quarterly Yearly Month January February March April May June July August September October November December Year Generate Appraisal"
+  },
+  {
+    "page": "promotion",
+    "url": "/promotion",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1678,
+    "screenshot": "apidown-1440-promotion.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/promotion",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Promotion Packet"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Promotion Packet"
+    ],
+    "inputs": 2,
+    "unlabeledInputs": 2,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Promotion Packet Build a data-driven promotion case from your engineering contributions Configuration Current Role Target Role Generate Promotion Packet"
+  },
+  {
+    "page": "career",
+    "url": "/career",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1677,
+    "screenshot": "apidown-1440-career.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/career",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Career Timeline"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Connect GitHub"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Career Timeline Your engineering journey visualized No timeline data yet Connect an integration and sync your data to build your career timeline. Connect GitHub"
+  },
+  {
+    "page": "kpis",
+    "url": "/kpis",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1731,
+    "screenshot": "apidown-1440-kpis.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/kpis",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "KPI Dashboard"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 KPI Dashboard Track your engineering performance metrics Productivity 0 Commits this month Code Quality 0 Pull requests this month Collaboration 0 Reviews this month Ownership 0 Repos contributed Impact Score 0 Features 0 Quality 0 Collab 0 Leadership 0 Top Repositories No data yet. Con"
+  },
+  {
+    "page": "settings",
+    "url": "/settings",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1695,
+    "screenshot": "apidown-1440-settings.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/settings",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Settings"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Save Changes",
+      "Enable",
+      "Enable"
+    ],
+    "inputs": 2,
+    "unlabeledInputs": 2,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Settings Manage your account and preferences Profile Your personal information Name Email Save Changes Plan & Billing Manage your subscription FREE 5 generations/month, 1 integration Pro $12/mo Unlimited generations, all integrations Team $29/mo Team dashboards, shared reports Enterpris"
+  },
+  {
+    "page": "not-found",
+    "url": "/does-not-exist",
+    "width": 1440,
+    "status": 404,
+    "loadMs": 1653,
+    "screenshot": "apidown-1440-not-found.png",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/does-not-exist",
+    "title": "404: This page could not be found.",
+    "h1": [
+      "404"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 404 This page could not be found."
+  },
+  {
+    "page": "root",
+    "url": "/",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1696,
+    "screenshot": "apidown-390-root.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/dashboard",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Dashboard"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 163,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Resume",
+      "Generate Appraisal",
+      "Connect GitHub"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "Dashboard Your engineering impact at a glance Generate Resume Generate Appraisal No activity data yet Connect an integration and sync your data to see your engineering impact. Connect GitHub Commits This Month 0 PRs Merged 0 Reviews Done 0 Impact Score — Impact Score 0 Features 0 Quality 0 Collab 0 Leadership 0 Top Repositories No repository data yet. Sync your GitHub to see top repos."
+  },
+  {
+    "page": "dashboard",
+    "url": "/dashboard",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1727,
+    "screenshot": "apidown-390-dashboard.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/dashboard",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Dashboard"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 163,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Resume",
+      "Generate Appraisal",
+      "Connect GitHub"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "Dashboard Your engineering impact at a glance Generate Resume Generate Appraisal No activity data yet Connect an integration and sync your data to see your engineering impact. Connect GitHub Commits This Month 0 PRs Merged 0 Reviews Done 0 Impact Score — Impact Score 0 Features 0 Quality 0 Collab 0 Leadership 0 Top Repositories No repository data yet. Sync your GitHub to see top repos."
+  },
+  {
+    "page": "connect",
+    "url": "/connect",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1667,
+    "screenshot": "apidown-390-connect.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/connect",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Integrations"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Connect",
+      "Coming Soon",
+      "Coming Soon",
+      "Coming Soon"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "Integrations Connect your developer tools to sync activity data GitHub Connect your GitHub account to sync commits, PRs, and code reviews. Idle Connect GitLab Connect your GitLab account to sync merge requests and commits. Idle Coming Soon Jira Connect Jira to sync issues, story points, and project data. Idle Coming Soon Linear Connect Linear to sync issues and project tracking data. Idle Coming S"
+  },
+  {
+    "page": "connect-callback",
+    "url": "/connect/callback",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1680,
+    "screenshot": "apidown-390-connect-callback.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/connect/callback",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "GitHub Connection No authorization code received from GitHub."
+  },
+  {
+    "page": "connect-callback-code",
+    "url": "/connect/callback?code=bogus",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1667,
+    "screenshot": "apidown-390-connect-callback-code.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/integrations/github/callback net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/integrations/github/callback net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/connect/callback?code=bogus",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "GitHub Connection Network error"
+  },
+  {
+    "page": "resume",
+    "url": "/resume",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1670,
+    "screenshot": "apidown-390-resume.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/resume",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Resume Generator"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Resume Bullets"
+    ],
+    "inputs": 3,
+    "unlabeledInputs": 3,
+    "textSample": "Resume Generator Generate professional resume bullet points from your engineering activity Configuration From To Role Backend Frontend Fullstack Devops Manager Generate Resume Bullets"
+  },
+  {
+    "page": "appraisal",
+    "url": "/appraisal",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1680,
+    "screenshot": "apidown-390-appraisal.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/appraisal",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Appraisal Report"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Appraisal"
+    ],
+    "inputs": 3,
+    "unlabeledInputs": 3,
+    "textSample": "Appraisal Report Generate performance appraisal documents from your activity data Configuration Period Monthly Quarterly Yearly Month January February March April May June July August September October November December Year Generate Appraisal"
+  },
+  {
+    "page": "promotion",
+    "url": "/promotion",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1665,
+    "screenshot": "apidown-390-promotion.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/promotion",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Promotion Packet"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Promotion Packet"
+    ],
+    "inputs": 2,
+    "unlabeledInputs": 2,
+    "textSample": "Promotion Packet Build a data-driven promotion case from your engineering contributions Configuration Current Role Target Role Generate Promotion Packet"
+  },
+  {
+    "page": "career",
+    "url": "/career",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1727,
+    "screenshot": "apidown-390-career.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/career",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Career Timeline"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Connect GitHub"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "Career Timeline Your engineering journey visualized No timeline data yet Connect an integration and sync your data to build your career timeline. Connect GitHub"
+  },
+  {
+    "page": "kpis",
+    "url": "/kpis",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1692,
+    "screenshot": "apidown-390-kpis.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/kpis",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "KPI Dashboard"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "KPI Dashboard Track your engineering performance metrics Productivity 0 Commits this month Code Quality 0 Pull requests this month Collaboration 0 Reviews this month Ownership 0 Repos contributed Impact Score 0 Features 0 Quality 0 Collab 0 Leadership 0 Top Repositories No data yet. Connect and sync your GitHub to see KPIs."
+  },
+  {
+    "page": "settings",
+    "url": "/settings",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1677,
+    "screenshot": "apidown-390-settings.png",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/settings",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Settings"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Save Changes",
+      "Enable",
+      "Enable"
+    ],
+    "inputs": 2,
+    "unlabeledInputs": 2,
+    "textSample": "Settings Manage your account and preferences Profile Your personal information Name Email Save Changes Plan & Billing Manage your subscription FREE 5 generations/month, 1 integration Pro $12/mo Unlimited generations, all integrations Team $29/mo Team dashboards, shared reports Enterprise Custom SSO, custom integrations, SLA Notifications Configure notification preferences Weekly Summary Receive we"
+  },
+  {
+    "page": "not-found",
+    "url": "/does-not-exist",
+    "width": 390,
+    "status": 404,
+    "loadMs": 1675,
+    "screenshot": "apidown-390-not-found.png",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": [],
+    "failedRequests": [
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED",
+      "POST http://localhost:4000/api/auth/dev-login net::ERR_CONNECTION_REFUSED"
+    ],
+    "apiCalls": [],
+    "finalUrl": "/does-not-exist",
+    "title": "404: This page could not be found.",
+    "h1": [
+      "404"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "404 This page could not be found."
+  }
+]

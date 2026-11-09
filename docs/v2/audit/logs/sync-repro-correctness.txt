@@ -1,0 +1,96 @@
+[Nest] 8455  - 11/09/2026, 6:51:41 AM     LOG [SyncProcessor] Starting sync for user cmw8wkzuq0000vxd8q7zx8mqz
+SecondaryRateLimit detected for request GET https://api.github.com/repos/acme/lib/commits?author=alice-sync&since=2026-05-09T06%3A51%3A41.609Z&per_page=100
+SecondaryRateLimit detected for request GET https://api.github.com/repos/acme/lib/commits?author=alice-sync&since=2026-05-09T06%3A51%3A41.609Z&per_page=100
+[Nest] 8455  - 11/09/2026, 6:52:41 AM    WARN [GitHubService] Failed to fetch commits for acme/lib: HttpError: You have exceeded a secondary rate limit.
+SecondaryRateLimit detected for request GET https://api.github.com/repos/acme/lib/pulls?state=all&sort=updated&direction=desc&per_page=100
+SecondaryRateLimit detected for request GET https://api.github.com/repos/acme/lib/pulls?state=all&sort=updated&direction=desc&per_page=100
+[Nest] 8455  - 11/09/2026, 6:53:41 AM    WARN [GitHubService] Failed to fetch PRs for acme/lib: HttpError: You have exceeded a secondary rate limit.
+SecondaryRateLimit detected for request GET https://api.github.com/repos/acme/lib/pulls?state=all&sort=updated&direction=desc&per_page=50
+SecondaryRateLimit detected for request GET https://api.github.com/repos/acme/lib/pulls?state=all&sort=updated&direction=desc&per_page=50
+[Nest] 8455  - 11/09/2026, 6:54:41 AM    WARN [GitHubService] Failed to fetch reviews for acme/lib: HttpError: You have exceeded a secondary rate limit.
+[Nest] 8455  - 11/09/2026, 6:54:41 AM     LOG [SyncProcessor] Sync complete: 3 commits, 2 PRs, 3 reviews
+{
+  "mode": "correctness",
+  "durationMs": 180310,
+  "jobResult": {
+    "totalCommits": 3,
+    "totalPRs": 2,
+    "totalReviews": 3
+  },
+  "jobError": null,
+  "progressUpdates": 8,
+  "lastProgress": 72,
+  "githubCalls": {
+    "total": 18,
+    "byEndpoint": {
+      "GET /user": 1,
+      "GET /user/repos": 1,
+      "GET /repos/:r/commits (list page)": 1,
+      "GET /repos/:r/commits/:sha (N+1 stats)": 3,
+      "403 secondary-rate-limit acme/lib": 6,
+      "GET /repos/:r/pulls (list page, per_page=100)": 1,
+      "GET /repos/:r/pulls (list page, per_page=50)": 1,
+      "GET /repos/:r/pulls/:n/reviews": 4
+    }
+  },
+  "db": {
+    "commits": 3,
+    "commitBranches": [
+      "main"
+    ],
+    "pullRequests": [
+      {
+        "repo": "acme/app",
+        "number": 1,
+        "title": "Checkout retry",
+        "state": "MERGED",
+        "mergedAt": "2026-10-28T06:51:41.532Z",
+        "authoredByUser": true
+      },
+      {
+        "repo": "acme/app",
+        "number": 2,
+        "title": "PR #2",
+        "state": "CLOSED",
+        "mergedAt": null,
+        "authoredByUser": false
+      },
+      {
+        "repo": "acme/app",
+        "number": 3,
+        "title": "PR #3",
+        "state": "CLOSED",
+        "mergedAt": null,
+        "authoredByUser": false
+      },
+      {
+        "repo": "acme/app",
+        "number": 4,
+        "title": "WIP: new search",
+        "state": "OPEN",
+        "mergedAt": null,
+        "authoredByUser": true
+      }
+    ],
+    "codeReviews": [
+      {
+        "pr": 3,
+        "prTitleStored": "PR #3",
+        "approved": false,
+        "comments": 1
+      },
+      {
+        "pr": 2,
+        "prTitleStored": "PR #2",
+        "approved": false,
+        "comments": 0
+      },
+      {
+        "pr": 2,
+        "prTitleStored": "PR #2",
+        "approved": true,
+        "comments": 0
+      }
+    ]
+  }
+}

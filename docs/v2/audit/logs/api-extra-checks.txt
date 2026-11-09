@@ -1,0 +1,57 @@
+## Date-range: pick a past weekday with commits
+day=2026-10-23  db_count=4
+API from=2026-10-23&to=2026-10-23 (date-only):
+ total= 0
+API from=2026-10-23&to=2026-10-23T23:59:59Z:
+ total= 4
+
+## limit=100000 returns everything
+ returned 292 of total 292
+## limit=-5
+ returned 5 limit echoed -5 first ts 2026-05-12T08:05:38.220Z
+
+## PR list composition (authored vs stub)
+ total 106 stub rows 65 MERGED 33
+
+## Response headers (helmet? x-powered-by?)
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Access-Control-Allow-Origin: http://localhost:3000
+Vary: Origin
+Access-Control-Allow-Credentials: true
+Content-Type: application/json; charset=utf-8
+Content-Length: 45
+ETag: W/"2d-GYgEoiyJIatSBbB3bTMPHNcIkwc"
+Date: Mon, 09 Nov 2026 06:49:48 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+## CORS preflight from evil origin
+Access-Control-Allow-Origin: http://localhost:3000
+Vary: Origin, Access-Control-Request-Headers
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: GET,HEAD,PUT,PATCH,POST,DELETE
+Access-Control-Allow-Headers: x-user-id
+## CORS preflight from allowed origin
+Access-Control-Allow-Origin: http://localhost:3000
+Vary: Origin, Access-Control-Request-Headers
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: GET,HEAD,PUT,PATCH,POST,DELETE
+Access-Control-Allow-Headers: x-user-id
+
+## Burst: 200 dev-login requests
+    200 201
+users created: 200
+
+## Large body
+{"statusCode":413,"message":"request entity too large"} HTTP 413
+
+## Sync worker log lines
+[Nest] 3013  - 11/09/2026, 6:49:22 AM     LOG [SyncProcessor] Starting sync for user cmw8wea2c0000149om69b8jf5
+[Nest] 3013  - 11/09/2026, 6:49:22 AM   ERROR [SyncProcessor] Sync failed for user cmw8wea2c0000149om69b8jf5: HttpError: Bad credentials - https://docs.github.com/rest
+    at async l (/home/user/ai_/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at async Promise.all (index 0)
+    at async ActivityService.getCommits (/home/user/ai_/apps/api/src/activity/activity.service.ts:16:27)
+    at async ActivityController.getCommits (/home/user/ai_/apps/api/src/activity/activity.controller.ts:25:20)
+    at async /home/user/ai_/node_modules/@nestjs/core/router/router-execution-context.js:46:28
+    at async /home/user/ai_/node_modules/@nestjs/core/router/router-proxy.js:9:17
