@@ -2,8 +2,10 @@
 
 *Phase 03 · 2026-11-09.* Maps every PRD feature to its methodology/ADR, data model, endpoints, UI
 page and implementing phase(s), and maps every open `audit/ISSUES.md` row targeting P05 or later to
-a feature (or marks it won't-fix for v2.0). UI routes are provisional until P04's `design/IA.md`;
-P04 may rename routes and must update this file.
+a feature (or marks it won't-fix for v2.0). UI routes were confirmed by P04 in
+[`../design/IA.md`](../design/IA.md) (2026-11-09); `A-n` endpoints are P04 amendments in
+[API_CONTRACT_V2 §22](API_CONTRACT_V2.md#22-amendments-from-phase-04-ux-design-2026-11-09). Screen
+specs: [`../design/SCREENS.md`](../design/SCREENS.md).
 
 Legend for tables/endpoints: see [DATA_MODEL_V2](DATA_MODEL_V2.md) and [API_CONTRACT_V2](API_CONTRACT_V2.md).
 
@@ -18,9 +20,9 @@ Legend for tables/endpoints: see [DATA_MODEL_V2](DATA_MODEL_V2.md) and [API_CONT
 | F-05 User settings (tz, role, period) | M | KPI §2.4 | UserSettings | `GET/PATCH /me/settings` | `/settings/profile`, onboarding | P05 (tz), P12 |
 | F-06 Plans & entitlements | M | PRD §6, ADR-0009 | User.plan, AiUsage | `/me/entitlements`, 402/403 errors | disabled states + upgrade copy | P08, P12 |
 | F-07 Plan & usage page | M | PRD §6 | AiUsage | `GET /me/usage` | `/settings/plan` | P12 |
-| F-10 Connect GitHub (App) | M | ADR-0004, ADR-0005 | Integration, GitHubInstallation | `POST /integrations/github/connect`, `/callback` | `/onboarding`, `/settings/integrations` | P05, P06, P09 |
-| F-11 Repository selection | M | ADR-0007 | Repository.included | `GET/PATCH /repos` | onboarding step 2, `/settings/integrations` | P06, P09, P10 |
-| F-12 Initial 12-month backfill | M | ADR-0007 | SyncRun, cursors | `POST /sync` (auto on connect) | onboarding step 3 | P06 |
+| F-10 Connect GitHub (App) | M | ADR-0004, ADR-0005 | Integration, GitHubInstallation | `POST /integrations/github/connect`, `/callback` | `/onboarding/connect`, `/onboarding/pending`, `/integrations/github/callback`, `/settings/integrations` | P05, P06, P09 |
+| F-11 Repository selection | M | ADR-0007 | Repository.included | `GET/PATCH /repos` | `/onboarding/repositories`, `/settings/integrations` | P06, P09, P10 |
+| F-12 Initial 12-month backfill | M | ADR-0007 | SyncRun, cursors | `POST /sync` (auto on connect), `SyncRunDto.recentWindowCompletedAt` (A-4) | `/onboarding/sync` | P06 |
 | F-13 Incremental 24 h + manual sync | M | ADR-0007 | Integration.scheduleSlotMinute, SyncRun | `POST /sync` | sync indicator, ⌘K | P06, P09 |
 | F-14 Webhooks | M | ADR-0004, ADR-0007 | WebhookDelivery | `POST /webhooks/github` | — | P06 |
 | F-15 Sync status/progress/history | M | ADR-0007 | SyncRun | `GET /sync/status`, `/sync/runs`, `/sync/stream` | `/settings/integrations`, top bar | P06, P10 |
@@ -33,28 +35,28 @@ Legend for tables/endpoints: see [DATA_MODEL_V2](DATA_MODEL_V2.md) and [API_CONT
 | F-23 Activity feed | M | — | PR, Review, Commit, Achievement | `GET /activity/feed` | `/dashboard` | P07, P10 |
 | F-24 Next best action | S | — | (derived) | overview + feed + me | `/dashboard` | P10 |
 | F-25 Activity explorer | M | — | PR, Review, Commit | `/activity/prs`, `/reviews`, `/commits` (+ detail) | `/activity` | P07, P10 |
-| F-26 KPIs page | M | KPI §3, ADR-0008 | ImpactScore.inputs | `GET /metrics/kpis`, `/metrics/timeseries` | `/kpis` | P07, P10 |
-| F-27 Explain this metric | M | KPI §3, §7 | — | `GET /metrics/definitions`, evidence ids | drawer on every metric | P07, P10 |
+| F-26 KPIs page | M | KPI §3, ADR-0008 | ImpactScore.inputs | `GET /metrics/kpis`, `/metrics/timeseries`, `/metrics/trends` (A-1) | `/kpis` | P07, P10 |
+| F-27 Explain this metric | M | KPI §3, §7 | — | `GET /metrics/definitions`, `/metrics/evidence` (A-2) | drawer on every metric (`?metric=`) | P07, P10 |
 | F-28 Impact score v2 | M | KPI §6, ADR-0008 | ImpactScore | `GET /impact`, `/impact/history` | `/dashboard`, `/kpis/impact` | P07, P10 |
 | F-29 AI impact highlights | S | KPI §8, ADR-0009 | GeneratedDocument (IMPACT_NARRATIVE) | `POST /impact/highlights` | `/kpis/impact` | P08, P10 |
-| F-30 Career timeline | M | KPI §3 (milestones) | PR, Review, Achievement | `GET /career/timeline`, `/metrics/repos` | `/career` | P07, P10 |
+| F-30 Career timeline | M | KPI §3 (milestones) | PR, Review, Achievement | `GET /career/timeline`, `/metrics/repos` | `/career`, `/career/print` | P07, P10 |
 | F-31 Global period + URL state | M | ADR-0006, ADR-0010 | UserSettings.defaultPeriodType | `period` param | top bar | P07 (utils), P09, P10 |
-| F-40 Resume | M | ADR-0009 | GeneratedDocument, DocumentVersion | `POST /documents` (resume) | `/documents/new/resume` | P08, P11 |
+| F-40 Resume | M | ADR-0009 | GeneratedDocument, DocumentVersion | `POST /documents` (resume) | `/documents/new`, `/documents/new/resume` | P08, P11 |
 | F-41 Appraisal | M | ADR-0009, KPI §8 | same | `POST /documents` (appraisal) | `/documents/new/appraisal` | P08, P11 |
 | F-42 Promotion | M | ADR-0009 | same | `POST /documents` (promotion) | `/documents/new/promotion` | P08, P11 |
 | F-43 Evidence preview | M | ADR-0009 | — | `POST /documents/preview-evidence` | creation flows | P08, P11 |
 | F-44 Streaming, cancel, resume | M | ADR-0009 | GeneratedDocument.status | `GET /documents/:id/stream`, `/cancel` | viewer | P08, P11 |
-| F-45 Citations + flags | M | ADR-0009 | evidenceRefs, citationCoverage | document content | viewer/editor | P08, P11 |
+| F-45 Citations + flags | M | ADR-0009 | evidenceRefs, citationCoverage | document content, `GET /documents/:id` `evidence` (A-3) | `/documents/:id` | P08, P11 |
 | F-46 Edit, versions, restore | M | ADR-0009 | DocumentVersion | `PATCH /documents/:id`, `/versions`, `/restore` | `/documents/:id` | P08, P11 |
 | F-47 Regenerate (doc / section) | M/S | ADR-0009 | DocumentVersion | `POST /documents/:id/regenerate` | viewer | P08, P11 |
-| F-48 Documents library | M | — | GeneratedDocument | `GET /documents`, `DELETE` | `/documents` | P11 |
+| F-48 Documents library | M | — | GeneratedDocument | `GET /documents` (+ `flags`, A-5), `DELETE` | `/documents` | P11 |
 | F-49 Exports | M | ADR-0012 | DocumentVersion | `GET /documents/:id/export` | viewer | P11 |
 | F-50 Result caching | M | ADR-0009 | inputHash | `POST /documents` (200 cached) | — | P08 |
 | F-51 Achievement statement | S | ADR-0009 | (AiUsage) | `POST /ai/achievement-statement` | activity drawer, achievements | P08, P10, P12 |
 | F-60 Achievements journal | M | — | Achievement, AchievementEvidence | `/achievements` CRUD | `/achievements`, ⌘K, dashboard | P12 |
 | F-61 Achievements as evidence | M | ADR-0009 | AchievementEvidence | feed, timeline, documents | feed, career, documents | P12 (+P08 interface) |
 | F-62 Goals | M | KPI keys | Goal, GoalAchievement | `/goals` CRUD | `/goals` | P12 |
-| F-63 Weekly digest | M | — | DigestDelivery, UserSettings | `PATCH /me/settings`, `/notifications/unsubscribe` | email, `/settings/notifications` | P12 |
+| F-63 Weekly digest | M | — | DigestDelivery, UserSettings | `PATCH /me/settings`, `/notifications/unsubscribe` | email, `/settings/notifications`, `/unsubscribe` | P12 |
 | F-64 AI digest summary | S | ADR-0009 | GeneratedDocument (DIGEST_SUMMARY) | (worker) | email | P08, P12 |
 | F-65 Notification preferences | M | — | UserSettings | `PATCH /me/settings` | `/settings/notifications` | P12 |
 | F-66 In-app notification centre | C | — | (v2.1) | — | — | v2.1 |

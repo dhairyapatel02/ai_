@@ -1,0 +1,356 @@
+/*
+ * DevImpact AI — design tokens (v2.0)
+ * Phase 04 · 2026-11-09 · Source of truth for P09 (`apps/web/src/app/globals.css` imports this file).
+ *
+ * Brand direction D-017: calm, professional, Linear-like. Cool neutral surfaces with a slight
+ * indigo bias, one restrained accent (indigo "ink"), crisp type, hairline borders, subtle motion.
+ *
+ * Usage in P09 (Tailwind v4 + shadcn/ui):
+ *   @import "tailwindcss";
+ *   @import "../../../../docs/v2/design/tokens.css";   // or copy to src/styles/tokens.css
+ *   @custom-variant dark (&:where(.dark, .dark *));     // next-themes attribute="class"
+ *
+ * Three tiers (DESIGN_SYSTEM.md §3):
+ *   1. Reference palette  (--ref-*)        raw values, never used directly by components
+ *   2. Semantic tokens     (--background…)  shadcn/ui names + DevImpact additions
+ *   3. Tailwind theme      (@theme inline)  exposes semantic tokens as utilities (bg-surface, text-subtle…)
+ *
+ * Contrast for every text/UI pair in both themes is checked by `scripts/check-contrast.mjs`
+ * (results in DESIGN_SYSTEM.md §4.4). Chart palettes validated with the dataviz validator (§4.5).
+ * Keep hex values here: the checker parses the two blocks below (`:root` and `.dark`).
+ */
+
+/* ------------------------------------------------------------------------------------------ */
+/* 1 + 2. Light theme (default)                                                               */
+/* ------------------------------------------------------------------------------------------ */
+:root {
+  /* Reference palette — neutrals ("slate-ink", hue ≈ 230°) */
+  --ref-ink-0: #ffffff;
+  --ref-ink-25: #f6f7f9;
+  --ref-ink-50: #eff1f4;
+  --ref-ink-100: #e6e9ee;
+  --ref-ink-150: #e1e4ea;
+  --ref-ink-300: #c9ced6;
+  --ref-ink-400: #828999;
+  --ref-ink-500: #636a77;
+  --ref-ink-600: #575e6b;
+  --ref-ink-900: #12141a;
+  /* Reference palette — accent ("indigo ink") */
+  --ref-indigo-50: #eceefc;
+  --ref-indigo-500: #4f5bd5;
+  --ref-indigo-600: #4351c8;
+  --ref-indigo-700: #3843b0;
+  --ref-indigo-text: #3e4bc0;
+
+  /* Surfaces */
+  --background: #f6f7f9; /* app canvas behind cards */
+  --surface: #ffffff; /* cards, panels, sidebar, inputs */
+  --surface-2: #eff1f4; /* sunken wells, hover rows, skeletons, empty heat cells */
+  --surface-3: #e6e9ee; /* pressed / selected rows */
+  --card: #ffffff;
+  --popover: #ffffff;
+  --sidebar: #fbfbfc;
+
+  /* Text */
+  --foreground: #12141a; /* primary text, numbers */
+  --card-foreground: #12141a;
+  --popover-foreground: #12141a;
+  --muted-foreground: #575e6b; /* secondary text, labels */
+  --subtle-foreground: #636a77; /* tertiary: timestamps, captions, placeholders */
+  --sidebar-foreground: #12141a;
+
+  /* Lines */
+  --border: #e1e4ea; /* hairline dividers, card outlines (decorative, not a control boundary) */
+  --border-strong: #c9ced6; /* table header rules, emphasised dividers */
+  --input: #828999; /* form-control boundary — ≥ 3:1 on surface (WCAG 1.4.11) */
+  --sidebar-border: #e1e4ea;
+
+  /* Accent (the only brand hue) */
+  --primary: #4351c8; /* primary buttons, active nav marker, selected states */
+  --primary-hover: #3843b0;
+  --primary-foreground: #ffffff;
+  --accent: #eceefc; /* soft accent wash: selected nav item, active chip, focus-within rows */
+  --accent-foreground: #3e4bc0; /* text on --accent; also link text */
+  --link: #3e4bc0;
+  --ring: #4f5bd5; /* focus ring, 2px + 2px offset */
+  --sidebar-primary: #4351c8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eceefc;
+  --sidebar-accent-foreground: #3e4bc0;
+  --sidebar-ring: #4f5bd5;
+
+  /* Neutral controls (shadcn names) */
+  --secondary: #eff1f4; /* secondary button fill */
+  --secondary-foreground: #12141a;
+  --muted: #eff1f4;
+
+  /* Status — system state only (sync, integration, validation). Never used for metrics. */
+  --success: #17784a;
+  --success-soft: #e7f5ee;
+  --warning: #8a5a00;
+  --warning-soft: #fbf3e1;
+  --destructive: #c2352b;
+  --destructive-hover: #a82c23;
+  --destructive-foreground: #ffffff;
+  --destructive-soft: #fcecea;
+  --info: #3e4bc0;
+  --info-soft: #eceefc;
+
+  /* Data visualisation (validated: dataviz validator, see DESIGN_SYSTEM.md §4.5) */
+  --chart-1: #4f5bd5; /* series 1 — commits */
+  --chart-2: #0e9f84; /* series 2 — PRs merged */
+  --chart-3: #b57f00; /* series 3 — reviews */
+  --chart-4: #828999; /* "Other" / previous period / de-emphasis */
+  --chart-5: #4351c8; /* single-series emphasis (accent) */
+  --chart-grid: #e9ebef; /* hairline gridlines */
+  --chart-axis: #c9ced6; /* baseline */
+  --chart-muted: #a9afba; /* sparklines, de-emphasised marks */
+  --heat-0: #eff1f4; /* no activity (same as surface-2) */
+  --heat-1: #9aa2ee;
+  --heat-2: #6b76e2;
+  --heat-3: #4350c8;
+  --heat-4: #2b358f;
+
+  /* Typography */
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --text-caption: 0.75rem; /* 12px / 16 — captions, axis ticks, badges */
+  --text-sm: 0.8125rem; /* 13px / 18 — dense tables, secondary text */
+  --text-base: 0.875rem; /* 14px / 20 — UI default */
+  --text-md: 1rem; /* 16px / 24 — document reading body, mobile inputs (prevents iOS zoom) */
+  --text-lg: 1.125rem; /* 18px / 26 — section titles (h3) */
+  --text-xl: 1.375rem; /* 22px / 28 — card hero values, dialog titles (h2) */
+  --text-2xl: 1.75rem; /* 28px / 34 — page titles (h1) */
+  --text-3xl: 2.25rem; /* 36px / 40 — impact score on dashboard */
+  --text-4xl: 3rem; /* 48px / 52 — impact score on detail page */
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.45;
+  --leading-relaxed: 1.6; /* document body */
+  --tracking-tight: -0.015em; /* ≥ 22px */
+  --tracking-display: -0.025em; /* ≥ 36px */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  /* Shape — radius by role, not one radius everywhere */
+  --radius: 0.5rem; /* shadcn base (8px); lg/xl derived below */
+  --radius-xs: 0.25rem; /* 4px — badges, chips, heat cells (2px), kbd */
+  --radius-sm: 0.375rem; /* 6px — buttons, inputs, menu items */
+  --radius-md: 0.5rem; /* 8px — cards, popovers */
+  --radius-lg: 0.75rem; /* 12px — dialogs, sheets, command palette */
+  --radius-full: 9999px; /* avatars, status dots, switches */
+
+  /* Elevation — borders do most of the work; shadows only for floating layers */
+  --shadow-xs: 0 1px 0 rgba(18, 20, 26, 0.04);
+  --shadow-sm: 0 1px 2px rgba(18, 20, 26, 0.06), 0 1px 1px rgba(18, 20, 26, 0.04);
+  --shadow-md: 0 4px 12px rgba(18, 20, 26, 0.08), 0 1px 3px rgba(18, 20, 26, 0.06);
+  --shadow-lg: 0 16px 40px rgba(18, 20, 26, 0.14), 0 2px 6px rgba(18, 20, 26, 0.06);
+
+  /* Layout */
+  --sidebar-width: 15rem; /* 240px */
+  --sidebar-width-collapsed: 3.5rem;
+  --topbar-height: 3.25rem; /* 52px */
+  --bottombar-height: 3.5rem; /* 56px, mobile */
+  --content-max: 80rem; /* 1280px */
+  --reading-max: 45rem; /* 720px — documents, forms */
+
+  /* Motion */
+  --duration-instant: 80ms; /* hover, press */
+  --duration-fast: 140ms; /* menus, tooltips, toggles */
+  --duration-base: 200ms; /* drawers, dialogs, accordions */
+  --duration-slow: 320ms; /* page-level progress, sheet on mobile */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1); /* entering */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1); /* leaving */
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1); /* moving */
+
+  /* Z-index scale */
+  --z-sticky: 10;
+  --z-sidebar: 20;
+  --z-overlay: 40;
+  --z-drawer: 50;
+  --z-dialog: 60;
+  --z-toast: 70;
+  --z-tooltip: 80;
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Dark theme — selected values (not an inversion), applied with `.dark` on <html>            */
+/* ------------------------------------------------------------------------------------------ */
+.dark {
+  color-scheme: dark;
+
+  --background: #0e1014;
+  --surface: #15171d;
+  --surface-2: #1c1f27;
+  --surface-3: #242833;
+  --card: #15171d;
+  --popover: #1a1d24;
+  --sidebar: #111318;
+
+  --foreground: #e8eaef;
+  --card-foreground: #e8eaef;
+  --popover-foreground: #e8eaef;
+  --muted-foreground: #a3a9b6;
+  --subtle-foreground: #8b919e;
+  --sidebar-foreground: #e8eaef;
+
+  --border: #262a34;
+  --border-strong: #353a46;
+  --input: #646b7a;
+  --sidebar-border: #22262f;
+
+  --primary: #8d97f2;
+  --primary-hover: #a2aaf5;
+  --primary-foreground: #0e1014;
+  --accent: #1f2340;
+  --accent-foreground: #b3b9f7;
+  --link: #a5adf6;
+  --ring: #8d97f2;
+  --sidebar-primary: #8d97f2;
+  --sidebar-primary-foreground: #0e1014;
+  --sidebar-accent: #1f2340;
+  --sidebar-accent-foreground: #b3b9f7;
+  --sidebar-ring: #8d97f2;
+
+  --secondary: #1c1f27;
+  --secondary-foreground: #e8eaef;
+  --muted: #1c1f27;
+
+  --success: #4cc38a;
+  --success-soft: #12281e;
+  --warning: #e5b54a;
+  --warning-soft: #2b2410;
+  --destructive: #f07a70;
+  --destructive-hover: #f4958d;
+  --destructive-foreground: #0e1014;
+  --destructive-soft: #2e1714;
+  --info: #a5adf6;
+  --info-soft: #1f2340;
+
+  --chart-1: #7480ea;
+  --chart-2: #16a083;
+  --chart-3: #c08a10;
+  --chart-4: #646b7a;
+  --chart-5: #8d97f2;
+  --chart-grid: #23262f;
+  --chart-axis: #353a46;
+  --chart-muted: #4f5562;
+  --heat-0: #1c1f27;
+  --heat-1: #3f4bb0;
+  --heat-2: #5562d0;
+  --heat-3: #7d88ec;
+  --heat-4: #b0b7f7;
+
+  --shadow-xs: 0 1px 0 rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Reduced motion: keep opacity fades, drop movement and long durations */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* 3. Tailwind v4 theme bridge — utilities such as bg-surface, text-subtle-foreground,         */
+/*    border-input, rounded-md, shadow-md, font-mono, text-base, duration-base, ease-out       */
+/* ------------------------------------------------------------------------------------------ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-link: var(--link);
+  --color-destructive: var(--destructive);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-axis: var(--chart-axis);
+  --color-chart-muted: var(--chart-muted);
+  --color-heat-0: var(--heat-0);
+  --color-heat-1: var(--heat-1);
+  --color-heat-2: var(--heat-2);
+  --color-heat-3: var(--heat-3);
+  --color-heat-4: var(--heat-4);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --text-caption: var(--text-caption);
+  --text-caption--line-height: 1rem;
+  --text-sm: var(--text-sm);
+  --text-sm--line-height: 1.125rem;
+  --text-base: var(--text-base);
+  --text-base--line-height: 1.25rem;
+  --text-md: var(--text-md);
+  --text-md--line-height: 1.5rem;
+  --text-lg: var(--text-lg);
+  --text-lg--line-height: 1.625rem;
+  --text-xl: var(--text-xl);
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: var(--text-2xl);
+  --text-2xl--line-height: 2.125rem;
+  --text-3xl: var(--text-3xl);
+  --text-3xl--line-height: 2.5rem;
+  --text-4xl: var(--text-4xl);
+  --text-4xl--line-height: 3.25rem;
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  --ease-out: var(--ease-out);
+  --ease-in: var(--ease-in);
+  --ease-in-out: var(--ease-in-out);
+}
