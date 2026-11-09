@@ -1,5 +1,7 @@
 import { type INestApplication, ValidationPipe } from '@nestjs/common';
 
+import { EmptyBodyInterceptor } from './common/empty-body.interceptor';
+
 import type { Env } from './config/env';
 
 /** HTTP configuration shared by `main.ts` and the integration-test app (`test/utils/app.ts`). */
@@ -16,6 +18,8 @@ export function configureApp(app: INestApplication, env: Pick<Env, 'WEB_URL'>): 
       transformOptions: { enableImplicitConversion: true },
     }),
   );
+
+  app.useGlobalInterceptors(new EmptyBodyInterceptor());
 
   app.setGlobalPrefix('api');
 }

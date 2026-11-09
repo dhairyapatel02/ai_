@@ -36,6 +36,15 @@ describe('Auth + Documents API (integration)', () => {
     expect(me.body.data).toMatchObject({ email: 'dev@devimpact.ai', integrations: [] });
   });
 
+  it('dev-login with a non-JSON body still uses the defaults (Express 4 behaviour kept)', async () => {
+    const res = await request(t.app.getHttpServer())
+      .post('/api/auth/dev-login')
+      .set('content-type', 'text/plain')
+      .send('garbage')
+      .expect(201);
+    expect(res.body.data.email).toBe('dev@devimpact.ai');
+  });
+
   it('documents are scoped to their owner', async () => {
     const owner = await f.user();
     const other = await f.user();
