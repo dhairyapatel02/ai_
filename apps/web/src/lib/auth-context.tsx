@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
-import { API_BASE } from './utils';
+import { API_BASE, DEV_LOGIN_EMAIL } from './utils';
 
 interface User {
   id: string;
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const res = await fetch(`${API_BASE}/auth/dev-login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
+          body: JSON.stringify(DEV_LOGIN_EMAIL ? { email: DEV_LOGIN_EMAIL } : {}),
         });
         const json = (await res.json()) as ApiResult<User>;
         if (json.success && json.data) {
