@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { GenerateButton } from '@/components/generate-button';
+
 import { DocumentPreview } from '@/components/document-preview';
+import { GenerateButton } from '@/components/generate-button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth-context';
 
 export default function PromotionPage() {
@@ -35,7 +36,9 @@ export default function PromotionPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Promotion Packet</h1>
-        <p className="text-muted-foreground">Build a data-driven promotion case from your engineering contributions</p>
+        <p className="text-muted-foreground">
+          Build a data-driven promotion case from your engineering contributions
+        </p>
       </div>
 
       <Card>
@@ -49,7 +52,9 @@ export default function PromotionPage() {
               <input
                 type="text"
                 value={currentRole}
-                onChange={(e) => setCurrentRole(e.target.value)}
+                onChange={(e) => {
+                  setCurrentRole(e.target.value);
+                }}
                 className="w-full rounded-md border border-input px-3 py-2 text-sm"
                 placeholder="e.g., Senior Engineer"
               />
@@ -59,7 +64,9 @@ export default function PromotionPage() {
               <input
                 type="text"
                 value={targetRole}
-                onChange={(e) => setTargetRole(e.target.value)}
+                onChange={(e) => {
+                  setTargetRole(e.target.value);
+                }}
                 className="w-full rounded-md border border-input px-3 py-2 text-sm"
                 placeholder="e.g., Staff Engineer"
               />

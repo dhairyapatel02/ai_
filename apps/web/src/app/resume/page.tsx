@@ -1,20 +1,18 @@
 'use client';
 
+import { resumeBulletSchema, type ResumeBulletOutput } from '@devimpact/shared';
+import { Download, Copy } from 'lucide-react';
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
 import { GenerateButton } from '@/components/generate-button';
 import { ResumeBulletCard } from '@/components/resume-bullet-card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth-context';
-import { Download, Copy } from 'lucide-react';
 
 const roles = ['backend', 'frontend', 'fullstack', 'devops', 'manager'] as const;
 
-interface ResumeBullet {
-  text: string;
-  category: string;
-  impact: string;
-}
+type ResumeBullet = ResumeBulletOutput;
 
 export default function ResumePage() {
   const { apiFetch } = useAuth();
@@ -33,17 +31,15 @@ export default function ResumePage() {
     setLoading(true);
     setError(null);
 
-    const res = await apiFetch<{ bullets: ResumeBullet[] }>('/generate/resume', {
+    const res = await apiFetch<{ bullets: unknown }>('/generate/resume', {
       method: 'POST',
       body: JSON.stringify({ dateRange: { from: dateFrom, to: dateTo }, role }),
     });
 
-    if (res.success && res.data?.bullets) {
-      setBullets(
-        Array.isArray(res.data.bullets)
-          ? res.data.bullets
-          : Object.values(res.data.bullets),
-      );
+    // BUG-14: the API returns `bullets` as an array; validate it against the shared contract.
+    const parsed = resumeBulletSchema.array().safeParse(res.data?.bullets);
+    if (res.success && parsed.success) {
+      setBullets(parsed.data);
     } else {
       setError(res.error || 'Generation failed. Is the ANTHROPIC_API_KEY configured?');
     }
@@ -54,7 +50,9 @@ export default function ResumePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Resume Generator</h1>
-        <p className="text-muted-foreground">Generate professional resume bullet points from your engineering activity</p>
+        <p className="text-muted-foreground">
+          Generate professional resume bullet points from your engineering activity
+        </p>
       </div>
 
       <Card>
@@ -68,7 +66,9 @@ export default function ResumePage() {
               <input
                 type="date"
                 value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                onChange={(e) => {
+                  setDateFrom(e.target.value);
+                }}
                 className="w-full rounded-md border border-input px-3 py-2 text-sm"
               />
             </div>
@@ -77,7 +77,9 @@ export default function ResumePage() {
               <input
                 type="date"
                 value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                onChange={(e) => {
+                  setDateTo(e.target.value);
+                }}
                 className="w-full rounded-md border border-input px-3 py-2 text-sm"
               />
             </div>
@@ -85,11 +87,15 @@ export default function ResumePage() {
               <label className="text-sm font-medium">Role</label>
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(e) => {
+                  setRole(e.target.value);
+                }}
                 className="w-full rounded-md border border-input px-3 py-2 text-sm"
               >
                 {roles.map((r) => (
-                  <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+                  <option key={r} value={r}>
+                    {r.charAt(0).toUpperCase() + r.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>

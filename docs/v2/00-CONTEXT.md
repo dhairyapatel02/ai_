@@ -116,3 +116,20 @@ raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
 5. **Tested.** Every phase leaves the repo with lint, typecheck, unit tests and build green.
 6. **Fairness.** KPIs measure work patterns, not worth. Avoid metrics that reward volume
    (raw LOC). Communicate limitations in the UI.
+
+## 7. State changes by phase
+
+### After Phase 02 (2026-11-09)
+- Green from the root: `npm run lint`, `format:check`, `typecheck`, `test`, `build` (`npm run check`),
+  plus `npm run test:int` (Postgres + Redis) and `npm run test:e2e` (Playwright). CI runs all of
+  them plus a Docker Compose job.
+- Stack versions: Node 22, NestJS 11, Prisma 6.19 (committed migrations), Next 14.2.35, zod 4,
+  TypeScript 5.9 strict everywhere (D-015).
+- `apps/api/src/worker.ts` exists; `docker compose up --build` starts postgres, redis, api
+  (migrates on start), worker and web, all with healthchecks. `GET /api/health` checks DB + Redis.
+- Root `.env` is read by everything; env validated with Zod at startup (fail fast).
+- `npm run db:seed` creates `demo@devimpact.dev` (deterministic, ~9 months of data); setting
+  `NEXT_PUBLIC_DEV_LOGIN_EMAIL=demo@devimpact.dev` makes the web dev-login open it.
+- Fixed BUG-01/02/14. Auth, sync, metrics and AI behaviour are otherwise unchanged (verified by
+  re-running the P01 API probes: 83/87 identical, 4 explained differences).
+

@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { SyncStatusBadge } from '@/components/sync-status-badge';
-import { useAuth } from '@/lib/auth-context';
+/* eslint-disable @typescript-eslint/no-deprecated -- lucide brand icons are deprecated upstream; the P09 design system replaces them. */
 import { Github, GitlabIcon, Trello, RefreshCw, Loader2 } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+
+import { SyncStatusBadge } from '@/components/sync-status-badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useAuth } from '@/lib/auth-context';
 
 interface Integration {
   id: string;
@@ -77,13 +79,15 @@ export default function ConnectPage() {
       await Promise.all([fetchIntegrations(), fetchSyncStatus()]);
       setLoading(false);
     }
-    load();
+    void load();
   }, [user, fetchIntegrations, fetchSyncStatus]);
 
   const handleConnect = async (providerId: string) => {
     if (providerId === 'GITHUB') {
       setConnectingProvider('GITHUB');
-      const res = await apiFetch<{ url: string }>('/integrations/github/connect', { method: 'POST' });
+      const res = await apiFetch<{ url: string }>('/integrations/github/connect', {
+        method: 'POST',
+      });
       if (res.success && res.data?.url) {
         window.location.href = res.data.url;
       } else {
@@ -104,27 +108,32 @@ export default function ConnectPage() {
     setSyncing(true);
     await apiFetch('/sync/trigger', { method: 'POST' });
     // Poll sync status
-    const poll = setInterval(async () => {
-      const res = await apiFetch<SyncStatus>('/sync/status');
-      if (res.success && res.data) {
-        setSyncStatus(res.data);
-        if (res.data.status === 'completed' || res.data.status === 'failed' || res.data.status === 'idle') {
-          clearInterval(poll);
-          setSyncing(false);
+    const poll = setInterval(() => {
+      void (async () => {
+        const res = await apiFetch<SyncStatus>('/sync/status');
+        if (res.success && res.data) {
+          setSyncStatus(res.data);
+          if (
+            res.data.status === 'completed' ||
+            res.data.status === 'failed' ||
+            res.data.status === 'idle'
+          ) {
+            clearInterval(poll);
+            setSyncing(false);
+          }
         }
-      }
+      })();
     }, 2000);
   };
 
-  const isConnected = (providerId: string) =>
-    integrations.some((i) => i.provider === providerId);
+  const isConnected = (providerId: string) => integrations.some((i) => i.provider === providerId);
 
   const getIntegration = (providerId: string) =>
     integrations.find((i) => i.provider === providerId);
 
   if (loading && user) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -159,7 +168,9 @@ export default function ConnectPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <SyncStatusBadge
-                      status={connected ? (syncing ? 'syncing' : 'complete') : 'idle'}
+                      status={
+                        connected && integration ? (syncing ? 'syncing' : 'complete') : 'idle'
+                      }
                     />
                     {connected && syncStatus?.lastSync && (
                       <span className="text-xs text-muted-foreground">
@@ -187,14 +198,14 @@ export default function ConnectPage() {
                         {syncing ? 'Syncing...' : 'Sync'}
                       </Button>
                     )}
-                    {connected ? (
+                    {connected && integration ? (
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => handleDisconnect(integration!.id)}
-                        disabled={disconnecting === integration!.id}
+                        onClick={() => handleDisconnect(integration.id)}
+                        disabled={disconnecting === integration.id}
                       >
-                        {disconnecting === integration!.id ? 'Disconnecting...' : 'Disconnect'}
+                        {disconnecting === integration.id ? 'Disconnecting...' : 'Disconnect'}
                       </Button>
                     ) : (
                       <Button

@@ -96,7 +96,7 @@ export class GitHubService {
         }
       }
     } catch (error) {
-      this.logger.warn(`Failed to fetch commits for ${repoFullName}: ${error}`);
+      this.logger.warn(`Failed to fetch commits for ${repoFullName}: ${String(error)}`);
     }
 
     return commits;
@@ -143,7 +143,7 @@ export class GitHubService {
         }
       }
     } catch (error) {
-      this.logger.warn(`Failed to fetch PRs for ${repoFullName}: ${error}`);
+      this.logger.warn(`Failed to fetch PRs for ${repoFullName}: ${String(error)}`);
     }
 
     return prs;
@@ -195,7 +195,7 @@ export class GitHubService {
         }
       }
     } catch (error) {
-      this.logger.warn(`Failed to fetch reviews for ${repoFullName}: ${error}`);
+      this.logger.warn(`Failed to fetch reviews for ${repoFullName}: ${String(error)}`);
     }
 
     return reviews;

@@ -1,7 +1,8 @@
 import { Controller, Get, Query, Req } from '@nestjs/common';
-import { ActivityService } from './activity.service';
-import { successResponse, errorResponse } from '../common/api-response';
 import { Request } from 'express';
+
+import { successResponse, errorResponse } from '../common/api-response';
+import { ActivityService } from './activity.service';
 
 @Controller('activity')
 export class ActivityController {
@@ -22,13 +23,7 @@ export class ActivityController {
     const parsedLimit = limit ? parseInt(limit, 10) : 20;
     if (isNaN(parsedPage) || isNaN(parsedLimit)) return errorResponse('Invalid page or limit');
 
-    const result = await this.activityService.getCommits(
-      userId,
-      from,
-      to,
-      parsedPage,
-      parsedLimit,
-    );
+    const result = await this.activityService.getCommits(userId, from, to, parsedPage, parsedLimit);
     return successResponse(result);
   }
 
@@ -58,11 +53,7 @@ export class ActivityController {
   }
 
   @Get('summary')
-  async getSummary(
-    @Req() req: Request,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-  ) {
+  async getSummary(@Req() req: Request, @Query('from') from?: string, @Query('to') to?: string) {
     const userId = req.headers['x-user-id'] as string;
     if (!userId) return errorResponse('Not authenticated');
 

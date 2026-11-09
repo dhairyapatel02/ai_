@@ -1,17 +1,15 @@
-import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
+import { Module } from '@nestjs/common';
+
+import { SYNC_QUEUE } from './sync.constants';
 import { SyncController } from './sync.controller';
 import { SyncService } from './sync.service';
-import { SyncProcessor } from './sync.processor';
-import { GitHubModule } from '../github/github.module';
 
+/** HTTP side of sync: enqueue jobs and report status. Processing lives in SyncWorkerModule. */
 @Module({
-  imports: [
-    BullModule.registerQueue({ name: 'github-sync' }),
-    GitHubModule,
-  ],
+  imports: [BullModule.registerQueue({ name: SYNC_QUEUE })],
   controllers: [SyncController],
-  providers: [SyncService, SyncProcessor],
+  providers: [SyncService],
   exports: [SyncService],
 })
 export class SyncModule {}

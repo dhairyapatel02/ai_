@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
 import { Provider, Prisma } from '@prisma/client';
+
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class IntegrationsService {
@@ -45,7 +46,7 @@ export class IntegrationsService {
 
   getGitHubOAuthUrl() {
     const clientId = this.configService.get<string>('GITHUB_CLIENT_ID');
-    const frontendUrl = this.configService.get<string>('NEXTAUTH_URL') || 'http://localhost:3000';
+    const frontendUrl = this.configService.get<string>('WEB_URL') || 'http://localhost:3000';
     const redirectUri = `${frontendUrl}/connect/callback`;
     return `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo,read:user,user:email`;
   }
@@ -55,7 +56,9 @@ export class IntegrationsService {
     const clientSecret = this.configService.get<string>('GITHUB_CLIENT_SECRET');
 
     if (!clientId || !clientSecret) {
-      throw new Error('GitHub OAuth credentials not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.');
+      throw new Error(
+        'GitHub OAuth credentials not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.',
+      );
     }
 
     const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
@@ -64,15 +67,22 @@ export class IntegrationsService {
       body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code }),
     });
 
-    const tokenData = await tokenRes.json() as { access_token?: string; error?: string; error_description?: string };
+    const tokenData = (await tokenRes.json()) as {
+      access_token?: string;
+      error?: string;
+      error_description?: string;
+    };
     if (!tokenData.access_token) {
       throw new Error(tokenData.error_description || 'Failed to exchange GitHub code for token');
     }
 
     const userRes = await fetch('https://api.github.com/user', {
-      headers: { Authorization: `Bearer ${tokenData.access_token}`, Accept: 'application/vnd.github+json' },
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+        Accept: 'application/vnd.github+json',
+      },
     });
-    const ghUser = await userRes.json() as { login?: string; name?: string; avatar_url?: string };
+    const ghUser = (await userRes.json()) as { login?: string; name?: string; avatar_url?: string };
 
     return this.connectGitHub(userId, tokenData.access_token, {
       username: ghUser.login,

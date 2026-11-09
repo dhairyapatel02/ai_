@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { GenerateButton } from '@/components/generate-button';
-import { DocumentPreview } from '@/components/document-preview';
-import { useAuth } from '@/lib/auth-context';
 import { Download } from 'lucide-react';
+import { useState } from 'react';
+
+import { DocumentPreview } from '@/components/document-preview';
+import { GenerateButton } from '@/components/generate-button';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/lib/auth-context';
 
 export default function AppraisalPage() {
   const { apiFetch } = useAuth();
@@ -38,7 +39,9 @@ export default function AppraisalPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Appraisal Report</h1>
-        <p className="text-muted-foreground">Generate performance appraisal documents from your activity data</p>
+        <p className="text-muted-foreground">
+          Generate performance appraisal documents from your activity data
+        </p>
       </div>
 
       <Card>
@@ -51,7 +54,9 @@ export default function AppraisalPage() {
               <label className="text-sm font-medium">Period</label>
               <select
                 value={period}
-                onChange={(e) => setPeriod(e.target.value)}
+                onChange={(e) => {
+                  setPeriod(e.target.value);
+                }}
                 className="w-full rounded-md border border-input px-3 py-2 text-sm"
               >
                 <option value="monthly">Monthly</option>
@@ -63,7 +68,9 @@ export default function AppraisalPage() {
               <label className="text-sm font-medium">Month</label>
               <select
                 value={month}
-                onChange={(e) => setMonth(parseInt(e.target.value))}
+                onChange={(e) => {
+                  setMonth(parseInt(e.target.value));
+                }}
                 className="w-full rounded-md border border-input px-3 py-2 text-sm"
               >
                 {Array.from({ length: 12 }, (_, i) => (
@@ -78,7 +85,9 @@ export default function AppraisalPage() {
               <input
                 type="number"
                 value={year}
-                onChange={(e) => setYear(parseInt(e.target.value))}
+                onChange={(e) => {
+                  setYear(parseInt(e.target.value));
+                }}
                 min={2020}
                 max={2030}
                 className="w-full rounded-md border border-input px-3 py-2 text-sm"

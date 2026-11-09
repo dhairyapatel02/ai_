@@ -1,8 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   Link2,
@@ -14,6 +11,10 @@ import {
   BarChart3,
   Settings,
 } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -30,12 +31,12 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-64 border-r bg-card">
-      <div className="flex items-center gap-2 px-6 py-5 border-b">
+    <aside className="hidden border-r bg-card lg:flex lg:w-64 lg:flex-col">
+      <div className="flex items-center gap-2 border-b px-6 py-5">
         <Trophy className="h-6 w-6 text-primary" />
-        <span className="font-bold text-lg">DevImpact AI</span>
+        <span className="text-lg font-bold">DevImpact AI</span>
       </div>
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 space-y-1 px-3 py-4">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -43,7 +44,7 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 isActive
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',

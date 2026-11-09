@@ -1,11 +1,12 @@
+import Anthropic from '@anthropic-ai/sdk';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Anthropic from '@anthropic-ai/sdk';
+
+import { CALCULATE_IMPACT_PROMPT } from '../prompts/calculate-impact';
 import { ENHANCE_COMMIT_PROMPT } from '../prompts/enhance-commit';
-import { GENERATE_RESUME_PROMPT } from '../prompts/generate-resume';
 import { GENERATE_APPRAISAL_PROMPT } from '../prompts/generate-appraisal';
 import { GENERATE_PROMOTION_PROMPT } from '../prompts/generate-promotion';
-import { CALCULATE_IMPACT_PROMPT } from '../prompts/calculate-impact';
+import { GENERATE_RESUME_PROMPT } from '../prompts/generate-resume';
 
 interface CommitContext {
   message: string;
@@ -33,8 +34,7 @@ export class AIService {
   }
 
   async enhanceCommitMessage(context: CommitContext) {
-    const prompt = ENHANCE_COMMIT_PROMPT
-      .replace('{{repo}}', context.repo)
+    const prompt = ENHANCE_COMMIT_PROMPT.replace('{{repo}}', context.repo)
       .replace('{{additions}}', String(context.additions))
       .replace('{{deletions}}', String(context.deletions))
       .replace('{{message}}', context.message);
@@ -57,8 +57,7 @@ export class AIService {
       .map((p) => `- [${p.repo}] ${p.title} (${p.state})`)
       .join('\n');
 
-    const prompt = GENERATE_RESUME_PROMPT
-      .replaceAll('{{role}}', role)
+    const prompt = GENERATE_RESUME_PROMPT.replaceAll('{{role}}', role)
       .replace('{{dateRange}}', `${dateRange.from} to ${dateRange.to}`)
       .replace('{{commitsCount}}', String(activityData.commits.length))
       .replace('{{repoCount}}', String(topRepos.length))
@@ -68,7 +67,9 @@ export class AIService {
       .replace('{{sampleCommits}}', sampleCommits)
       .replace('{{samplePRs}}', samplePRs);
 
-    return this.callClaude<{ bullets: { text: string; category: string; impact: string }[] }>(prompt);
+    return this.callClaude<{ bullets: { text: string; category: string; impact: string }[] }>(
+      prompt,
+    );
   }
 
   async generateAppraisalReport(
@@ -88,8 +89,7 @@ export class AIService {
       .map((c) => `- ${c.message} (+${c.additions}/-${c.deletions})`)
       .join('\n');
 
-    const prompt = GENERATE_APPRAISAL_PROMPT
-      .replace('{{period}}', period)
+    const prompt = GENERATE_APPRAISAL_PROMPT.replace('{{period}}', period)
       .replace('{{month}}', String(month))
       .replace('{{year}}', String(year))
       .replace('{{commitsCount}}', String(activityData.commits.length))
@@ -111,9 +111,10 @@ export class AIService {
     const prsMerged = activityData.prs.filter((p) => p.state === 'MERGED').length;
     const totalAdditions = activityData.commits.reduce((sum, c) => sum + c.additions, 0);
     const totalDeletions = activityData.commits.reduce((sum, c) => sum + c.deletions, 0);
-    const avgPRSize = activityData.prs.length > 0
-      ? Math.round((totalAdditions + totalDeletions) / activityData.prs.length)
-      : 0;
+    const avgPRSize =
+      activityData.prs.length > 0
+        ? Math.round((totalAdditions + totalDeletions) / activityData.prs.length)
+        : 0;
 
     const notableWork = activityData.prs
       .slice(0, 10)
@@ -121,8 +122,7 @@ export class AIService {
       .join('\n');
     const collaborationEvidence = `- Code reviews completed: ${activityData.reviews.length}\n- Reviews with approvals: ${activityData.reviews.filter((r) => r.approved).length}`;
 
-    const prompt = GENERATE_PROMOTION_PROMPT
-      .replace('{{currentRole}}', currentRole)
+    const prompt = GENERATE_PROMOTION_PROMPT.replace('{{currentRole}}', currentRole)
       .replaceAll('{{targetRole}}', targetRole)
       .replace('{{commitsCount}}', String(activityData.commits.length))
       .replace('{{prsCount}}', String(activityData.prs.length))
@@ -136,11 +136,7 @@ export class AIService {
     return this.callClaude(prompt);
   }
 
-  async calculateImpactScore(
-    activityData: ActivityData,
-    month: number,
-    year: number,
-  ) {
+  async calculateImpactScore(activityData: ActivityData, month: number, year: number) {
     const prsMerged = activityData.prs.filter((p) => p.state === 'MERGED').length;
     const totalAdditions = activityData.commits.reduce((sum, c) => sum + c.additions, 0);
     const totalDeletions = activityData.commits.reduce((sum, c) => sum + c.deletions, 0);
@@ -149,8 +145,7 @@ export class AIService {
       .map((c) => `- ${c.message} [${c.repo}] (+${c.additions}/-${c.deletions})`)
       .join('\n');
 
-    const prompt = CALCULATE_IMPACT_PROMPT
-      .replace('{{month}}', String(month))
+    const prompt = CALCULATE_IMPACT_PROMPT.replace('{{month}}', String(month))
       .replace('{{year}}', String(year))
       .replace('{{commitsCount}}', String(activityData.commits.length))
       .replace('{{prsCount}}', String(activityData.prs.length))
@@ -185,14 +180,14 @@ export class AIService {
           throw new Error('Unexpected response type');
         }
 
-        const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+        const jsonMatch = /\{[\s\S]*\}/.exec(content.text);
         if (!jsonMatch) {
           throw new Error('No JSON found in response');
         }
 
         return JSON.parse(jsonMatch[0]) as T;
       } catch (error) {
-        this.logger.warn(`AI call attempt ${attempt + 1} failed: ${error}`);
+        this.logger.warn(`AI call attempt ${attempt + 1} failed: ${String(error)}`);
         if (attempt === retries - 1) throw error;
         await this.delay(Math.pow(2, attempt) * 1000);
       }

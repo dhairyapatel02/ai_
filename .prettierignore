@@ -1,0 +1,14 @@
+# Generated / vendored
+node_modules/
+dist/
+.next/
+coverage/
+playwright-report/
+test-results/
+package-lock.json
+next-env.d.ts
+*.tsbuildinfo
+apps/api/prisma/migrations/
+
+# Planning & audit artifacts are hand-maintained; don't reflow their tables
+docs/

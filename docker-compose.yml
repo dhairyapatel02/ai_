@@ -1,8 +1,17 @@
-version: '3.8'
+# Full stack: `docker compose up --build` (create `.env` from `.env.example` first if you want
+# AI/GitHub keys; it is optional). Explicit project name avoids invalid image tags when the repo
+# is cloned into a directory such as `ai_` (OPS-09).
+name: devimpact
+
+x-api-env: &api-env
+  DATABASE_URL: postgresql://devimpact:devimpact_password@postgres:5432/devimpact
+  REDIS_URL: redis://redis:6379
+  WEB_URL: http://localhost:3000
+  RUN_WORKER_IN_API: 'false'
 
 services:
   postgres:
-    image: postgres:15
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: devimpact
       POSTGRES_PASSWORD: devimpact_password
@@ -15,7 +24,7 @@ services:
       test: ['CMD-SHELL', 'pg_isready -U devimpact']
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   redis:
     image: redis:7-alpine
@@ -27,43 +36,57 @@ services:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+    image: devimpact-api
     ports:
       - '4000:4000'
-    environment:
-      - DATABASE_URL=postgresql://devimpact:devimpact_password@postgres:5432/devimpact
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - PORT=4000
     env_file:
-      - .env
+      - path: .env
+        required: false
+    environment:
+      <<: *api-env
+      API_PORT: '4000'
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:4000/api/health > /dev/null || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   worker:
+    # Same image as the API (identical build is served from cache).
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    command: node dist/worker
-    environment:
-      - DATABASE_URL=postgresql://devimpact:devimpact_password@postgres:5432/devimpact
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+    image: devimpact-api
+    command: ['node', 'dist/worker.js']
     env_file:
-      - .env
+      - path: .env
+        required: false
+    environment:
+      <<: *api-env
+      RUN_MIGRATIONS: 'false'
+      WORKER_HEARTBEAT_FILE: /tmp/worker-heartbeat
     depends_on:
-      postgres:
+      api:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+    healthcheck:
+      # Healthy while the worker touched its heartbeat file within the last minute.
+      test: ['CMD-SHELL', 'test -n "$(find /tmp/worker-heartbeat -mmin -1 2>/dev/null)"']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
 
   web:
     build:
@@ -71,12 +94,19 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://localhost:4000/api
+        NEXT_PUBLIC_DEV_LOGIN_EMAIL: ${NEXT_PUBLIC_DEV_LOGIN_EMAIL:-}
+    image: devimpact-web
     ports:
       - '3000:3000'
-    env_file:
-      - .env
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3000/dashboard > /dev/null || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
 volumes:
   postgres_data:
