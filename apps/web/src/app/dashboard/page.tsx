@@ -1,10 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ImpactScoreCard } from '@/components/impact-score-card';
-import { useAuth } from '@/lib/auth-context';
 import {
   GitCommit,
   GitPullRequest,
@@ -15,6 +10,12 @@ import {
   Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+import { ImpactScoreCard } from '@/components/impact-score-card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/lib/auth-context';
 
 interface Summary {
   totalCommits: number;
@@ -57,7 +58,7 @@ export default function DashboardPage() {
       if (scoreRes.success && scoreRes.data) setImpactScore(scoreRes.data);
       setLoading(false);
     }
-    load();
+    void load();
   }, [user, apiFetch]);
 
   const hasData =

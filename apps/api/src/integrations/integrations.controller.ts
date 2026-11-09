@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Delete, Param, Body, Req } from '@nestjs/common';
-import { IntegrationsService } from './integrations.service';
-import { successResponse, errorResponse } from '../common/api-response';
 import { Request } from 'express';
+
+import { successResponse, errorResponse } from '../common/api-response';
+import { IntegrationsService } from './integrations.service';
 
 @Controller('integrations')
 export class IntegrationsController {
@@ -17,7 +18,7 @@ export class IntegrationsController {
   }
 
   @Post('github/connect')
-  async connectGitHub(@Req() req: Request) {
+  connectGitHub(@Req() req: Request) {
     const userId = req.headers['x-user-id'] as string;
     if (!userId) return errorResponse('Not authenticated');
 

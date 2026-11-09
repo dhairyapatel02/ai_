@@ -1,7 +1,8 @@
 import { Controller, Get, Delete, Param, Query, Req } from '@nestjs/common';
-import { DocumentsService } from './documents.service';
-import { successResponse, errorResponse } from '../common/api-response';
 import { Request } from 'express';
+
+import { successResponse, errorResponse } from '../common/api-response';
+import { DocumentsService } from './documents.service';
 
 @Controller('documents')
 export class DocumentsController {

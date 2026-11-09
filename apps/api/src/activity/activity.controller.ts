@@ -1,7 +1,8 @@
 import { Controller, Get, Query, Req } from '@nestjs/common';
-import { ActivityService } from './activity.service';
-import { successResponse, errorResponse } from '../common/api-response';
 import { Request } from 'express';
+
+import { successResponse, errorResponse } from '../common/api-response';
+import { ActivityService } from './activity.service';
 
 @Controller('activity')
 export class ActivityController {

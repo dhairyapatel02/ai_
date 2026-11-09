@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+
 import { API_BASE } from './utils';
 
 interface User {
@@ -11,30 +12,37 @@ interface User {
   plan: string;
 }
 
+export interface ApiResult<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+export type ApiFetch = <T>(path: string, options?: RequestInit) => Promise<ApiResult<T>>;
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  apiFetch: <T>(
-    path: string,
-    options?: RequestInit,
-  ) => Promise<{ success: boolean; data?: T; error?: string }>;
+  apiFetch: ApiFetch;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  apiFetch: async () => ({ success: false, error: 'Not initialized' }),
+  apiFetch: () => Promise.resolve({ success: false, error: 'Not initialized' }),
 });
+
+function headersToRecord(headers: HeadersInit | undefined): Record<string, string> {
+  if (!headers) return {};
+  return Object.fromEntries(new Headers(headers).entries());
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const apiFetch = useCallback(
-    async <T,>(
-      path: string,
-      options?: RequestInit,
-    ): Promise<{ success: boolean; data?: T; error?: string }> => {
+  const apiFetch = useCallback<ApiFetch>(
+    async <T,>(path: string, options?: RequestInit): Promise<ApiResult<T>> => {
       const userId = user?.id || localStorage.getItem('devimpact_user_id') || '';
       try {
         const res = await fetch(`${API_BASE}${path}`, {
@@ -42,10 +50,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           headers: {
             'Content-Type': 'application/json',
             'x-user-id': userId,
-            ...options?.headers,
+            ...headersToRecord(options?.headers),
           },
         });
-        return res.json();
+        return (await res.json()) as ApiResult<T>;
       } catch {
         return { success: false, error: 'Network error' };
       }
@@ -61,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const res = await fetch(`${API_BASE}/auth/me`, {
             headers: { 'x-user-id': storedId },
           });
-          const json = await res.json();
+          const json = (await res.json()) as ApiResult<User>;
           if (json.success && json.data) {
             setUser(json.data);
             setLoading(false);
@@ -78,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({}),
         });
-        const json = await res.json();
+        const json = (await res.json()) as ApiResult<User>;
         if (json.success && json.data) {
           localStorage.setItem('devimpact_user_id', json.data.id);
           setUser(json.data);
@@ -88,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setLoading(false);
     }
-    init();
+    void init();
   }, []);
 
   return (

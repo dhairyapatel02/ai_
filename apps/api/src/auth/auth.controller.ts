@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Body, Req } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { successResponse, errorResponse } from '../common/api-response';
 import { Request } from 'express';
+
+import { successResponse, errorResponse } from '../common/api-response';
+import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
@@ -20,21 +21,15 @@ export class AuthController {
   }
 
   @Post('github')
-  async githubCallback(@Body() body: { code: string }) {
-    try {
-      return successResponse({ message: 'GitHub OAuth handled by NextAuth.js on frontend' });
-    } catch (error) {
-      return errorResponse('GitHub authentication failed');
-    }
+  githubCallback(@Body() _body: { code: string }) {
+    // Stub kept for API compatibility; real OAuth sign-in arrives with P05 (D-003).
+    return successResponse({ message: 'GitHub OAuth handled by NextAuth.js on frontend' });
   }
 
   @Post('google')
-  async googleCallback(@Body() body: { code: string }) {
-    try {
-      return successResponse({ message: 'Google OAuth handled by NextAuth.js on frontend' });
-    } catch (error) {
-      return errorResponse('Google authentication failed');
-    }
+  googleCallback(@Body() _body: { code: string }) {
+    // Stub kept for API compatibility; real OAuth sign-in arrives with P05 (D-003).
+    return successResponse({ message: 'Google OAuth handled by NextAuth.js on frontend' });
   }
 
   @Get('me')

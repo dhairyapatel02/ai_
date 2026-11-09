@@ -1,11 +1,12 @@
+import Anthropic from '@anthropic-ai/sdk';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Anthropic from '@anthropic-ai/sdk';
+
+import { CALCULATE_IMPACT_PROMPT } from '../prompts/calculate-impact';
 import { ENHANCE_COMMIT_PROMPT } from '../prompts/enhance-commit';
-import { GENERATE_RESUME_PROMPT } from '../prompts/generate-resume';
 import { GENERATE_APPRAISAL_PROMPT } from '../prompts/generate-appraisal';
 import { GENERATE_PROMOTION_PROMPT } from '../prompts/generate-promotion';
-import { CALCULATE_IMPACT_PROMPT } from '../prompts/calculate-impact';
+import { GENERATE_RESUME_PROMPT } from '../prompts/generate-resume';
 
 interface CommitContext {
   message: string;
@@ -179,14 +180,14 @@ export class AIService {
           throw new Error('Unexpected response type');
         }
 
-        const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+        const jsonMatch = /\{[\s\S]*\}/.exec(content.text);
         if (!jsonMatch) {
           throw new Error('No JSON found in response');
         }
 
         return JSON.parse(jsonMatch[0]) as T;
       } catch (error) {
-        this.logger.warn(`AI call attempt ${attempt + 1} failed: ${error}`);
+        this.logger.warn(`AI call attempt ${attempt + 1} failed: ${String(error)}`);
         if (attempt === retries - 1) throw error;
         await this.delay(Math.pow(2, attempt) * 1000);
       }

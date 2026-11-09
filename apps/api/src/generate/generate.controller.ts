@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Body, Query, Req } from '@nestjs/common';
-import { GenerateService } from './generate.service';
-import { successResponse, errorResponse } from '../common/api-response';
 import { Request } from 'express';
+
+import { successResponse, errorResponse } from '../common/api-response';
+import { GenerateService } from './generate.service';
 
 @Controller('generate')
 export class GenerateController {
