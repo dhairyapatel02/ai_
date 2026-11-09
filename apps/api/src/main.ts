@@ -1,7 +1,7 @@
-import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
+import { configureApp } from './app.setup';
 import { bootstrapEnv } from './bootstrap-env';
 
 async function bootstrap() {
@@ -9,21 +9,7 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule.register({ runWorker: env.RUN_WORKER_IN_API }));
   app.enableShutdownHooks();
-
-  app.enableCors({
-    origin: env.WEB_URL,
-    credentials: true,
-  });
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
-
-  app.setGlobalPrefix('api');
+  configureApp(app, env);
 
   await app.listen(env.API_PORT);
   console.log(

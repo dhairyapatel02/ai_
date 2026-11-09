@@ -1,13 +1,10 @@
 {
-  "extends": "../../tsconfig.base.json",
+  // Type-checking/lint config (sources + tests). `npm run build` uses tsconfig.build.json.
+  "extends": "./tsconfig.build.json",
   "compilerOptions": {
-    // Emitted as CommonJS so both NestJS (CommonJS) and Next.js (bundler) can consume dist/.
-    "module": "commonjs",
-    "moduleResolution": "node10",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "isolatedModules": false
+    "noEmit": true,
+    "rootDir": "."
   },
-  "include": ["src/**/*"],
-  "exclude": ["src/**/*.test.ts"]
+  "include": ["src/**/*", "*.mts"],
+  "exclude": []
 }
