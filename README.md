@@ -4,15 +4,15 @@ AI-powered platform that connects to your developer tools (GitHub, GitLab, Jira)
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
+| Layer    | Technology                                      |
+| -------- | ----------------------------------------------- |
 | Frontend | Next.js 14 (App Router), TailwindCSS, shadcn/ui |
-| Backend | Node.js + NestJS (REST API) |
-| Database | PostgreSQL + Prisma ORM |
-| Queue | Redis + BullMQ |
-| AI | Anthropic Claude API (claude-sonnet-4-20250514) |
-| Auth | NextAuth.js (GitHub OAuth + Google OAuth) |
-| Infra | Docker Compose |
+| Backend  | Node.js + NestJS (REST API)                     |
+| Database | PostgreSQL + Prisma ORM                         |
+| Queue    | Redis + BullMQ                                  |
+| AI       | Anthropic Claude API (claude-sonnet-4-20250514) |
+| Auth     | NextAuth.js (GitHub OAuth + Google OAuth)       |
+| Infra    | Docker Compose                                  |
 
 ## Project Structure
 
@@ -96,40 +96,40 @@ docker compose up --build
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | /api/auth/github | GitHub OAuth callback |
-| POST | /api/auth/google | Google OAuth callback |
-| GET | /api/auth/me | Current user profile |
-| GET | /api/integrations | List connected integrations |
-| POST | /api/integrations/github/connect | Start GitHub OAuth |
-| DELETE | /api/integrations/:id | Disconnect integration |
-| POST | /api/sync/trigger | Manual sync trigger |
-| GET | /api/sync/status | Sync job status |
-| GET | /api/activity/commits | Paginated commits |
-| GET | /api/activity/prs | Pull requests |
-| GET | /api/activity/summary | Aggregated stats |
-| POST | /api/generate/resume | Generate resume bullets |
-| POST | /api/generate/appraisal | Generate appraisal report |
-| POST | /api/generate/promotion | Generate promotion packet |
-| GET | /api/generate/impact-score | Calculate impact score |
-| GET | /api/documents | List generated documents |
-| GET | /api/documents/:id | Get document |
-| DELETE | /api/documents/:id | Delete document |
+| Method | Path                             | Description                 |
+| ------ | -------------------------------- | --------------------------- |
+| POST   | /api/auth/github                 | GitHub OAuth callback       |
+| POST   | /api/auth/google                 | Google OAuth callback       |
+| GET    | /api/auth/me                     | Current user profile        |
+| GET    | /api/integrations                | List connected integrations |
+| POST   | /api/integrations/github/connect | Start GitHub OAuth          |
+| DELETE | /api/integrations/:id            | Disconnect integration      |
+| POST   | /api/sync/trigger                | Manual sync trigger         |
+| GET    | /api/sync/status                 | Sync job status             |
+| GET    | /api/activity/commits            | Paginated commits           |
+| GET    | /api/activity/prs                | Pull requests               |
+| GET    | /api/activity/summary            | Aggregated stats            |
+| POST   | /api/generate/resume             | Generate resume bullets     |
+| POST   | /api/generate/appraisal          | Generate appraisal report   |
+| POST   | /api/generate/promotion          | Generate promotion packet   |
+| GET    | /api/generate/impact-score       | Calculate impact score      |
+| GET    | /api/documents                   | List generated documents    |
+| GET    | /api/documents/:id               | Get document                |
+| DELETE | /api/documents/:id               | Delete document             |
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `REDIS_URL` | Redis connection string |
-| `ANTHROPIC_API_KEY` | Anthropic Claude API key |
-| `GITHUB_CLIENT_ID` | GitHub OAuth App client ID |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `NEXTAUTH_SECRET` | NextAuth.js encryption secret |
-| `NEXTAUTH_URL` | Base URL for NextAuth (e.g., http://localhost:3000) |
+| Variable               | Description                                         |
+| ---------------------- | --------------------------------------------------- |
+| `DATABASE_URL`         | PostgreSQL connection string                        |
+| `REDIS_URL`            | Redis connection string                             |
+| `ANTHROPIC_API_KEY`    | Anthropic Claude API key                            |
+| `GITHUB_CLIENT_ID`     | GitHub OAuth App client ID                          |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret                      |
+| `GOOGLE_CLIENT_ID`     | Google OAuth client ID                              |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret                          |
+| `NEXTAUTH_SECRET`      | NextAuth.js encryption secret                       |
+| `NEXTAUTH_URL`         | Base URL for NextAuth (e.g., http://localhost:3000) |
 
 ## License
 

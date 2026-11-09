@@ -39,7 +39,7 @@ export default function KPIsPage() {
       const [summaryRes, scoreRes] = await Promise.all([
         apiFetch<Summary>(`/activity/summary?from=${from}&to=${to}`),
         apiFetch<ImpactScoreData>(
-          `/generate/impact-score?month=${now.getMonth() + 1}&year=${now.getFullYear()}`
+          `/generate/impact-score?month=${now.getMonth() + 1}&year=${now.getFullYear()}`,
         ),
       ]);
 
@@ -52,7 +52,7 @@ export default function KPIsPage() {
 
   if (loading && user) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -131,22 +131,22 @@ export default function KPIsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2">Repository</th>
-                      <th className="text-right py-2">Commits</th>
+                      <th className="py-2 text-left">Repository</th>
+                      <th className="py-2 text-right">Commits</th>
                     </tr>
                   </thead>
                   <tbody>
                     {summary.topRepos.map((repo) => (
                       <tr key={repo.repo} className="border-b last:border-0">
-                        <td className="py-2 truncate max-w-[200px]">{repo.repo}</td>
-                        <td className="text-right py-2">{repo.commits}</td>
+                        <td className="max-w-[200px] truncate py-2">{repo.repo}</td>
+                        <td className="py-2 text-right">{repo.commits}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
+              <p className="py-8 text-center text-sm text-muted-foreground">
                 No data yet. Connect and sync your GitHub to see KPIs.
               </p>
             )}

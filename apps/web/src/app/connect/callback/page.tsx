@@ -22,10 +22,13 @@ export default function GitHubCallbackPage() {
     }
 
     async function exchangeCode() {
-      const result = await apiFetch<{ id: string; provider: string }>('/integrations/github/callback', {
-        method: 'POST',
-        body: JSON.stringify({ code }),
-      });
+      const result = await apiFetch<{ id: string; provider: string }>(
+        '/integrations/github/callback',
+        {
+          method: 'POST',
+          body: JSON.stringify({ code }),
+        },
+      );
 
       if (result.success) {
         setStatus('success');
@@ -41,13 +44,15 @@ export default function GitHubCallbackPage() {
   }, [searchParams, apiFetch, router]);
 
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="flex min-h-[60vh] items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-center">GitHub Connection</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4 py-8">
-          {status === 'processing' && <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />}
+          {status === 'processing' && (
+            <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+          )}
           {status === 'success' && <CheckCircle2 className="h-12 w-12 text-green-500" />}
           {status === 'error' && <XCircle className="h-12 w-12 text-red-500" />}
           <p className="text-center text-muted-foreground">{message}</p>

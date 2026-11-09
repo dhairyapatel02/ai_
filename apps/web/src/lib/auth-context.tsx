@@ -14,7 +14,10 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  apiFetch: <T>(path: string, options?: RequestInit) => Promise<{ success: boolean; data?: T; error?: string }>;
+  apiFetch: <T>(
+    path: string,
+    options?: RequestInit,
+  ) => Promise<{ success: boolean; data?: T; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,22 +30,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const apiFetch = useCallback(async <T,>(path: string, options?: RequestInit): Promise<{ success: boolean; data?: T; error?: string }> => {
-    const userId = user?.id || localStorage.getItem('devimpact_user_id') || '';
-    try {
-      const res = await fetch(`${API_BASE}${path}`, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': userId,
-          ...options?.headers,
-        },
-      });
-      return res.json();
-    } catch {
-      return { success: false, error: 'Network error' };
-    }
-  }, [user?.id]);
+  const apiFetch = useCallback(
+    async <T,>(
+      path: string,
+      options?: RequestInit,
+    ): Promise<{ success: boolean; data?: T; error?: string }> => {
+      const userId = user?.id || localStorage.getItem('devimpact_user_id') || '';
+      try {
+        const res = await fetch(`${API_BASE}${path}`, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': userId,
+            ...options?.headers,
+          },
+        });
+        return res.json();
+      } catch {
+        return { success: false, error: 'Network error' };
+      }
+    },
+    [user?.id],
+  );
 
   useEffect(() => {
     async function init() {
@@ -83,9 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, apiFetch }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, apiFetch }}>{children}</AuthContext.Provider>
   );
 }
 

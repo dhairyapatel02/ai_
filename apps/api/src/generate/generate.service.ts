@@ -13,7 +13,11 @@ export class GenerateService {
   ) {}
 
   async generateResume(userId: string, dateRange: { from: string; to: string }, role: string) {
-    const activityData = await this.activityService.getActivityDataForAI(userId, dateRange.from, dateRange.to);
+    const activityData = await this.activityService.getActivityDataForAI(
+      userId,
+      dateRange.from,
+      dateRange.to,
+    );
     const result = await this.aiService.generateResumeBullets(activityData, dateRange, role);
 
     const doc = await this.prisma.generatedDocument.create({
@@ -52,7 +56,11 @@ export class GenerateService {
     const to = new Date().toISOString();
 
     const activityData = await this.activityService.getActivityDataForAI(userId, from, to);
-    const result = await this.aiService.generatePromotionPacket(currentRole, targetRole, activityData);
+    const result = await this.aiService.generatePromotionPacket(
+      currentRole,
+      targetRole,
+      activityData,
+    );
 
     const doc = await this.prisma.generatedDocument.create({
       data: {

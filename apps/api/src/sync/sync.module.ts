@@ -6,10 +6,7 @@ import { SyncProcessor } from './sync.processor';
 import { GitHubModule } from '../github/github.module';
 
 @Module({
-  imports: [
-    BullModule.registerQueue({ name: 'github-sync' }),
-    GitHubModule,
-  ],
+  imports: [BullModule.registerQueue({ name: 'github-sync' }), GitHubModule],
   controllers: [SyncController],
   providers: [SyncService, SyncProcessor],
   exports: [SyncService],

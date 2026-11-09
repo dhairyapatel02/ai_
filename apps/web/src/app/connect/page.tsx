@@ -83,7 +83,9 @@ export default function ConnectPage() {
   const handleConnect = async (providerId: string) => {
     if (providerId === 'GITHUB') {
       setConnectingProvider('GITHUB');
-      const res = await apiFetch<{ url: string }>('/integrations/github/connect', { method: 'POST' });
+      const res = await apiFetch<{ url: string }>('/integrations/github/connect', {
+        method: 'POST',
+      });
       if (res.success && res.data?.url) {
         window.location.href = res.data.url;
       } else {
@@ -108,7 +110,11 @@ export default function ConnectPage() {
       const res = await apiFetch<SyncStatus>('/sync/status');
       if (res.success && res.data) {
         setSyncStatus(res.data);
-        if (res.data.status === 'completed' || res.data.status === 'failed' || res.data.status === 'idle') {
+        if (
+          res.data.status === 'completed' ||
+          res.data.status === 'failed' ||
+          res.data.status === 'idle'
+        ) {
           clearInterval(poll);
           setSyncing(false);
         }
@@ -116,15 +122,14 @@ export default function ConnectPage() {
     }, 2000);
   };
 
-  const isConnected = (providerId: string) =>
-    integrations.some((i) => i.provider === providerId);
+  const isConnected = (providerId: string) => integrations.some((i) => i.provider === providerId);
 
   const getIntegration = (providerId: string) =>
     integrations.find((i) => i.provider === providerId);
 
   if (loading && user) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );

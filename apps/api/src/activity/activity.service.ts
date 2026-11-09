@@ -91,9 +91,18 @@ export class ActivityService {
     };
 
     const [commits, prs, reviews] = await Promise.all([
-      this.prisma.commit.findMany({ where: { userId, ...dateFilter }, orderBy: { timestamp: 'desc' } }),
-      this.prisma.pullRequest.findMany({ where: { userId, ...dateFilter }, orderBy: { timestamp: 'desc' } }),
-      this.prisma.codeReview.findMany({ where: { userId, ...dateFilter }, orderBy: { timestamp: 'desc' } }),
+      this.prisma.commit.findMany({
+        where: { userId, ...dateFilter },
+        orderBy: { timestamp: 'desc' },
+      }),
+      this.prisma.pullRequest.findMany({
+        where: { userId, ...dateFilter },
+        orderBy: { timestamp: 'desc' },
+      }),
+      this.prisma.codeReview.findMany({
+        where: { userId, ...dateFilter },
+        orderBy: { timestamp: 'desc' },
+      }),
     ]);
 
     return {

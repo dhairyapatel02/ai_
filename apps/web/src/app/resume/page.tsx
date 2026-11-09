@@ -40,9 +40,7 @@ export default function ResumePage() {
 
     if (res.success && res.data?.bullets) {
       setBullets(
-        Array.isArray(res.data.bullets)
-          ? res.data.bullets
-          : Object.values(res.data.bullets),
+        Array.isArray(res.data.bullets) ? res.data.bullets : Object.values(res.data.bullets),
       );
     } else {
       setError(res.error || 'Generation failed. Is the ANTHROPIC_API_KEY configured?');
@@ -54,7 +52,9 @@ export default function ResumePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Resume Generator</h1>
-        <p className="text-muted-foreground">Generate professional resume bullet points from your engineering activity</p>
+        <p className="text-muted-foreground">
+          Generate professional resume bullet points from your engineering activity
+        </p>
       </div>
 
       <Card>
@@ -89,7 +89,9 @@ export default function ResumePage() {
                 className="w-full rounded-md border border-input px-3 py-2 text-sm"
               >
                 {roles.map((r) => (
-                  <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+                  <option key={r} value={r}>
+                    {r.charAt(0).toUpperCase() + r.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>

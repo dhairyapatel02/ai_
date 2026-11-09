@@ -46,7 +46,12 @@ export class SyncProcessor extends WorkerHost {
       let totalCommits = 0;
       for (let i = 0; i < recentRepos.length; i++) {
         const repoName = recentRepos[i];
-        const commits = await this.githubService.fetchCommits(accessToken, repoName, username, since);
+        const commits = await this.githubService.fetchCommits(
+          accessToken,
+          repoName,
+          username,
+          since,
+        );
 
         for (const commit of commits) {
           await this.prisma.commit.upsert({
@@ -74,7 +79,12 @@ export class SyncProcessor extends WorkerHost {
       let totalPRs = 0;
       for (let i = 0; i < recentRepos.length; i++) {
         const repoName = recentRepos[i];
-        const prs = await this.githubService.fetchPullRequests(accessToken, repoName, username, since);
+        const prs = await this.githubService.fetchPullRequests(
+          accessToken,
+          repoName,
+          username,
+          since,
+        );
 
         for (const pr of prs) {
           await this.prisma.pullRequest.upsert({
@@ -109,7 +119,12 @@ export class SyncProcessor extends WorkerHost {
       let totalReviews = 0;
       for (let i = 0; i < Math.min(recentRepos.length, 15); i++) {
         const repoName = recentRepos[i];
-        const reviews = await this.githubService.fetchReviews(accessToken, repoName, username, since);
+        const reviews = await this.githubService.fetchReviews(
+          accessToken,
+          repoName,
+          username,
+          since,
+        );
 
         for (const review of reviews) {
           let dbPR = await this.prisma.pullRequest.findFirst({
@@ -174,7 +189,9 @@ export class SyncProcessor extends WorkerHost {
         },
       });
 
-      this.logger.log(`Sync complete: ${totalCommits} commits, ${totalPRs} PRs, ${totalReviews} reviews`);
+      this.logger.log(
+        `Sync complete: ${totalCommits} commits, ${totalPRs} PRs, ${totalReviews} reviews`,
+      );
       return { totalCommits, totalPRs, totalReviews };
     } catch (error) {
       this.logger.error(`Sync failed for user ${userId}: ${error}`);

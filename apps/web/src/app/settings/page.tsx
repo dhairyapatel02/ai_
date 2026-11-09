@@ -38,7 +38,7 @@ export default function SettingsPage() {
                 type="email"
                 defaultValue={user?.email || ''}
                 disabled
-                className="w-full rounded-md border border-input px-3 py-2 text-sm bg-muted"
+                className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm"
               />
             </div>
           </div>
@@ -55,29 +55,39 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3">
             <Badge variant="default">{user?.plan || 'FREE'}</Badge>
-            <span className="text-sm text-muted-foreground">5 generations/month, 1 integration</span>
+            <span className="text-sm text-muted-foreground">
+              5 generations/month, 1 integration
+            </span>
           </div>
           <Separator />
           <div className="grid gap-3 md:grid-cols-3">
             <Card className="border-2">
               <CardContent className="p-4">
                 <h3 className="font-semibold">Pro</h3>
-                <p className="text-2xl font-bold mt-1">$12<span className="text-sm font-normal">/mo</span></p>
-                <p className="text-xs text-muted-foreground mt-2">Unlimited generations, all integrations</p>
+                <p className="mt-1 text-2xl font-bold">
+                  $12<span className="text-sm font-normal">/mo</span>
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Unlimited generations, all integrations
+                </p>
               </CardContent>
             </Card>
             <Card className="border-2">
               <CardContent className="p-4">
                 <h3 className="font-semibold">Team</h3>
-                <p className="text-2xl font-bold mt-1">$29<span className="text-sm font-normal">/mo</span></p>
-                <p className="text-xs text-muted-foreground mt-2">Team dashboards, shared reports</p>
+                <p className="mt-1 text-2xl font-bold">
+                  $29<span className="text-sm font-normal">/mo</span>
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Team dashboards, shared reports
+                </p>
               </CardContent>
             </Card>
             <Card className="border-2">
               <CardContent className="p-4">
                 <h3 className="font-semibold">Enterprise</h3>
-                <p className="text-2xl font-bold mt-1">Custom</p>
-                <p className="text-xs text-muted-foreground mt-2">SSO, custom integrations, SLA</p>
+                <p className="mt-1 text-2xl font-bold">Custom</p>
+                <p className="mt-2 text-xs text-muted-foreground">SSO, custom integrations, SLA</p>
               </CardContent>
             </Card>
           </div>
@@ -96,7 +106,9 @@ export default function SettingsPage() {
               <p className="text-sm font-medium">Weekly Summary</p>
               <p className="text-xs text-muted-foreground">Receive weekly activity digest</p>
             </div>
-            <Button variant="outline" size="sm">Enable</Button>
+            <Button variant="outline" size="sm">
+              Enable
+            </Button>
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -104,7 +116,9 @@ export default function SettingsPage() {
               <p className="text-sm font-medium">Sync Notifications</p>
               <p className="text-xs text-muted-foreground">Get notified when sync completes</p>
             </div>
-            <Button variant="outline" size="sm">Enable</Button>
+            <Button variant="outline" size="sm">
+              Enable
+            </Button>
           </div>
         </CardContent>
       </Card>

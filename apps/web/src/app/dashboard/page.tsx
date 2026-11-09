@@ -5,7 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImpactScoreCard } from '@/components/impact-score-card';
 import { useAuth } from '@/lib/auth-context';
-import { GitCommit, GitPullRequest, Eye, TrendingUp, FileText, ClipboardList, Loader2 } from 'lucide-react';
+import {
+  GitCommit,
+  GitPullRequest,
+  Eye,
+  TrendingUp,
+  FileText,
+  ClipboardList,
+  Loader2,
+} from 'lucide-react';
 import Link from 'next/link';
 
 interface Summary {
@@ -41,7 +49,7 @@ export default function DashboardPage() {
       const [summaryRes, scoreRes] = await Promise.all([
         apiFetch<Summary>(`/activity/summary?from=${from}&to=${to}`),
         apiFetch<ImpactScoreData>(
-          `/generate/impact-score?month=${now.getMonth() + 1}&year=${now.getFullYear()}`
+          `/generate/impact-score?month=${now.getMonth() + 1}&year=${now.getFullYear()}`,
         ),
       ]);
 
@@ -52,11 +60,12 @@ export default function DashboardPage() {
     load();
   }, [user, apiFetch]);
 
-  const hasData = summary && (summary.totalCommits > 0 || summary.totalPRs > 0 || summary.totalReviews > 0);
+  const hasData =
+    summary && (summary.totalCommits > 0 || summary.totalPRs > 0 || summary.totalReviews > 0);
 
   if (loading && user) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -89,7 +98,7 @@ export default function DashboardPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-lg font-medium text-muted-foreground">No activity data yet</p>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="mt-2 text-sm text-muted-foreground">
               Connect an integration and sync your data to see your engineering impact.
             </p>
             <Link href="/connect">
@@ -135,7 +144,11 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {impactScore ? `${Math.round(impactScore.overall)}/100` : (summary?.impactScore != null ? `${summary.impactScore}/100` : '—')}
+              {impactScore
+                ? `${Math.round(impactScore.overall)}/100`
+                : summary?.impactScore != null
+                  ? `${summary.impactScore}/100`
+                  : '—'}
             </div>
           </CardContent>
         </Card>
@@ -163,13 +176,13 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 {summary.topRepos.map((repo) => (
                   <div key={repo.repo} className="flex items-center justify-between">
-                    <span className="text-sm font-medium truncate">{repo.repo}</span>
+                    <span className="truncate text-sm font-medium">{repo.repo}</span>
                     <span className="text-sm text-muted-foreground">{repo.commits} commits</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
+              <p className="py-8 text-center text-sm text-muted-foreground">
                 No repository data yet. Sync your GitHub to see top repos.
               </p>
             )}

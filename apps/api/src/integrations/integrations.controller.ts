@@ -26,10 +26,7 @@ export class IntegrationsController {
   }
 
   @Post('github/callback')
-  async githubCallback(
-    @Req() req: Request,
-    @Body() body: { code: string },
-  ) {
+  async githubCallback(@Req() req: Request, @Body() body: { code: string }) {
     const userId = req.headers['x-user-id'] as string;
     if (!userId) return errorResponse('Not authenticated');
 

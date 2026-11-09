@@ -51,34 +51,35 @@ Without the API server, pages will show loading spinners or network errors inste
 
 All pages now call real backend API endpoints. With an empty database and placeholder credentials:
 
-| Path | API Endpoints Called | Expected Behavior (empty DB) |
-|------|---------------------|-----------------------------|
-| /dashboard | GET /activity/summary, GET /generate/impact-score | 0 commits, 0 PRs, 0 reviews, "No activity data yet" + "Connect GitHub" CTA |
-| /connect | GET /integrations, POST /integrations/github/connect | GitHub=Connect button, GitLab/Jira/Linear=Coming Soon |
-| /resume | POST /generate/resume | Form with date pickers + role selector; Generate shows Anthropic error |
-| /appraisal | POST /generate/appraisal | Form with period/month/year; Generate shows Anthropic error |
-| /promotion | POST /generate/promotion | Pre-filled "Senior Engineer" → "Staff Engineer"; Generate shows Anthropic error |
-| /career | GET /activity/commits, GET /activity/prs | "No timeline data yet" + "Connect GitHub" CTA |
-| /kpis | GET /activity/summary, GET /generate/impact-score | Productivity=0, Code Quality=0, Collaboration=0, Ownership=0 |
-| /settings | Uses auth context (no API call) | Name="Dev User", Email="dev@devimpact.ai", Plan=FREE |
+| Path       | API Endpoints Called                                 | Expected Behavior (empty DB)                                                    |
+| ---------- | ---------------------------------------------------- | ------------------------------------------------------------------------------- |
+| /dashboard | GET /activity/summary, GET /generate/impact-score    | 0 commits, 0 PRs, 0 reviews, "No activity data yet" + "Connect GitHub" CTA      |
+| /connect   | GET /integrations, POST /integrations/github/connect | GitHub=Connect button, GitLab/Jira/Linear=Coming Soon                           |
+| /resume    | POST /generate/resume                                | Form with date pickers + role selector; Generate shows Anthropic error          |
+| /appraisal | POST /generate/appraisal                             | Form with period/month/year; Generate shows Anthropic error                     |
+| /promotion | POST /generate/promotion                             | Pre-filled "Senior Engineer" → "Staff Engineer"; Generate shows Anthropic error |
+| /career    | GET /activity/commits, GET /activity/prs             | "No timeline data yet" + "Connect GitHub" CTA                                   |
+| /kpis      | GET /activity/summary, GET /generate/impact-score    | Productivity=0, Code Quality=0, Collaboration=0, Ownership=0                    |
+| /settings  | Uses auth context (no API call)                      | Name="Dev User", Email="dev@devimpact.ai", Plan=FREE                            |
 
 ## Key Discriminators (API-wired vs old mock data)
 
 These values distinguish whether pages are calling real API or still using old hardcoded mock data:
 
-| Check | Old Mock Value | Correct API Value (empty DB) |
-|-------|---------------|-----------------------------|
-| Dashboard commits | 142 | 0 |
-| Dashboard PRs | 28 | 0 |
-| Dashboard reviews | 45 | 0 |
-| Dashboard impact | 78/100 | 0 or — |
+| Check             | Old Mock Value                | Correct API Value (empty DB)    |
+| ----------------- | ----------------------------- | ------------------------------- |
+| Dashboard commits | 142                           | 0                               |
+| Dashboard PRs     | 28                            | 0                               |
+| Dashboard reviews | 45                            | 0                               |
+| Dashboard impact  | 78/100                        | 0 or —                          |
 | Resume "Generate" | 5 bullet cards after 2s delay | Red error about invalid API key |
-| Career timeline | Q2 2024, Q1 2024, Q4 2023 | "No timeline data yet" |
-| KPI productivity | 142 | 0 |
+| Career timeline   | Q2 2024, Q1 2024, Q4 2023     | "No timeline data yet"          |
+| KPI productivity  | 142                           | 0                               |
 
 ## Auth Flow
 
 The `AuthProvider` context auto-creates a dev user on first visit:
+
 1. Checks `localStorage` for `devimpact_user_id`
 2. If not found, calls `POST /api/auth/dev-login`
 3. Stores returned user ID in `localStorage`
@@ -117,6 +118,7 @@ To reset auth state: clear `localStorage.removeItem('devimpact_user_id')` in bro
 For basic testing (empty DB, placeholder credentials): **None required** — the app handles missing credentials gracefully with error messages.
 
 For full integration testing:
+
 - `ANTHROPIC_API_KEY` — Claude AI API key for generation features (Resume, Appraisal, Promotion, Impact Score)
 - `GITHUB_CLIENT_ID` — GitHub OAuth app client ID (create at https://github.com/settings/developers with callback URL `http://localhost:3000/connect/callback`)
 - `GITHUB_CLIENT_SECRET` — GitHub OAuth app client secret
