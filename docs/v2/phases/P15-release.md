@@ -75,3 +75,17 @@ root `README.md`. Skills: `engineering:deploy-checklist`, `engineering:documenta
 ## Handoff
 Final PROGRESS.md entry: release links, deployed URLs (if any), credentials the owner must rotate
 or store, and the v2.1 roadmap pointer.
+
+---
+
+## Blueprint amendments (P03, 2026-11-09)
+Appended by Phase 03; these take precedence over conflicting text above.
+
+1. **Hosting (D-013 / ADR-0013):** the owner deferred the choice to this phase — USER DECISION 1
+   stands. The platform must satisfy ADR-0013's constraints (SSE streaming ≥ 5 min without
+   buffering, Redis Streams, separate worker process). Record the choice as an ADR superseding ADR-0013.
+2. **Migration:** run P15-1 (`drop_legacy`) from DATA_MODEL_V2 §5.
+3. **Roadmap:** `ROADMAP_V2_1.md` must include P13 (GitLab/Jira/Linear), manager/team views,
+   Stripe billing, share links, in-app notifications (if deferred), issue metrics, OAuth-App
+   fallback evaluation (ADR-0004), anchor recalibration `impact@2.1.0` (ADR-0008).
+4. **OAuth setup docs:** two GitHub registrations (sign-in OAuth App + data GitHub App) and Google.

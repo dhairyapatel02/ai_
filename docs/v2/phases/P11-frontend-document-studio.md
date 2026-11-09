@@ -75,3 +75,17 @@ export endpoints + templates, tests, screenshots, PROGRESS.md.
 
 ## Handoff
 Note editor choice, export renderer details, and any generator/API improvements to feed back to P08 follow-ups.
+
+---
+
+## Blueprint amendments (P03, 2026-11-09)
+Appended by Phase 03; these take precedence over conflicting text above.
+
+1. **Exports (ADR-0012):** `@react-pdf/renderer` (PDF) and `docx` (DOCX) from one export-blocks IR;
+   `GET /documents/:id/export?format=md|txt|pdf|docx&version=`; resume exports omit citations by default.
+2. **Creation flows:** options per API_CONTRACT_V2 §13.1 (appraisal periods include `half` and `custom`;
+   resume `format` and optional `jobDescription`; promotion optional `ladderText`); evidence preview
+   via `POST /documents/preview-evidence`.
+3. **Streaming:** consume the SSE contract in API_CONTRACT_V2 §13.3 (`status`, `section`, `delta`,
+   `done`, `error`, `cancelled`); reopening a document mid-generation resumes from `Last-Event-ID`.
+4. **Out of scope:** shareable read-only links (v2.1).

@@ -9,7 +9,7 @@ Every phase session updates this file before opening its PR.
 | 00 | Planning (this folder) | ✅ Done | — | 2026-11-09 | Baseline `ed6ed4f` confirmed; plan written |
 | 01 | Audit & Discovery | ✅ Done | (this PR) | 2026-11-09 | 106 issues (🔴10 🟠34 🟡50 ⚪12); see `audit/` |
 | 02 | Engineering Foundation & Stabilization | ⏳ Not started | | | |
-| 03 | V2 Blueprint | ⏳ Not started | | | |
+| 03 | V2 Blueprint | ✅ Done | (this PR) | 2026-11-09 | All 7 user decisions answered; 14 ADRs; `blueprint/` |
 | 04 | UX/UI Design System & Prototype | ⏳ Not started | | | |
 | 05 | Backend Platform | ⏳ Not started | | | |
 | 06 | Sync Engine v2 | ⏳ Not started | | | |
@@ -19,7 +19,7 @@ Every phase session updates this file before opening its PR.
 | 10 | Frontend: Insights Pages | ⏳ Not started | | | |
 | 11 | Frontend: AI Document Studio | ⏳ Not started | | | |
 | 12 | Product Extensions | ⏳ Not started | | | |
-| 13 | Additional Integrations (optional) | ⏳ Not started | | | |
+| 13 | Additional Integrations (optional) | ⏸ Deferred | | | Skipped for v2.0 → v2.1 (D-016) |
 | 14 | Hardening | ⏳ Not started | | | |
 | 15 | Release v2.0.0 | ⏳ Not started | | | |
 
@@ -126,3 +126,80 @@ leaks), AI-07 (mislabeled prompt metrics), UX-02/04/05. Full list: `audit/ISSUES
   deterministic KPI/impact methodology to replace the LLM score (AI-01, UX-06).
 - `octokit`'s bundled throttling plugin waits 60 s when `retry-after` is `0`/missing — mocks in
   future sync tests should send a non-zero `retry-after` or disable throttling.
+
+### Phase 03 — V2 Blueprint: Product, KPIs & Architecture (2026-11-09)
+**Branch / PR:** `claude/eager-volta-lqrxeb` → `main` / PR "Phase 03: V2 Blueprint"
+(branched from `main@91a6c78` = Phase 01 merged; P02 not yet merged — P03 ran in parallel as planned).
+
+**Summary:**
+- Asked the owner the 7 USER DECISIONS (two AskUserQuestion rounds); all answers recorded as
+  CONFIRMED entries in `DECISIONS.md` (D-003, D-004, D-007, D-013, D-014, D-015, D-016).
+- Wrote `blueprint/PRD.md` (personas, JTBD, 8 journeys, 59 features with MoSCoW + owning phase,
+  plans/entitlements, NFRs, success metrics).
+- Wrote `blueprint/KPI_METHODOLOGY.md`: 21 metrics + 3 deferred issue metrics (`metrics@2.0.0`) with formulas, attribution
+  timestamps, timezone/period/business-hours rules, min-n thresholds; deterministic impact score
+  `impact@2.0.0` (bands, k = 3 shrinkage, weights, rounding, stored inputs, explanation template)
+  with a numerically verified worked example (G-1 → 78).
+- Wrote `blueprint/ARCHITECTURE_V2.md` (7 Mermaid diagrams, all parsed with mermaid 11),
+  `blueprint/DATA_MODEL_V2.md` (full Prisma draft + ERD + phase-by-phase migration plan from
+  v0.1.0 + retention), `blueprint/API_CONTRACT_V2.md` (all endpoints with Zod sketches, error codes,
+  rate classes, SSE contract, v1 disposition, PRD coverage), `blueprint/TRACEABILITY.md`
+  (feature → ADR → model → endpoint → page → phase; all 81 open issues targeting ≥ P05 mapped,
+  GAP-10 won't-fix for v2.0 — verified by script).
+- 14 ADRs in `blueprint/adr/` (+ index); every PROPOSED decision D-001…D-014 marked
+  CONFIRMED / AMENDED / DEFERRED with ADR links; new D-015 (brand), D-016 (P13 out), D-017 (time zones).
+- Appended "Blueprint amendments (P03)" sections to P04–P15; marked P13 skipped in `README.md` and here.
+
+**Confirmed decisions (one line each):**
+- D-001 npm workspaces, `shared` = single source of schemas; no Turborepo.
+- D-002 Node 22, Nest 11, latest Prisma, Zod 4, SDK 1.x; Next 14.2.x patch (P02) → 16 + React 19 + Tailwind 4 (P09).
+- D-003 **Better Auth** in web (GitHub + Google), 15-min EdDSA JWT verified by Nest via JWKS; dev login web-only, never in prod. *(user)*
+- D-004 **GitHub App** (read-only, webhooks, expiring tokens) for data; separate OAuth App for sign-in. *(user)*
+- D-005 AES-256-GCM `v<n>.iv.ct.tag` with AAD + key list; legacy plaintext tokens dropped → `NEEDS_REAUTH`.
+- D-006 Envelope + status codes, Zod pipe, cursor pagination, `period` grammar, fixed error codes, rate classes.
+- D-007 **Deterministic** score: overall + Delivery 30 / Quality 25 / Collaboration 30 / Ownership 15. *(user)*
+- D-008 Worker; GraphQL search + contributions + per-repo history; cursors; 24 h + webhooks; ≤ 250 requests for the P06 fixture.
+- D-009 Models from env (`claude-opus-5-5` default, `claude-haiku-5-5` fast); worker + Redis Streams SSE; structured output; citations; quotas.
+- D-010 Typed client + TanStack Query; fetch-based SSE; period in URL.
+- D-011 Jest/supertest, Vitest/RTL, Playwright + axe, MSW fixtures, mock Anthropic.
+- D-012 Markdown, PDF via `@react-pdf/renderer`, DOCX via `docx`.
+- D-013 Hosting **deferred to P15**; platform-neutral constraints binding. *(user)*
+- D-014 **Individual only**; no team views, no billing (FREE/PRO enforced). *(user)*
+- D-015 Brand **calm, professional, Linear-like**. *(user)*
+- D-016 GitLab/Jira/Linear **out of v2.0**; P13 skipped. *(user)*
+- D-017 IANA timezone per user; inclusive local periods; ISO weeks; business hours exclude weekends.
+
+**Phase amendments appended:** P04 (brand, scope, onboarding states, KPI copy, URL period),
+P05 (Better Auth + JWT/JWKS, web dev-login, GitHub App connect, drop legacy tokens, env vars),
+P06 (GitHub App tokens, fetch strategy, budget fixture, backfill order, legacy migration),
+P07 (spec versions, lazy ImpactScore, extra endpoints, shared periods), P08 (models, worker/Redis
+Streams, endpoints, quotas, doc types), P09 (auth client, fetch-SSE, onboarding), P10 (KPI sections,
+cards, integrations states), P11 (export renderers, options, SSE), P12 (scope, no billing,
+entitlements, sync export), P13 (skipped), P14 (targets, security focus), P15 (hosting decision, roadmap).
+
+**Deviations from the phase file:**
+- Task 9 says review P04–P15; `P02-engineering-foundation.md` was **not** amended because P02 may be
+  running in parallel — P02-relevant consequences are listed in the handoff notes below instead.
+- `docs/v2/README.md` phase table edited (P13 row marked skipped) because the plan itself changed.
+- `audit/ISSUES.md` annotated (SEC-05 decided, DATA-10 designed → target P06, GAP-10 → v2.1 won't fix).
+
+**Deferred items:** none from this phase. Product deferrals (v2.1): team views, billing, P13
+integrations, share links, in-app notification centre (Could), issue metrics.
+
+**New issues found:** none (design phase; gaps found are covered by existing IDs).
+
+**Handoff notes for next phases:**
+- *P02 (if still open):* targets from ADR-0002 — Zod **4**, latest Prisma major, Nest 11, Node 22;
+  env uses `REDIS_URL` (not host/port) and `API_PORT`/`WEB_PORT`; create the **baseline migration**
+  exactly as DATA_MODEL_V2 §5 describes; seed should include a heavy persona (12 months, ~3k
+  PRs/reviews) for P07/P10/P14 perf work; record the Jest-vs-Vitest choice for the API (ADR-0011
+  allows either). If P02 merged with different choices, the next phase records the reconciliation.
+- *P04:* read PRD §4–§5, KPI_METHODOLOGY §3/§6.7 (copy), API_CONTRACT_V2, and the P04 amendments.
+  Routes in TRACEABILITY §1 are provisional — update that file if IA.md changes them.
+- *P05:* the Better Auth Prisma models must be reconciled with `npx @better-auth/cli generate`
+  for the pinned version (DATA_MODEL_V2 §3 note). The connect flow needs a GitHub App registered
+  for local testing; dummy values suffice for unit/integration tests.
+- *P08:* re-check model IDs and SDK details with the `claude-api` skill before coding; defaults are
+  env-only so changing them later is configuration.
+- Mermaid validation helper used here: mermaid 11 + jsdom, `mermaid.parse()` per block (semicolons
+  inside sequence-diagram messages break parsing).

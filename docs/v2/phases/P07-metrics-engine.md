@@ -87,3 +87,20 @@ seed, PROGRESS.md.
 
 ## Handoff
 List endpoints + example responses (for P10), the score version, and any metric deferred (with reason).
+
+---
+
+## Blueprint amendments (P03, 2026-11-09)
+Appended by Phase 03; these take precedence over conflicting text above.
+
+1. **Spec versions:** implement `metrics@2.0.0` and `impact@2.0.0` exactly (KPI_METHODOLOGY);
+   golden tests G-1, G-2 and the threshold cases are mandatory; `businessHours` tests per §10.
+2. **MetricSnapshot** = additive daily counters only (columns in DATA_MODEL_V2); medians/ratios are
+   computed from fact tables per request. `ImpactScore` is computed **lazily** on GET and cached;
+   `metrics.recompute` deletes overlapping cached rows. `ImpactScore.inputs` also serves `/metrics/kpis`.
+3. **Endpoints:** add `GET /metrics/definitions`, `GET /metrics/repos`, `GET /career/timeline`
+   (API_CONTRACT_V2 §9–§12) to the task-5 list; `/activity/summary` is deprecated (removed in P10);
+   `GET /generate/impact-score` is removed.
+4. **Periods:** `parsePeriod` / `resolvePeriod` / `previousPeriod` in `packages/shared/src/periods/`
+   with the grammar in API_CONTRACT_V2 §3.4 (incl. `half`), DST and week-53 tests.
+5. **Migration:** P07-1 (rename v0.1 `impact_scores` → `impact_scores_legacy`; never displayed).

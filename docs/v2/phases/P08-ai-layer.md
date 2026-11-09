@@ -108,3 +108,27 @@ section, PROGRESS.md.
 ## Handoff
 Document the SSE event contract with examples (for P11), quota config, how to add a prompt
 version, and eval results summary.
+
+---
+
+## Blueprint amendments (P03, 2026-11-09)
+Appended by Phase 03; these take precedence over conflicting text above.
+
+1. **Models (ADR-0009):** `ANTHROPIC_MODEL_DEFAULT=claude-opus-5-5`, `ANTHROPIC_MODEL_FAST=claude-haiku-5-5`
+   (env defaults; re-check with the `claude-api` skill at implementation time). Thinking is adaptive
+   (cannot be disabled on the default model); set `output_config.effort` explicitly (`medium` docs,
+   `low` fast). Use `output_config.format` for structured output — **forced `tool_choice` is not
+   supported** on the default model. Handle `stop_reason: "refusal"`; enable server-side fallback
+   when `AI_FALLBACKS_ENABLED=true`.
+2. **Execution (task 13):** all generation runs in the **worker** (`ai.generate`); events go to a Redis
+   Stream `doc-events:<id>`; the API relays SSE with `Last-Event-ID` resume (API_CONTRACT_V2 §13.3).
+   Quick actions (`ai.quick`) are awaited synchronously by the API (≤ 20 s).
+3. **Endpoints:** `POST /documents/preview-evidence`, `POST /documents/:id/cancel`,
+   `POST /impact/highlights`, `POST /ai/achievement-statement` (replaces `enhanceCommitMessage`).
+   `/generate/*` routes are removed (not aliased).
+4. **Quotas (task 15):** FREE 15 generations + 100 quick actions per UTC month; PRO 150 + 1,000
+   (PRD §6, `ENTITLEMENTS_JSON` override); cache hits/failures/cancellations don't count; 402 `QUOTA_EXCEEDED`.
+5. **Document types:** add `impact_narrative`, `achievement_statement`, `digest_summary`; the weekly
+   digest summary generator (task 12) **is in scope** (consumed by P12).
+6. **Migration:** P08-1 in DATA_MODEL_V2 §5 (legacy documents imported as read-only versions).
+7. **Privacy:** honour `UserSettings.aiRedactPrivateRepos` in the EvidenceBuilder.

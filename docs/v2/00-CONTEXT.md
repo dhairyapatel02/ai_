@@ -116,3 +116,12 @@ raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
 5. **Tested.** Every phase leaves the repo with lint, typecheck, unit tests and build green.
 6. **Fairness.** KPIs measure work patterns, not worth. Avoid metrics that reward volume
    (raw LOC). Communicate limitations in the UI.
+
+## 7. State changes since the audit
+
+- **Phase 03 (2026-11-09):** the v2 blueprint is in [`blueprint/`](./blueprint/) and binding:
+  PRD, KPI methodology (`metrics@2.0.0`, `impact@2.0.0`), architecture, data model + migration plan,
+  API contract, traceability, 14 ADRs. Owner decisions: Better Auth; GitHub App data source;
+  deterministic impact score (overall + 4 dimensions); individual-only scope without billing;
+  GitLab/Jira/Linear and Phase 13 moved to v2.1; hosting decided in P15; brand "calm, professional,
+  Linear-like". See [`DECISIONS.md`](./DECISIONS.md) → Confirmed decisions.
