@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  FREE
+  PRO
+  TEAM
+  ENTERPRISE
+}
+
+enum Provider {
+  GITHUB
+  GITLAB
+  JIRA
+  LINEAR
+}
+
+enum DocumentType {
+  RESUME
+  APPRAISAL
+  PROMOTION
+  KPI
+}
+
+enum PRState {
+  OPEN
+  CLOSED
+  MERGED
+}
+
+enum IssueStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum IssuePriority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+  NONE
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  avatar    String?
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+
+  integrations Integration[]
+  commits      Commit[]
+  pullRequests PullRequest[]
+  issues       Issue[]
+  codeReviews  CodeReview[]
+  documents    GeneratedDocument[]
+  impactScores ImpactScore[]
+
+  @@map("users")
+}
+
+model Integration {
+  id           String   @id @default(cuid())
+  userId       String
+  provider     Provider
+  accessToken  String
+  refreshToken String?
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commits Commit[]
+  prs     PullRequest[]
+  issues  Issue[]
+
+  @@unique([userId, provider])
+  @@map("integrations")
+}
+
+model Commit {
+  id            String   @id @default(cuid())
+  userId        String
+  integrationId String
+  sha           String
+  message       String
+  repo          String
+  branch        String
+  additions     Int      @default(0)
+  deletions     Int      @default(0)
+  timestamp     DateTime
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sha])
+  @@index([userId, timestamp])
+  @@map("commits")
+}
+
+model PullRequest {
+  id            String   @id @default(cuid())
+  userId        String
+  integrationId String
+  number        Int
+  title         String
+  body          String?
+  state         PRState
+  repo          String
+  mergedAt      DateTime?
+  reviewCount   Int      @default(0)
+  timestamp     DateTime
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  reviews     CodeReview[]
+
+  @@unique([userId, repo, number])
+  @@index([userId, timestamp])
+  @@map("pull_requests")
+}
+
+model Issue {
+  id            String        @id @default(cuid())
+  userId        String
+  integrationId String
+  title         String
+  labels        String[]
+  storyPoints   Int?
+  priority      IssuePriority @default(NONE)
+  status        IssueStatus   @default(TODO)
+  projectName   String?
+  timestamp     DateTime
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+  @@map("issues")
+}
+
+model CodeReview {
+  id        String   @id @default(cuid())
+  userId    String
+  prId      String
+  comments  Int      @default(0)
+  approved  Boolean  @default(false)
+  timestamp DateTime
+
+  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pr   PullRequest @relation(fields: [prId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, prId, timestamp])
+  @@index([userId, timestamp])
+  @@map("code_reviews")
+}
+
+model GeneratedDocument {
+  id        String       @id @default(cuid())
+  userId    String
+  type      DocumentType
+  content   Json
+  dateRange Json
+  createdAt DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("generated_documents")
+}
+
+model ImpactScore {
+  id              String   @id @default(cuid())
+  userId          String
+  month           Int
+  year            Int
+  overall         Float
+  featureDelivery Float
+  codeQuality     Float
+  collaboration   Float
+  leadership      Float
+  highlights      String[] @default([])
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month, year])
+  @@map("impact_scores")
+}
