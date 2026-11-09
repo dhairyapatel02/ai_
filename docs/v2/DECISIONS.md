@@ -116,6 +116,9 @@ Stretch / v2.1: GitLab/Jira/Linear (P13), manager/team views, billing (Stripe).
 Recorded by Phase 03 on 2026-11-09. User answers were collected in two rounds of structured
 questions (7 questions); every answer matched the recommended option. Full reasoning in the linked ADRs.
 
+> Numbering: Phase 02 merged first and used D-015 and D-016 (see *Implementation decisions* below),
+> so the new decisions from Phase 03 are D-017 to D-019.
+
 ### D-001 · Monorepo & tooling · CONFIRMED · P03
 **Summary:** npm workspaces (`apps/web`, `apps/api` with HTTP + worker entries, `packages/shared`);
 `shared` is the single source of Zod schemas, enums, period utils and metric metadata; no Turborepo.
@@ -127,7 +130,8 @@ questions (7 questions); every answer matched the recommended option. Full reaso
 **Summary:** Node 22 LTS; NestJS 11; latest Prisma major; Zod 4; latest BullMQ, octokit,
 `@anthropic-ai/sdk` 1.x; ESLint flat config; Postgres 16 / Redis 7. Next.js patched to 14.2.x in
 P02, upgraded to 16.x + React 19 + Tailwind v4 in P09. *Amendment:* explicit Zod 4 / Prisma-major /
-TypeScript 5.x targets and exact pinning for auth, Prisma and the Anthropic SDK.
+TypeScript 5.x targets and exact pinning for auth, Prisma and the Anthropic SDK. P02 applied the
+backend part with pins recorded in D-015 (Prisma 6.19, SDK 0.24 kept); remaining majors → DEBT-10.
 **ADR:** [ADR-0002](blueprint/adr/ADR-0002-runtime-and-framework-versions.md)
 
 ### D-003 · Authentication · CONFIRMED · P03 · **USER DECISION**
@@ -210,22 +214,53 @@ worker images; Postgres 16 + Redis 7; env-only config; SSE-capable proxy). Final
 share links → v2.1. FREE/PRO plans enforced without billing.
 **ADR:** [ADR-0014](blueprint/adr/ADR-0014-product-scope-v2.md) · [PRD](blueprint/PRD.md)
 
-### D-015 · Brand / visual direction · CONFIRMED · P03 · **USER DECISION**
+### D-017 · Brand / visual direction · CONFIRMED · P03 · **USER DECISION**
 **User answer:** "Calm, professional, Linear-like (Recommended)".
 **Summary:** neutral surfaces, one restrained accent, crisp typography, dense-but-airy data views,
 subtle motion; credible in front of a manager. Binding input for P04's design system.
 **Consequences:** P04 tokens/prototype follow this direction; celebratory/gamified patterns are avoided (consistent with the fairness principle).
 
-### D-016 · Additional integrations out of v2.0 · CONFIRMED · P03 · **USER DECISION**
+### D-018 · Additional integrations out of v2.0 · CONFIRMED · P03 · **USER DECISION**
 **User answer:** "Out — v2.1 (Recommended)".
 **Summary:** Phase 13 (GitLab, Jira, Linear) is skipped for v2.0 and moved to the v2.1 roadmap.
 P06 still builds the `ActivityProvider` abstraction. Issue metrics (`issues_completed`,
 `story_points_completed`) are specified but deferred. ISSUES GAP-10 → won't fix in v2.0.
 **ADR:** [ADR-0014](blueprint/adr/ADR-0014-product-scope-v2.md)
 
-### D-017 · Time zones and period semantics · CONFIRMED · P03
+### D-019 · Time zones and period semantics · CONFIRMED · P03
 **Summary:** every user has an IANA timezone (default UTC, prefilled at onboarding); periods are
 inclusive local-date ranges mapped to half-open UTC instants; ISO weeks (Monday start); business
 hours exclude Saturday/Sunday; AI quotas reset on UTC calendar months.
 **Rationale:** fixes BUG-05/06; one shared implementation for API and web.
 **Spec:** [KPI_METHODOLOGY §2.4–2.5](blueprint/KPI_METHODOLOGY.md#24-periods-and-time-zones)
+
+---
+
+## Implementation decisions (appended by phases)
+
+### D-015 · P02 dependency versions · APPLIED (P02)
+Within D-002, P02 pinned: Node 22, **NestJS 11** (not 12), **Prisma 6.19** (not 7/8),
+TypeScript 5.9, ESLint 9, zod 4.6, Next 14.2.35, BullMQ 5.81; `@anthropic-ai/sdk` stays 0.24 (P08).
+*Rationale:* the phase allows only behaviour-preserving majors. Prisma 7+ requires driver adapters,
+`prisma.config.ts` datasource config and an ESM client — best done with data model v2 (P05/P06).
+NestJS 12 appeared after the plan was written. typescript-eslint supports TS < 6.1; ESLint 10
+removed APIs the Next 14 plugin uses. Tracked as DEBT-10.
+*Consequences:* later phases upgrade from these baselines; zod 4 API (`z.iso.*`, `z.url()`, `error`
+param) is the standard in `packages/shared`.
+
+### D-016 · Monorepo tooling conventions · APPLIED (P02)
+- One root ESLint flat config (`typescript-eslint` strict-type-checked + stylistic, `import-x/order`,
+  Next + react-hooks for web, Prettier last). Disables need a reason comment.
+- Each workspace has `tsconfig.json` (typecheck/lint/tests, no emit) and, where it emits,
+  `tsconfig.build.json`. API compiles with `module: nodenext` (typed ESM-only deps such as octokit,
+  CommonJS output via Node 22 `require(esm)`).
+- `packages/shared` emits CommonJS + `.d.ts` to `dist/`; `scripts/postinstall.mjs` builds it and
+  generates the Prisma client after every install.
+- Config: one root `.env` read by API, worker, Prisma CLI, seed and Next.js (`next.config.js` loads
+  it); Zod env schemas in `apps/api/src/config/env.ts` and `apps/web/src/env.ts`. Redis via
+  `REDIS_URL`, API port `API_PORT`, web origin `WEB_URL`.
+- Tests: API Jest (`*.spec.ts` unit, `test/integration/*.int-spec.ts` integration against
+  `DATABASE_URL_TEST`), web/shared Vitest, Playwright in `e2e/`. Known bugs are `it.skip`/`it.todo`
+  tagged with issue IDs.
+- Processes: `src/main.ts` (HTTP) and `src/worker.ts` (queues). `RUN_WORKER_IN_API` (default true)
+  controls whether the API also runs processors; compose runs a dedicated worker.

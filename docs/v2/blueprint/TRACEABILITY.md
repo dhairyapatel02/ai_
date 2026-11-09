@@ -138,6 +138,7 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | PERF-02 | 🟡 | ADR-0007 | P06 | batched writes |
 | PERF-03 | 🟡 | ADR-0008 | P07, P10 | |
 | PERF-04 | 🟡 | ADR-0010 | P09 | |
+| PERF-05 | ⚪ | ADR-0010 (RSC shells, code splitting) | P09 | added by P02 |
 | UX-06 | 🟡 | F-26, F-27 | P07, P10 | |
 | UX-07 | 🟡 | F-73 | P09 | |
 | UX-08 | 🟡 | F-73, F-75, F-44 | P09, P11 | |
@@ -150,12 +151,13 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | GAP-09 | 🟡 | ADR-0006, ADR-0010 | P02, P05, P09 | |
 | DEBT-06 | 🟡 | ADR-0010 | P09 | |
 | DEBT-07 | ⚪ | ADR-0002 | P02, P09 | |
+| DEBT-10 | ⚪ | ADR-0002 (end-state versions) | P05 (Prisma major with auth migrations), P06, P08 (SDK 1.x), P09 (Next/ESLint), P14 (TS 7 evaluation) | added by P02 |
 | SEC-15 | ⚪ | ADR-0003 | P05, P09 | NextAuth route removed |
 | BUG-13 | ⚪ | F-20 (formatting helpers) | P10 | |
 | OPS-15 | ⚪ | ADR-0009 | P08 | |
 | AI-09 | ⚪ | F-51 | P08 | `enhanceCommitMessage` → achievement statement |
 | API-06 | ⚪ | ADR-0006 | P05 | `/health`, `/docs` |
 | UX-13 | ⚪ | F-15, F-16 | P10 | |
-| GAP-10 | ⚪ | — | **WF (v2.1)** | GitLab/Jira/Linear out of v2.0 scope (ADR-0014, D-016); integrations page shows "planned" cards without connect buttons |
+| GAP-10 | ⚪ | — | **WF (v2.1)** | GitLab/Jira/Linear out of v2.0 scope (ADR-0014, D-018); integrations page shows "planned" cards without connect buttons |
 
 Every open ISSUES row with a target of P05 or later is mapped above; one (GAP-10) is won't-fix for v2.0.

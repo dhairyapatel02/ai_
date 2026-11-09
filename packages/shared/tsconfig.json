@@ -1,8 +1,10 @@
 {
-  "extends": "../../tsconfig.base.json",
+  // Type-checking/lint config (sources + tests). `npm run build` uses tsconfig.build.json.
+  "extends": "./tsconfig.build.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
+    "noEmit": true,
+    "rootDir": "."
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "*.mts"],
+  "exclude": []
 }

@@ -14,7 +14,7 @@ export function DocumentPreview({ content, type }: DocumentPreviewProps) {
         <CardTitle className="text-lg capitalize">{type.toLowerCase()} Document</CardTitle>
       </CardHeader>
       <CardContent>
-        <pre className="text-sm whitespace-pre-wrap bg-muted p-4 rounded-md overflow-auto max-h-96">
+        <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-4 text-sm">
           {JSON.stringify(content, null, 2)}
         </pre>
       </CardContent>

@@ -1,18 +1,15 @@
 import { Controller, Get, Delete, Param, Query, Req } from '@nestjs/common';
-import { DocumentsService } from './documents.service';
-import { successResponse, errorResponse } from '../common/api-response';
 import { Request } from 'express';
+
+import { successResponse, errorResponse } from '../common/api-response';
+import { DocumentsService } from './documents.service';
 
 @Controller('documents')
 export class DocumentsController {
   constructor(private documentsService: DocumentsService) {}
 
   @Get()
-  async list(
-    @Req() req: Request,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
+  async list(@Req() req: Request, @Query('page') page?: string, @Query('limit') limit?: string) {
     const userId = req.headers['x-user-id'] as string;
     if (!userId) return errorResponse('Not authenticated');
 
@@ -20,11 +17,7 @@ export class DocumentsController {
     const parsedLimit = limit ? parseInt(limit, 10) : 20;
     if (isNaN(parsedPage) || isNaN(parsedLimit)) return errorResponse('Invalid page or limit');
 
-    const result = await this.documentsService.listDocuments(
-      userId,
-      parsedPage,
-      parsedLimit,
-    );
+    const result = await this.documentsService.listDocuments(userId, parsedPage, parsedLimit);
     return successResponse(result);
   }
 

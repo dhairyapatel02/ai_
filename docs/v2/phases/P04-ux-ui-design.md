@@ -105,9 +105,9 @@ List which shadcn components P09 must install, any custom components needed, and
 ## Blueprint amendments (P03, 2026-11-09)
 Appended by Phase 03; these take precedence over conflicting text above.
 
-1. **Brand direction (D-015):** calm, professional, Linear-like — neutral surfaces, one restrained
+1. **Brand direction (D-017):** calm, professional, Linear-like — neutral surfaces, one restrained
    accent, crisp type, dense-but-airy data views, subtle motion. Avoid gamified/celebratory patterns.
-2. **Scope (D-014, D-016):** no manager/team screens; no billing UI (Plan & usage shows plan, AI
+2. **Scope (D-014, D-018):** no manager/team screens; no billing UI (Plan & usage shows plan, AI
    usage vs quota and "contact us to upgrade"); integrations page shows **GitHub only** as live,
    GitLab/Jira/Linear as "Planned" cards **without** connect buttons.
 3. **Onboarding (ADR-0004):** step "Connect GitHub data" = install the GitHub App (repo choice on

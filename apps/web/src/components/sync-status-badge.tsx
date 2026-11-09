@@ -1,7 +1,8 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
 
 interface SyncStatusBadgeProps {
   status: 'syncing' | 'complete' | 'error' | 'idle';

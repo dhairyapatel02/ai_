@@ -23,7 +23,7 @@ Related: [ADR-0006 API conventions](adr/ADR-0006-api-conventions.md) ·
 
 | Topic | Rule |
 |---|---|
-| Base URL | API: `${API_ORIGIN}/api`. Auth endpoints live on the **web** origin under `/api/auth/*` (Better Auth). |
+| Base URL | API: `NEXT_PUBLIC_API_URL` (e.g. `http://localhost:4000/api`). Auth endpoints live on the **web** origin under `/api/auth/*` (Better Auth). |
 | Auth | `Authorization: Bearer <JWT>` issued by Better Auth (`iss = AUTH_JWT_ISSUER`, `aud = devimpact-api`, `sub = userId`, `exp ≤ 15 min`, EdDSA). Routes are authenticated by default; `@Public()` marks exceptions (health, webhooks, unsubscribe, OpenAPI in non-prod). |
 | Content type | `application/json; charset=utf-8` unless stated (exports, SSE, webhooks raw body). Max JSON body **256 KB** (413 above). |
 | Envelope | Success: `{ "success": true, "data": T, "meta"?: Meta }`. Error: `{ "success": false, "error": { "code": ErrorCode, "message": string, "details"?: unknown, "requestId": string } }`. SSE and file downloads are not enveloped. |
@@ -39,7 +39,7 @@ Related: [ADR-0006 API conventions](adr/ADR-0006-api-conventions.md) ·
 | Caching | Authenticated responses `Cache-Control: private, no-store`. `/metrics/definitions` `private, max-age=3600`. |
 | Validation | Zod schemas, `strict()` objects (unknown keys → 400). Coercion only for query strings. |
 | Versioning | No URI version in v2.0 (D-006). Deprecated routes return `Deprecation: true` and `Sunset` headers until removed. |
-| CORS | Allow-list `WEB_ORIGIN`; methods GET, POST, PATCH, DELETE; headers `Authorization`, `Content-Type`, `x-request-id`, `Last-Event-ID`; no cookies (`credentials: false`). |
+| CORS | Allow-list `WEB_URL` (comma-separated list allowed); methods GET, POST, PATCH, DELETE; headers `Authorization`, `Content-Type`, `x-request-id`, `Last-Event-ID`; no cookies (`credentials: false`). |
 
 ### 1.1 Rate-limit classes (Redis-backed `@nestjs/throttler`)
 
@@ -432,8 +432,8 @@ Digest preferences are part of `PATCH /me/settings`.
 
 | Method & path | Auth | Response |
 |---|---|---|
-| `GET /health` | public | `{ status: 'ok', version, uptimeSeconds }` (liveness, no dependencies) |
-| `GET /health/ready` | public | `{ status: 'ok'\|'degraded', checks: { database: 'ok'\|'fail', redis: 'ok'\|'fail' } }` — 503 if any fails |
+| `GET /health` | public | Readiness (exists since P02): `{ status: 'ok'\|'degraded', checks: { database: 'ok'\|'fail', redis: 'ok'\|'fail' } }` — 503 if any fails. Used by compose healthchecks |
+| `GET /health/live` | public | Liveness, no dependencies: `{ status: 'ok', version, uptimeSeconds }` (P05) |
 | `GET /docs`, `GET /docs/openapi.json` | public, **non-production only** | Swagger UI / OpenAPI 3.1 generated from the Zod schemas |
 | `GET /admin/queues` | admin allow-list (`ADMIN_USER_IDS`) | Bull Board (P14) |
 

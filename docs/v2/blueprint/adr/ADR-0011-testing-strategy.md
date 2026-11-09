@@ -11,7 +11,7 @@ formulas and AI output contracts, without calling real GitHub or Anthropic.
 ## Decision
 | Layer | Tool | Scope |
 |---|---|---|
-| API unit | **Jest** (Nest default; Vitest acceptable if P02 prefers one runner for all packages — record the choice) | pure functions (metrics, periods, encryption, template filling, citation verifier), services with mocked deps |
+| API unit | **Jest** (chosen by P02, D-016: `*.spec.ts` unit, `test/integration/*.int-spec.ts` against `DATABASE_URL_TEST`) | pure functions (metrics, periods, encryption, template filling, citation verifier), services with mocked deps |
 | API integration | Jest + **supertest** against a real **Postgres 16** + **Redis 7** (CI service containers; local compose) | every endpoint: auth required, ownership, validation, envelope, rate limits |
 | Shared | Vitest | period utilities (+ `fast-check` property tests), schemas |
 | Web unit/component | **Vitest** + React Testing Library | components and page states with a mocked query client |

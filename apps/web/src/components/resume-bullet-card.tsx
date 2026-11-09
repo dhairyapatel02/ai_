@@ -17,16 +17,17 @@ export function ResumeBulletCard({ bullet, category }: ResumeBulletCardProps) {
   };
 
   return (
-    <div className="p-4 border rounded-lg space-y-2">
+    <div className="space-y-2 rounded-lg border p-4">
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm leading-relaxed">{bullet.text}</p>
-        <Badge className={categoryColors[category] || 'bg-gray-100 text-gray-800'} variant="secondary">
+        <Badge
+          className={categoryColors[category] || 'bg-gray-100 text-gray-800'}
+          variant="secondary"
+        >
           {category}
         </Badge>
       </div>
-      {bullet.impact && (
-        <p className="text-xs text-muted-foreground">Impact: {bullet.impact}</p>
-      )}
+      {bullet.impact && <p className="text-xs text-muted-foreground">Impact: {bullet.impact}</p>}
     </div>
   );
 }

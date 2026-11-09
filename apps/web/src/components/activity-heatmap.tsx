@@ -33,7 +33,7 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
           {data.map((day) => (
             <div
               key={day.date}
-              className={`w-3 h-3 rounded-sm ${getColor(day.count)}`}
+              className={`h-3 w-3 rounded-sm ${getColor(day.count)}`}
               title={`${day.date}: ${day.count} contributions`}
             />
           ))}

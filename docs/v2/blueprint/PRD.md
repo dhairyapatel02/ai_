@@ -26,10 +26,10 @@ every claim backed by a PR."*
 |---|---|
 | Audience | **Individual engineers only.** Manager/team views → v2.1 (D-014) |
 | Billing | **Not in v2.0.** Plans exist (FREE, PRO) and are enforced; plan changes are an admin action. Stripe → v2.1 (D-014) |
-| Data sources | **GitHub only** in v2.0, via a **GitHub App**. GitLab, Jira, Linear → v2.1; Phase 13 skipped (D-004, D-016) |
+| Data sources | **GitHub only** in v2.0, via a **GitHub App**. GitLab, Jira, Linear → v2.1; Phase 13 skipped (D-004, D-018) |
 | Sign-in | GitHub and Google via **Better Auth** (D-003) |
 | Impact score | **Deterministic** formula; a single 0–100 score **plus** four dimension scores, each explainable (D-007) |
-| Brand | **Calm, professional, Linear-like** (D-015) |
+| Brand | **Calm, professional, Linear-like** (D-017) |
 | Hosting | Platform-neutral; final pick in P15. Docker Compose self-hosting must always work (D-013) |
 
 ### 1.2 Non-goals for v2.0

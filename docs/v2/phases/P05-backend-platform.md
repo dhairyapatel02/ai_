@@ -134,4 +134,6 @@ Appended by Phase 03; these take precedence over conflicting text above.
    API_CONTRACT_V2 §1–§3; rate-limit classes §1.1 (the AI class + plan quotas land in P08).
 8. **Env vars:** see ARCHITECTURE_V2 §10 (`BETTER_AUTH_*`, `AUTH_JWT_*`, `GITHUB_SIGNIN_*`,
    `GITHUB_APP_*`, `TOKEN_ENCRYPTION_KEYS`, `TOKEN_ENCRYPTION_ACTIVE_KEY`, `OAUTH_STATE_SECRET`,
-   `WEB_ORIGIN`, `API_ORIGIN`). `NEXTAUTH_*` are removed.
+   `WEB_URL` from P02). `NEXTAUTH_*`, `GITHUB_CLIENT_ID/SECRET` (v0.1 OAuth App) and
+   `NEXT_PUBLIC_DEV_LOGIN_EMAIL` are removed. Split the P02 `/api/health` into readiness
+   (`/health`, unchanged) and liveness (`/health/live`).

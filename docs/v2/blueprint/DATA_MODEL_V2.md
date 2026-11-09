@@ -779,9 +779,9 @@ model DigestDelivery {
 
 ## 5. Migration plan from v0.1.0
 
-**Baseline.** P02 creates `0000_baseline` from the v0.1.0 schema exactly as deployed (via
-`prisma migrate diff --from-empty --to-schema-datamodel`) and marks it applied on existing
-databases (`prisma migrate resolve --applied 0000_baseline`). Every later change is a forward
+**Baseline.** P02 committed `apps/api/prisma/migrations/20261109075145_init` = the v0.1.0 schema.
+Existing databases created with `db push` mark it applied once
+(`prisma migrate resolve --applied 20261109075145_init`). Every later change is a forward
 migration owned by the phase below. Data steps that need application code (encryption) are
 TypeScript scripts in `apps/api/prisma/scripts/` run by the migration runbook, idempotent.
 

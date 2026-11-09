@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/lib/auth-context';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/lib/auth-context';
 
 interface CommitData {
   message: string;
@@ -86,8 +87,12 @@ export default function CareerPage() {
       const to = new Date().toISOString();
 
       const [commitsRes, prsRes] = await Promise.all([
-        apiFetch<{ data: CommitData[]; total: number }>(`/activity/commits?from=${from}&to=${to}&limit=200`),
-        apiFetch<{ data: PRData[]; total: number }>(`/activity/prs?from=${from}&to=${to}&limit=200`),
+        apiFetch<{ data: CommitData[]; total: number }>(
+          `/activity/commits?from=${from}&to=${to}&limit=200`,
+        ),
+        apiFetch<{ data: PRData[]; total: number }>(
+          `/activity/prs?from=${from}&to=${to}&limit=200`,
+        ),
       ]);
 
       const commits = commitsRes.success && commitsRes.data ? commitsRes.data.data : [];
@@ -95,12 +100,12 @@ export default function CareerPage() {
       setTimeline(groupByQuarter(commits, prs));
       setLoading(false);
     }
-    load();
+    void load();
   }, [user, apiFetch]);
 
   if (loading && user) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -117,7 +122,7 @@ export default function CareerPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-lg font-medium text-muted-foreground">No timeline data yet</p>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="mt-2 text-sm text-muted-foreground">
               Connect an integration and sync your data to build your career timeline.
             </p>
             <Link href="/connect">
@@ -129,13 +134,15 @@ export default function CareerPage() {
         <div className="space-y-8">
           {timeline.map((period, idx) => (
             <div key={idx} className="relative">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                   {period.quarter}
                 </div>
-                <h2 className="text-xl font-semibold">{period.year} {period.quarter}</h2>
+                <h2 className="text-xl font-semibold">
+                  {period.year} {period.quarter}
+                </h2>
               </div>
-              <div className="ml-5 border-l-2 border-border pl-6 space-y-3">
+              <div className="ml-5 space-y-3 border-l-2 border-border pl-6">
                 {period.items.map((item, i) => (
                   <Card key={i}>
                     <CardContent className="p-4">
@@ -144,7 +151,7 @@ export default function CareerPage() {
                           <h3 className="font-medium">{item.title}</h3>
                           <p className="text-sm text-muted-foreground">{item.repo}</p>
                         </div>
-                        <div className="flex gap-1 flex-wrap">
+                        <div className="flex flex-wrap gap-1">
                           {item.tags.map((tag) => (
                             <Badge key={tag} variant="secondary" className="text-xs">
                               {tag}

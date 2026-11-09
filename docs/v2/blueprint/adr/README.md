@@ -19,4 +19,4 @@ Each ADR corresponds to a decision in [`../../DECISIONS.md`](../../DECISIONS.md)
 | [ADR-0011](ADR-0011-testing-strategy.md) | Testing strategy | D-011 | Accepted | — |
 | [ADR-0012](ADR-0012-exports.md) | Document exports | D-012 | Accepted | — |
 | [ADR-0013](ADR-0013-hosting.md) | Hosting target | D-013 | **Deferred to P15** (constraints accepted) | ✅ decide in P15 |
-| [ADR-0014](ADR-0014-product-scope-v2.md) | Product scope for v2.0 | D-014, D-016 | Accepted | ✅ individual only; integrations out |
+| [ADR-0014](ADR-0014-product-scope-v2.md) | Product scope for v2.0 | D-014, D-018 | Accepted | ✅ individual only; integrations out |

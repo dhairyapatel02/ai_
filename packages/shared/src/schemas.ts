@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const dateRangeSchema = z.object({
-  from: z.string().datetime({ offset: true }).or(z.string().date()),
-  to: z.string().datetime({ offset: true }).or(z.string().date()),
+  from: z.iso.datetime({ offset: true }).or(z.iso.date()),
+  to: z.iso.datetime({ offset: true }).or(z.iso.date()),
 });
 
 export const generateResumeSchema = z.object({
@@ -32,15 +32,16 @@ export const dateFilterSchema = z.object({
   to: z.string().optional(),
 });
 
-export const envSchema = z.object({
-  DATABASE_URL: z.string().url(),
-  REDIS_URL: z.string(),
-  ANTHROPIC_API_KEY: z.string().min(1),
-  GITHUB_CLIENT_ID: z.string().min(1),
-  GITHUB_CLIENT_SECRET: z.string().min(1),
-  GOOGLE_CLIENT_ID: z.string().min(1),
-  GOOGLE_CLIENT_SECRET: z.string().min(1),
-  NEXTAUTH_SECRET: z.string().min(1),
-  NEXTAUTH_URL: z.string().url(),
-  PORT: z.coerce.number().optional().default(4000),
+/** One AI-generated resume bullet (BUG-14: shared contract between API and web). */
+export const resumeBulletSchema = z.object({
+  text: z.string().min(1),
+  category: z.string().default(''),
+  impact: z.string().default(''),
 });
+
+/** Shape the resume prompt asks the model to return. */
+export const resumeBulletsResultSchema = z.object({
+  bullets: z.array(resumeBulletSchema),
+});
+
+export type ResumeBulletOutput = z.infer<typeof resumeBulletSchema>;

@@ -94,7 +94,7 @@ Release-readiness summary in PROGRESS.md: what's accepted risk, what's monitored
 ## Blueprint amendments (P03, 2026-11-09)
 Appended by Phase 03; these take precedence over conflicting text above.
 
-1. **Prerequisites:** P12 merged; P13 is out of scope for v2.0 (D-016).
+1. **Prerequisites:** P12 merged; P13 is out of scope for v2.0 (D-018).
 2. **Targets** come from PRD §7 (dashboard LCP/TTI < 2 s, metrics p95 < 150 ms server time and
    < 300 ms at 50 RPS, AI first section < 8 s p50, cost ceilings, ≥ 99 % successful syncs).
 3. **Security focus:** JWT/JWKS validation edge cases and key rotation (ADR-0003), token-encryption

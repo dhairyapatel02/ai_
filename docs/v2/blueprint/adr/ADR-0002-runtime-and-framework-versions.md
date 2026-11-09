@@ -15,17 +15,21 @@ ESM-only — OPS-02). `npm outdated` shows two majors behind for most packages
 |---|---|---|
 | Node | **22 LTS** minimum (`engines: ">=22.12"`), images `node:22-alpine` (or 24 LTS if current at P15 and all deps support it) | P02 |
 | TypeScript | latest **5.x** stable at P02 (`strict: true` everywhere). TS 7 (native compiler) evaluated in P14, not required | P02 |
-| NestJS | **11.x** (+ `@nestjs/config`, `@nestjs/bullmq`, `@nestjs/throttler`, `nestjs-pino`) | P02 |
-| Prisma | latest stable major at P02 (current `prisma`/`@prisma/client` 7.x) | P02 |
+| NestJS | **11.x** (+ `@nestjs/config`, `@nestjs/bullmq`, `@nestjs/throttler`, `nestjs-pino`). P02 shipped 11; NestJS 12 evaluated later (D-015, DEBT-10) | P02 |
+| Prisma | P02 pinned **6.19** (D-015: Prisma 7+ needs driver adapters, `prisma.config.ts` and an ESM client). Upgrade to the latest major together with the data-model v2 migrations (P05/P06, tracked as DEBT-10) | P02, P05/P06 |
 | BullMQ | latest stable major | P02 |
 | Zod | **4.x** in all packages | P02 |
 | octokit | latest (`octokit`, `@octokit/graphql`, throttling + retry plugins) | P06 |
-| `@anthropic-ai/sdk` | latest 1.x | P08 |
+| `@anthropic-ai/sdk` | latest 1.x (P02 kept 0.24 on purpose) | P08 |
 | Next.js | P02: patch to latest **14.2.x** (security). P09: latest stable major (**16.x**) + React 19 | P02, P09 |
 | Tailwind | **v4** (CSS-first `@theme`) + shadcn/ui via CLI | P09 |
 | ESLint | flat config, ESLint 9/10 + typescript-eslint 8; Prettier | P02 |
 | Postgres / Redis | **16** / **7** in compose and CI | P02 |
 | Better Auth | latest stable (pinned exact) | P05 |
+
+*Applied in P02 (D-015):* Node 22, NestJS 11, Prisma 6.19, TypeScript 5.9, ESLint 9, zod 4.6,
+Next 14.2.35, BullMQ 5.81, `@anthropic-ai/sdk` 0.24. The targets above are the end state; DEBT-10
+tracks the remaining majors.
 
 Rules: pin exact versions for auth, Prisma and the Anthropic SDK; use `npm ci`; `npm audit --omit=dev`
 gate in CI (no high/critical) from P02.

@@ -1,28 +1,20 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+
 import { AppModule } from './app.module';
+import { configureApp } from './app.setup';
+import { bootstrapEnv } from './bootstrap-env';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const env = bootstrapEnv('api');
 
-  app.enableCors({
-    origin: process.env.NEXTAUTH_URL || 'http://localhost:3000',
-    credentials: true,
-  });
+  const app = await NestFactory.create(AppModule.register({ runWorker: env.RUN_WORKER_IN_API }));
+  app.enableShutdownHooks();
+  configureApp(app, env);
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
+  await app.listen(env.API_PORT);
+  console.log(
+    `API running on http://localhost:${env.API_PORT} (queue worker in-process: ${env.RUN_WORKER_IN_API})`,
   );
-
-  app.setGlobalPrefix('api');
-
-  const port = process.env.PORT || 4000;
-  await app.listen(port);
-  console.log(`API running on http://localhost:${port}`);
 }
 
-bootstrap();
+void bootstrap();

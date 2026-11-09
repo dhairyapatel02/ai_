@@ -82,8 +82,8 @@ Key properties:
 | Process | Entry | Scales | Responsibilities | Health |
 |---|---|---|---|---|
 | `web` | `next start` (standalone) | horizontally, stateless | Pages (RSC), Better Auth endpoints, JWKS, dev-login (non-prod) | `GET /api/health` (web) |
-| `api` | `node dist/main.js` | horizontally, stateless | REST + SSE, validation, auth guard, rate limits, enqueue, webhooks ingress | `GET /api/health`, `GET /api/health/ready` (DB + Redis) |
-| `worker` | `node dist/worker.js` | horizontally (BullMQ concurrency per queue) | Queue consumers; registers job schedulers idempotently on boot | liveness file/heartbeat key + `/healthz` on a small HTTP port |
+| `api` | `node dist/main.js` | horizontally, stateless | REST + SSE, validation, auth guard, rate limits, enqueue, webhooks ingress | `GET /api/health` (DB + Redis, exists since P02), `GET /api/health/live` (no dependencies, P05) |
+| `worker` | `node dist/worker.js` | horizontally (BullMQ concurrency per queue) | Queue consumers; registers job schedulers idempotently on boot | heartbeat file (`WORKER_HEARTBEAT_FILE`, since P02) |
 | `postgres` | managed or compose | vertical | System of record | — |
 | `redis` | managed or compose | vertical | BullMQ, throttler storage, Redis Streams for SSE, small caches | — |
 | `migrate` | `prisma migrate deploy` (release step) | one-off | Schema migrations before rollout | — |
@@ -370,10 +370,12 @@ sequenceDiagram
 |---|---|---|---|
 | `DATABASE_URL` | web, api, worker | P02 | Better Auth and API share the DB |
 | `REDIS_URL` | api, worker | P02 | replaces `REDIS_HOST/PORT` (OPS-10) |
-| `API_PORT` / `WEB_PORT` | api / web | P02 | OPS-08 |
-| `WEB_ORIGIN`, `API_ORIGIN` | web, api | P05 | CORS allow-list = `WEB_ORIGIN` (comma-separated) |
+| `API_PORT` | api | P02 | OPS-08 (`PORT` accepted as PaaS fallback); web port is a CLI flag, not an env var |
+| `RUN_WORKER_IN_API`, `WORKER_HEARTBEAT_FILE` | api, worker | P02 | `RUN_WORKER_IN_API=true` only for local dev; compose/production run the dedicated worker |
+| `DATABASE_URL_TEST` | tests | P02 | truncated by integration tests |
+| `WEB_URL` | web, api | P02 | public web URL; CORS allow-list (P05 accepts a comma-separated list) and redirect base |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | web | P05 | replace `NEXTAUTH_*` |
-| `AUTH_JWT_ISSUER`, `AUTH_JWT_AUDIENCE`, `AUTH_JWKS_URL` | web (iss/aud), api (verify) | P05 | defaults: `WEB_ORIGIN`, `devimpact-api`, `${WEB_ORIGIN}/api/auth/jwks` |
+| `AUTH_JWT_ISSUER`, `AUTH_JWT_AUDIENCE`, `AUTH_JWKS_URL` | web (iss/aud), api (verify) | P05 | defaults: `WEB_URL`, `devimpact-api`, `${WEB_URL}/api/auth/jwks` |
 | `GITHUB_SIGNIN_CLIENT_ID`, `GITHUB_SIGNIN_CLIENT_SECRET` | web | P05 | OAuth App, identity scopes |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | web | P05 | |
 | `ENABLE_DEV_LOGIN` | web | P05 | ignored when `NODE_ENV=production` |
