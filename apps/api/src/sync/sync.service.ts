@@ -1,15 +1,19 @@
-import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, Logger } from '@nestjs/common';
 import { Provider } from '@prisma/client';
+import { Queue } from 'bullmq';
+
+import { PrismaService } from '../prisma/prisma.service';
+import { SYNC_QUEUE } from './sync.constants';
+
+import type { SyncJobData } from './sync.processor';
 
 @Injectable()
 export class SyncService {
   private readonly logger = new Logger(SyncService.name);
 
   constructor(
-    @InjectQueue('github-sync') private syncQueue: Queue,
+    @InjectQueue(SYNC_QUEUE) private syncQueue: Queue<SyncJobData>,
     private prisma: PrismaService,
   ) {}
 

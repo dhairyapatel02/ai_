@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
 import { Provider, Prisma } from '@prisma/client';
+
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class IntegrationsService {
@@ -45,7 +46,7 @@ export class IntegrationsService {
 
   getGitHubOAuthUrl() {
     const clientId = this.configService.get<string>('GITHUB_CLIENT_ID');
-    const frontendUrl = this.configService.get<string>('NEXTAUTH_URL') || 'http://localhost:3000';
+    const frontendUrl = this.configService.get<string>('WEB_URL') || 'http://localhost:3000';
     const redirectUri = `${frontendUrl}/connect/callback`;
     return `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo,read:user,user:email`;
   }

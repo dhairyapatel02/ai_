@@ -1,12 +1,17 @@
-import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+
 import { AppModule } from './app.module';
+import { bootstrapEnv } from './bootstrap-env';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const env = bootstrapEnv('api');
+
+  const app = await NestFactory.create(AppModule.register({ runWorker: env.RUN_WORKER_IN_API }));
+  app.enableShutdownHooks();
 
   app.enableCors({
-    origin: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+    origin: env.WEB_URL,
     credentials: true,
   });
 
@@ -20,9 +25,10 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  const port = process.env.PORT || 4000;
-  await app.listen(port);
-  console.log(`API running on http://localhost:${port}`);
+  await app.listen(env.API_PORT);
+  console.log(
+    `API running on http://localhost:${env.API_PORT} (queue worker in-process: ${env.RUN_WORKER_IN_API})`,
+  );
 }
 
-bootstrap();
+void bootstrap();

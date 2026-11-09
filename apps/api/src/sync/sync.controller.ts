@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Req } from '@nestjs/common';
-import { SyncService } from './sync.service';
-import { successResponse, errorResponse } from '../common/api-response';
 import { Request } from 'express';
+
+import { successResponse, errorResponse } from '../common/api-response';
+import { SyncService } from './sync.service';
 
 @Controller('sync')
 export class SyncController {

@@ -1,15 +1,17 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { PrismaService } from '../prisma/prisma.service';
-import { GitHubService } from '../github/github.service';
 
-interface SyncJobData {
+import { GitHubService } from '../github/github.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { SYNC_QUEUE } from './sync.constants';
+
+export interface SyncJobData {
   userId: string;
   integrationId: string;
 }
 
-@Processor('github-sync')
+@Processor(SYNC_QUEUE)
 export class SyncProcessor extends WorkerHost {
   private readonly logger = new Logger(SyncProcessor.name);
 
@@ -194,7 +196,7 @@ export class SyncProcessor extends WorkerHost {
       );
       return { totalCommits, totalPRs, totalReviews };
     } catch (error) {
-      this.logger.error(`Sync failed for user ${userId}: ${error}`);
+      this.logger.error(`Sync failed for user ${userId}: ${String(error)}`);
       throw error;
     }
   }
