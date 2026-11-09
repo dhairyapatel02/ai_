@@ -99,3 +99,28 @@ Click through the prototype on desktop and phone. This is the cheapest moment to
 
 ## Handoff
 List which shadcn components P09 must install, any custom components needed, and the token file path.
+
+---
+
+## Blueprint amendments (P03, 2026-11-09)
+Appended by Phase 03; these take precedence over conflicting text above.
+
+1. **Brand direction (D-017):** calm, professional, Linear-like — neutral surfaces, one restrained
+   accent, crisp type, dense-but-airy data views, subtle motion. Avoid gamified/celebratory patterns.
+2. **Scope (D-014, D-018):** no manager/team screens; no billing UI (Plan & usage shows plan, AI
+   usage vs quota and "contact us to upgrade"); integrations page shows **GitHub only** as live,
+   GitLab/Jira/Linear as "Planned" cards **without** connect buttons.
+3. **Onboarding (ADR-0004):** step "Connect GitHub data" = install the GitHub App (repo choice on
+   GitHub) + authorise; design the **org approval pending** state (`setupAction=request`), the
+   "Review repositories" include/exclude step, and first-sync progress by stage with the
+   newest-30-days-first behaviour ("your dashboard is ready; older history is still loading").
+4. **Additional screens/states:** Impact detail (`/kpis/impact`) with dimension drill-down, inputs
+   table and explanation (KPI_METHODOLOGY §6.7); integration states `needs_reauth`, `suspended`,
+   `waiting_rate_limit` (sync shows "paused until HH:MM"); document flags (`uncited`,
+   `invalid_citation`); quota exceeded (402) and rate limited (429).
+5. **KPI copy:** metric names, units, definitions, caveats and score band labels come from
+   `blueprint/KPI_METHODOLOGY.md` (five KPI sections: Delivery, Quality, Collaboration, Ownership,
+   Consistency; dashboard cards: Commits, PRs merged, PRs reviewed, Impact score).
+6. **URL & period:** global period uses the grammar in API_CONTRACT_V2 §3.4 in the URL
+   (`?period=month:2026-10`); period types month, quarter, half, year, custom.
+7. Provisional routes are listed in `blueprint/TRACEABILITY.md`; if IA.md changes them, update that file.

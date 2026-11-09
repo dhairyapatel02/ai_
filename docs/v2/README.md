@@ -55,7 +55,7 @@ into the integration branch.
 | 10 | [Frontend: Insights Pages](phases/P10-frontend-insights.md) | Code | 07, 09 | Dashboard, Activity, KPIs, Career, Integrations |
 | 11 | [Frontend: AI Document Studio](phases/P11-frontend-document-studio.md) | Code | 08, 09 | Resume, Appraisal, Promotion, Documents library, exports |
 | 12 | [Product Extensions](phases/P12-product-extensions.md) | Code | 10, 11 | Achievements journal, goals, digests, settings, plan limits |
-| 13 | [Additional Integrations (optional)](phases/P13-additional-integrations.md) | Code | 06 (+12) | GitLab, Jira, Linear via provider abstraction |
+| 13 | [Additional Integrations (optional)](phases/P13-additional-integrations.md) | Code | 06 (+12) | **Skipped for v2.0 → v2.1** (D-018). GitLab, Jira, Linear via provider abstraction |
 | 14 | [Hardening: QA, Security, Perf, A11y, Observability](phases/P14-hardening.md) | QA + Code | 12 | Full E2E suite, security & a11y audits fixed, monitoring |
 | 15 | [Release: Deployment, Docs & v2.0.0](phases/P15-release.md) | Ops + Docs | 14 | Prod images, deploy guide, docs, changelog, `v2.0.0` tag |
 

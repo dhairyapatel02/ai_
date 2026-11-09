@@ -106,3 +106,34 @@ Create real GitHub/Google OAuth apps per the README and sign in locally once.
 ## Handoff
 Document: how to get a session in tests/E2E, new env vars, the error-code list, and the pattern
 for adding a new endpoint (schema in shared → controller → test).
+
+---
+
+## Blueprint amendments (P03, 2026-11-09)
+Appended by Phase 03; these take precedence over conflicting text above.
+
+1. **Auth (ADR-0003):** Better Auth in `apps/web` (Prisma adapter, GitHub OAuth App with
+   `read:user user:email`, Google, `encryptOAuthTokens`, account linking) + **JWT plugin** (EdDSA,
+   15 min, `aud=devimpact-api`). NestJS `AuthGuard` verifies with `jose` remote JWKS — no shared
+   session store, no cookies on the API. Remove the NextAuth route (SEC-15).
+2. **Dev login (task 5):** implemented as web route `POST /api/dev-login` (Better Auth
+   email/password provider enabled only when `NODE_ENV !== 'production' && ENABLE_DEV_LOGIN === 'true'`);
+   the API's `POST /auth/dev-login` is deleted. Acceptance "dev-login returns 404 in a production
+   build" applies to the web route.
+3. **Endpoints (task 7):** `GET /me` per API_CONTRACT_V2 §5; `/auth/me` kept as a deprecated alias
+   until P09; `DELETE /me` with `{ confirmEmail }`; sign-out is Better Auth's `/api/auth/sign-out`.
+4. **GitHub connect (task 9, ADR-0004):** implement the **GitHub App** install/authorize flow
+   (`{ url, mode }`, callback with `code`, `state`, `installationId`, `setupAction`); store
+   `Integration` + `GitHubInstallation`. Token refresh/webhooks are P06.
+5. **Token migration (task 8, ADR-0005, DATA_MODEL_V2 §5 P05-3):** v0.1 OAuth tokens are **dropped**
+   (not encrypted) and those integrations set to `NEEDS_REAUTH`; the encryption service is still
+   built and tested (round-trip, tamper, AAD, rotation) for new GitHub App tokens.
+6. **Schema scope (task 1):** migrations P05-1..3 from DATA_MODEL_V2 §5 (Better Auth tables,
+   `user_settings`, integration security columns, `github_installations`).
+7. **Conventions:** cursor pagination, `period` grammar and the full error-code list in
+   API_CONTRACT_V2 §1–§3; rate-limit classes §1.1 (the AI class + plan quotas land in P08).
+8. **Env vars:** see ARCHITECTURE_V2 §10 (`BETTER_AUTH_*`, `AUTH_JWT_*`, `GITHUB_SIGNIN_*`,
+   `GITHUB_APP_*`, `TOKEN_ENCRYPTION_KEYS`, `TOKEN_ENCRYPTION_ACTIVE_KEY`, `OAUTH_STATE_SECRET`,
+   `WEB_URL` from P02). `NEXTAUTH_*`, `GITHUB_CLIENT_ID/SECRET` (v0.1 OAuth App) and
+   `NEXT_PUBLIC_DEV_LOGIN_EMAIL` are removed. Split the P02 `/api/health` into readiness
+   (`/health`, unchanged) and liveness (`/health/live`).

@@ -133,3 +133,10 @@ raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
 - Fixed BUG-01/02/14. Auth, sync, metrics and AI behaviour are otherwise unchanged (verified by
   re-running the P01 API probes: 83/87 identical, 4 explained differences).
 
+### After Phase 03 (2026-11-09)
+- The v2 blueprint is in [`blueprint/`](./blueprint/) and binding:
+  PRD, KPI methodology (`metrics@2.0.0`, `impact@2.0.0`), architecture, data model + migration plan,
+  API contract, traceability, 14 ADRs. Owner decisions: Better Auth; GitHub App data source;
+  deterministic impact score (overall + 4 dimensions); individual-only scope without billing;
+  GitLab/Jira/Linear and Phase 13 moved to v2.1; hosting decided in P15; brand "calm, professional,
+  Linear-like". See [`DECISIONS.md`](./DECISIONS.md) → Confirmed decisions.

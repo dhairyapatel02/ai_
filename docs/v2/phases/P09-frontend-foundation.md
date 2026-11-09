@@ -80,3 +80,17 @@ desktop/mobile) in `docs/v2/screenshots/p09/`, PROGRESS.md.
 ## Handoff
 Document: how to add a page (route + query hook + states), component catalogue location, the
 query-key conventions, and any API gaps found.
+
+---
+
+## Blueprint amendments (P03, 2026-11-09)
+Appended by Phase 03; these take precedence over conflicting text above.
+
+1. **Auth client (ADR-0003):** Better Auth React client; `apiClient` gets JWTs from
+   `/api/auth/token` (browser) or `auth.api.getToken` (server) and sends `Authorization: Bearer`.
+   Remove the `/auth/me` alias usage and the old `auth-context.tsx`.
+2. **SSE (ADR-0010):** `useEventStream` is **fetch-based** (EventSource cannot send the Bearer
+   header) with `Last-Event-ID` reconnect.
+3. **Onboarding:** GitHub App install/authorize flow including the "org approval pending" state;
+   repos step uses `GET/PATCH /repos`; first sync via `GET /sync/status` polling (or `/sync/stream`).
+4. **No team/billing UI** (D-014). Period state in the URL using the shared `parsePeriod`.

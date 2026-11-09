@@ -76,3 +76,20 @@ Achievements, goals, notifications/digests, full settings, entitlements, tests, 
 
 ## Handoff
 List deferred features, email provider config, and anything P14 should load/security-test specifically.
+
+---
+
+## Blueprint amendments (P03, 2026-11-09)
+Appended by Phase 03; these take precedence over conflicting text above.
+
+1. **Scope per PRD §5.5:** Must — achievements journal + evidence, goals with metric targets,
+   weekly digest email (opt-in), notification preferences, data export, account deletion UI,
+   plan & usage page, entitlements. Should — AI digest summary. Could — monthly digest, in-app
+   notification centre (defer to v2.1 if time is short; no owner approval needed for Could items).
+2. **No billing (D-014):** Plan & usage shows plan, quota usage and "contact us to upgrade"; PRO is
+   assigned via an admin script (document it).
+3. **Entitlements (PRD §6):** FREE — 1 integration, 12-month history, 15 generations, 100 quick
+   actions/month; PRO — 1 integration, 36-month history, 150 / 1,000.
+4. **Data export** is a synchronous streamed JSON download (`GET /me/export`, 3/day) — no ZIP or job
+   needed; contents per API_CONTRACT_V2 §5.
+5. **Schema:** P12-1 in DATA_MODEL_V2 §5; goal progress semantics in API_CONTRACT_V2 §16.

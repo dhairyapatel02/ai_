@@ -112,3 +112,29 @@ Optionally connect a real GitHub account locally, run a sync, and compare counts
 ## Handoff
 Document the job types/queues, cursor semantics, API-call budget, how to replay a webhook locally,
 and any GitHub fields not yet captured.
+
+---
+
+## Blueprint amendments (P03, 2026-11-09)
+Appended by Phase 03; these take precedence over conflicting text above.
+
+1. **Mechanism (ADR-0004):** data comes from the GitHub App user-to-server token (expires 8 h;
+   refresh token 6 months — implement refresh in the provider). Installations from
+   `GET /user/installations`; `installation*` and `github_app_authorization` webhooks.
+2. **Fetch strategy (ADR-0007) replaces tasks 5–6 details:** authored/reviewed PRs via GraphQL
+   search with window splitting above 1,000 results; repos with commits via
+   `contributionsCollection`; commits via per-repo `history(author:)` on the default branch.
+   Revert detection via `CrossReferencedEvent` + `Revert "` title (KPI_METHODOLOGY §3.2); review
+   request times via `ReviewRequestedEvent`; `readyForReviewAt` via `ReadyForReviewEvent`;
+   received-review aggregates (`firstReviewAt`, approvals, changes requested) on authored PRs.
+3. **Budget (task 15):** reference fixture = 1 installation, 50 repos × 300 commits, 600 authored
+   PRs, 900 reviewed PRs, 12-month window; **≤ 250 requests** and ≤ 2,500 GraphQL points.
+4. **Backfill order:** newest 30 days first → `metrics.recompute` → remaining months backwards.
+   Default window = plan history window (FREE 12 months).
+5. **Endpoints:** `POST /sync` (replaces `/sync/trigger`), `GET /sync/status`, `/sync/runs`,
+   `/sync/runs/:id`, optional `/sync/stream`; `GET/PATCH /repos`; `POST /integrations/:id/reconnect`;
+   `DELETE /integrations/:id?purgeData=`. See API_CONTRACT_V2 §6–§8, §18.
+6. **Data migration (task 1):** follow DATA_MODEL_V2 §5 P06-1..3 exactly (natural-key upserts
+   overwrite legacy rows; purge remaining `legacy_stub` PRs and `legacy:` reviews after the first
+   successful v2 backfill). Migration test on the P01 fixture: Alice's authored PRs 106 → 41.
+7. **Data minimisation:** reviewed PRs store no body; no third-party review content.

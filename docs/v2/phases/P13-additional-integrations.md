@@ -47,3 +47,12 @@ should not require orchestrator changes.
 
 ## Handoff
 Document per-provider app registration steps (README), field mappings, known limitations.
+
+---
+
+## Blueprint amendments (P03, 2026-11-09)
+
+**This phase is SKIPPED for v2.0** (user decision D-018, ADR-0014: "Out — v2.1"). Do not start it
+before v2.0 is released. P14's prerequisite becomes "P12 merged". The provider abstraction is
+still built in P06. P15 must carry this phase into `docs/v2/ROADMAP_V2_1.md`; the issue-metric
+definitions in KPI_METHODOLOGY §3.6 are ready for it.

@@ -71,3 +71,18 @@ summary in PROGRESS.md.
 
 ## Handoff
 Note any API gaps worked around, any design deviations (with reason), and remaining UX polish ideas.
+
+---
+
+## Blueprint amendments (P03, 2026-11-09)
+Appended by Phase 03; these take precedence over conflicting text above.
+
+1. **KPIs page:** five sections (Delivery, Quality, Collaboration, Ownership, Consistency) using
+   `GET /metrics/kpis` + `GET /metrics/definitions`; scored vs informational metrics labelled;
+   "Not enough data" for `insufficient_data`.
+2. **Dashboard cards:** Commits, PRs merged, PRs reviewed, Impact score (KPI_METHODOLOGY §3.7),
+   with "same point last period" comparison for in-progress periods.
+3. **Career timeline** uses `GET /career/timeline` (server-computed milestones).
+4. **Integrations:** GitHub live only; GitLab/Jira/Linear "Planned" cards without connect buttons
+   (D-018); states include `needs_reauth`, `suspended`, `waiting_rate_limit`, org approval pending.
+5. Remove the deprecated `/activity/summary` endpoint and its last callers in this phase.
