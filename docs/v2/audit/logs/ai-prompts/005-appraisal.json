@@ -1,0 +1,17 @@
+{
+  "method": "POST",
+  "url": "/v1/messages",
+  "headers": {
+    "x-api-key": "<redacted>"
+  },
+  "body": {
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 4096,
+    "messages": [
+      {
+        "role": "user",
+        "content": "You are an expert at writing engineering performance appraisals. Generate a structured appraisal document based on the following engineering activity data.\n\nPeriod: weird (13/1900)\n\nActivity Summary:\n- Total Commits: 0\n- Pull Requests: 0 (0 merged)\n- Code Reviews: 0\n- Repositories Contributed To: 0\n\nKey Contributions:\n\n\nSample Work:\n\n\nGenerate a comprehensive appraisal report. Respond in JSON format:\n{\n  \"executiveSummary\": \"2-3 sentence high-level summary of the period\",\n  \"keyContributions\": [\n    { \"title\": \"Contribution title\", \"evidence\": \"Specific evidence from the data\" }\n  ],\n  \"metrics\": {\n    \"prCount\": number,\n    \"reviewCount\": number,\n    \"featuresShipped\": number,\n    \"commitsCount\": number\n  },\n  \"areasOfImpact\": [\"Area 1 with description\", \"Area 2 with description\"],\n  \"growthAndLearning\": [\"Growth area 1\", \"Growth area 2\"],\n  \"goalsForNextPeriod\": [\"Goal 1\", \"Goal 2\", \"Goal 3\"]\n}\n\nGuidelines:\n- Be specific and evidence-based\n- Highlight patterns of excellence\n- Identify growth areas constructively\n- Set ambitious but achievable goals\n- Use professional, confident language"
+      }
+    ]
+  }
+}

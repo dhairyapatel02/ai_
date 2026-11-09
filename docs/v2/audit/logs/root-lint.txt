@@ -1,0 +1,46 @@
+
+> devimpact-ai@0.1.0 lint
+> npm run lint --workspaces --if-present
+
+
+> @devimpact/api@0.1.0 lint
+> eslint "{src,test}/**/*.ts"
+
+
+Oops! Something went wrong! :(
+
+ESLint: 8.57.1
+
+ESLint couldn't find a configuration file. To set up a configuration file for this project, please run:
+
+    npm init @eslint/config
+
+ESLint looked for configuration files in /home/user/ai_/apps/api/src/activity and its ancestors. If it found none, it then looked in your home directory.
+
+If you think you already have a configuration file or if you need more help, please stop by the ESLint Discord server: https://eslint.org/chat
+
+npm error Lifecycle script `lint` failed with error:
+npm error code 2
+npm error path /home/user/ai_/apps/api
+npm error workspace @devimpact/api@0.1.0
+npm error location /home/user/ai_/apps/api
+npm error command failed
+npm error command sh -c eslint "{src,test}/**/*.ts"
+
+
+> @devimpact/web@0.1.0 lint
+> next lint
+
+? How would you like to configure ESLint? https://nextjs.org/docs/basic-features/eslint
+❯  Strict (recommended)
+   Base
+   Cancel ⚠ If you set up ESLint yourself, we recommend adding the Next.js ESLint plugin. See https://nextjs.org/docs/basic-features/eslint#migrating-existing-config
+npm error Lifecycle script `lint` failed with error:
+npm error code 1
+npm error path /home/user/ai_/apps/web
+npm error workspace @devimpact/web@0.1.0
+npm error location /home/user/ai_/apps/web
+npm error command failed
+npm error command sh -c next lint
+
+EXIT 1

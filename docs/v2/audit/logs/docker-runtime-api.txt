@@ -1,0 +1,23 @@
+### worker service command: node dist/worker
+node:internal/modules/cjs/loader:1143
+  throw err;
+  ^
+
+Error: Cannot find module '/app/dist/worker'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1140:15)
+    at Module._load (node:internal/modules/cjs/loader:981:27)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:128:12)
+
+### api container against an empty database (no migrate/db push step anywhere)
+GET /auth/me ->
+
+POST /auth/dev-login ->
+
+
+### image size / node version / user
+596635664 bytes
+v18.20.8
+root
+dist
+node_modules
+prisma

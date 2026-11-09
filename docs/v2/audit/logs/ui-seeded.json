@@ -1,0 +1,784 @@
+[
+  {
+    "page": "root",
+    "url": "/",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1738,
+    "screenshot": "seeded-1440-root.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200",
+      "GET /generate/impact-score?month=11&year=2026 -> 200",
+      "GET /activity/summary?from=2026-11-01T00:00:00.000Z&to=2026-11-09T06:58:56.928Z -> 200",
+      "GET /generate/impact-score?month=11&year=2026 -> 200",
+      "GET /activity/summary?from=2026-11-01T00:00:00.000Z&to=2026-11-09T06:58:56.931Z -> 200"
+    ],
+    "finalUrl": "/dashboard",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Dashboard"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Resume",
+      "Generate Appraisal"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Dashboard Your engineering impact at a glance Generate Resume Generate Appraisal Commits This Month 3 PRs Merged 3 Reviews Done 2 Impact Score 66/100 Impact Score 66 Features 74 Quality 88 Collab 90 Leadership 40 Top Repositories alice/dotfiles 1 commits acme/checkout-service 1 commits "
+  },
+  {
+    "page": "dashboard",
+    "url": "/dashboard",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1743,
+    "screenshot": "seeded-1440-dashboard.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200",
+      "GET /generate/impact-score?month=11&year=2026 -> 200",
+      "GET /activity/summary?from=2026-11-01T00:00:00.000Z&to=2026-11-09T06:58:58.789Z -> 200",
+      "GET /generate/impact-score?month=11&year=2026 -> 200",
+      "GET /activity/summary?from=2026-11-01T00:00:00.000Z&to=2026-11-09T06:58:58.792Z -> 200"
+    ],
+    "finalUrl": "/dashboard",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Dashboard"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Resume",
+      "Generate Appraisal"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Dashboard Your engineering impact at a glance Generate Resume Generate Appraisal Commits This Month 3 PRs Merged 3 Reviews Done 2 Impact Score 66/100 Impact Score 66 Features 74 Quality 88 Collab 90 Leadership 40 Top Repositories alice/dotfiles 1 commits acme/checkout-service 1 commits "
+  },
+  {
+    "page": "connect",
+    "url": "/connect",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1727,
+    "screenshot": "seeded-1440-connect.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200",
+      "GET /integrations -> 200",
+      "GET /sync/status -> 200",
+      "GET /sync/status -> 200",
+      "GET /integrations -> 200"
+    ],
+    "finalUrl": "/connect",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Integrations"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Sync",
+      "Disconnect",
+      "Coming Soon",
+      "Coming Soon",
+      "Coming Soon"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Integrations Connect your developer tools to sync activity data GitHub Connect your GitHub account to sync commits, PRs, and code reviews. Synced @alice Sync Disconnect GitLab Connect your GitLab account to sync merge requests and commits. Idle Coming Soon Jira Connect Jira to sync issu"
+  },
+  {
+    "page": "connect-callback",
+    "url": "/connect/callback",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1723,
+    "screenshot": "seeded-1440-connect-callback.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200"
+    ],
+    "finalUrl": "/connect/callback",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 GitHub Connection No authorization code received from GitHub."
+  },
+  {
+    "page": "connect-callback-code",
+    "url": "/connect/callback?code=bogus",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1936,
+    "screenshot": "seeded-1440-connect-callback-code.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200",
+      "POST /integrations/github/callback -> 201",
+      "POST /integrations/github/callback -> 201",
+      "POST /integrations/github/callback -> 201"
+    ],
+    "finalUrl": "/connect/callback?code=bogus",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 GitHub Connection Failed to exchange GitHub code for token"
+  },
+  {
+    "page": "resume",
+    "url": "/resume",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1683,
+    "screenshot": "seeded-1440-resume.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200"
+    ],
+    "finalUrl": "/resume",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Resume Generator"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Resume Bullets"
+    ],
+    "inputs": 3,
+    "unlabeledInputs": 3,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Resume Generator Generate professional resume bullet points from your engineering activity Configuration From To Role Backend Frontend Fullstack Devops Manager Generate Resume Bullets"
+  },
+  {
+    "page": "appraisal",
+    "url": "/appraisal",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1716,
+    "screenshot": "seeded-1440-appraisal.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200"
+    ],
+    "finalUrl": "/appraisal",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Appraisal Report"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Appraisal"
+    ],
+    "inputs": 3,
+    "unlabeledInputs": 3,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Appraisal Report Generate performance appraisal documents from your activity data Configuration Period Monthly Quarterly Yearly Month January February March April May June July August September October November December Year Generate Appraisal"
+  },
+  {
+    "page": "promotion",
+    "url": "/promotion",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1682,
+    "screenshot": "seeded-1440-promotion.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200"
+    ],
+    "finalUrl": "/promotion",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Promotion Packet"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Promotion Packet"
+    ],
+    "inputs": 2,
+    "unlabeledInputs": 2,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Promotion Packet Build a data-driven promotion case from your engineering contributions Configuration Current Role Target Role Generate Promotion Packet"
+  },
+  {
+    "page": "career",
+    "url": "/career",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1687,
+    "screenshot": "seeded-1440-career.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200",
+      "GET /activity/prs?from=2026-05-09T06:59:11.695Z&to=2026-11-09T06:59:11.696Z&limit=200 -> 200",
+      "GET /activity/commits?from=2026-05-09T06:59:11.695Z&to=2026-11-09T06:59:11.696Z&limit=200 -> 200",
+      "GET /activity/commits?from=2026-05-09T06:59:11.698Z&to=2026-11-09T06:59:11.698Z&limit=200 -> 200",
+      "GET /activity/prs?from=2026-05-09T06:59:11.698Z&to=2026-11-09T06:59:11.698Z&limit=200 -> 200"
+    ],
+    "finalUrl": "/career",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Career Timeline"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Career Timeline Your engineering journey visualized Q4 2026 Q4 PR #5064 acme/checkout-service closed 12 commits PR #5063 acme/web-app closed 5 commits Orders API: cursor pagination alice/dotfiles merged 12 commits PR #5062 acme/checkout-service closed PR #5061 acme/search-api closed 10 "
+  },
+  {
+    "page": "kpis",
+    "url": "/kpis",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1688,
+    "screenshot": "seeded-1440-kpis.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200",
+      "GET /generate/impact-score?month=11&year=2026 -> 200",
+      "GET /activity/summary?from=2026-11-01T00:00:00.000Z&to=2026-11-09T06:59:13.585Z -> 200",
+      "GET /generate/impact-score?month=11&year=2026 -> 200",
+      "GET /activity/summary?from=2026-11-01T00:00:00.000Z&to=2026-11-09T06:59:13.592Z -> 200"
+    ],
+    "finalUrl": "/kpis",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "KPI Dashboard"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 KPI Dashboard Track your engineering performance metrics Productivity 3 Commits this month Code Quality 3 Pull requests this month Collaboration 2 Reviews this month Ownership 3 Repos contributed Impact Score 66 Features 74 Quality 88 Collab 90 Leadership 40 Top Repositories Repository "
+  },
+  {
+    "page": "settings",
+    "url": "/settings",
+    "width": 1440,
+    "status": 200,
+    "loadMs": 1701,
+    "screenshot": "seeded-1440-settings.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200"
+    ],
+    "finalUrl": "/settings",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Settings"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Save Changes",
+      "Enable",
+      "Enable"
+    ],
+    "inputs": 2,
+    "unlabeledInputs": 2,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 Settings Manage your account and preferences Profile Your personal information Name Email Save Changes Plan & Billing Manage your subscription FREE 5 generations/month, 1 integration Pro $12/mo Unlimited generations, all integrations Team $29/mo Team dashboards, shared reports Enterpris"
+  },
+  {
+    "page": "not-found",
+    "url": "/does-not-exist",
+    "width": 1440,
+    "status": 404,
+    "loadMs": 1684,
+    "screenshot": "seeded-1440-not-found.png",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200"
+    ],
+    "finalUrl": "/does-not-exist",
+    "title": "404: This page could not be found.",
+    "h1": [
+      "404"
+    ],
+    "navVisible": true,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "DevImpact AI Dashboard Integrations Resume Appraisal Promotion Career Timeline KPIs Settings DevImpact AI v0.1.0 404 This page could not be found."
+  },
+  {
+    "page": "root",
+    "url": "/",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1707,
+    "screenshot": "seeded-390-root.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200",
+      "GET /generate/impact-score?month=11&year=2026 -> 200",
+      "GET /activity/summary?from=2026-11-01T00:00:00.000Z&to=2026-11-09T06:59:19.044Z -> 200",
+      "GET /generate/impact-score?month=11&year=2026 -> 200",
+      "GET /activity/summary?from=2026-11-01T00:00:00.000Z&to=2026-11-09T06:59:19.046Z -> 200"
+    ],
+    "finalUrl": "/dashboard",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Dashboard"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 163,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Resume",
+      "Generate Appraisal"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "Dashboard Your engineering impact at a glance Generate Resume Generate Appraisal Commits This Month 3 PRs Merged 3 Reviews Done 2 Impact Score 66/100 Impact Score 66 Features 74 Quality 88 Collab 90 Leadership 40 Top Repositories alice/dotfiles 1 commits acme/checkout-service 1 commits acme/web-app 1 commits"
+  },
+  {
+    "page": "dashboard",
+    "url": "/dashboard",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1697,
+    "screenshot": "seeded-390-dashboard.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200",
+      "GET /activity/summary?from=2026-11-01T00:00:00.000Z&to=2026-11-09T06:59:20.838Z -> 200",
+      "GET /generate/impact-score?month=11&year=2026 -> 200",
+      "GET /activity/summary?from=2026-11-01T00:00:00.000Z&to=2026-11-09T06:59:20.841Z -> 200",
+      "GET /generate/impact-score?month=11&year=2026 -> 200"
+    ],
+    "finalUrl": "/dashboard",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Dashboard"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 163,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Resume",
+      "Generate Appraisal"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "Dashboard Your engineering impact at a glance Generate Resume Generate Appraisal Commits This Month 3 PRs Merged 3 Reviews Done 2 Impact Score 66/100 Impact Score 66 Features 74 Quality 88 Collab 90 Leadership 40 Top Repositories alice/dotfiles 1 commits acme/checkout-service 1 commits acme/web-app 1 commits"
+  },
+  {
+    "page": "connect",
+    "url": "/connect",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1674,
+    "screenshot": "seeded-390-connect.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200",
+      "GET /integrations -> 200",
+      "GET /sync/status -> 200",
+      "GET /integrations -> 200",
+      "GET /sync/status -> 200"
+    ],
+    "finalUrl": "/connect",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Integrations"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Sync",
+      "Disconnect",
+      "Coming Soon",
+      "Coming Soon",
+      "Coming Soon"
+    ],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "Integrations Connect your developer tools to sync activity data GitHub Connect your GitHub account to sync commits, PRs, and code reviews. Synced @alice Sync Disconnect GitLab Connect your GitLab account to sync merge requests and commits. Idle Coming Soon Jira Connect Jira to sync issues, story points, and project data. Idle Coming Soon Linear Connect Linear to sync issues and project tracking da"
+  },
+  {
+    "page": "connect-callback",
+    "url": "/connect/callback",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1660,
+    "screenshot": "seeded-390-connect-callback.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200"
+    ],
+    "finalUrl": "/connect/callback",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "GitHub Connection No authorization code received from GitHub."
+  },
+  {
+    "page": "connect-callback-code",
+    "url": "/connect/callback?code=bogus",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1853,
+    "screenshot": "seeded-390-connect-callback-code.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200",
+      "POST /integrations/github/callback -> 201",
+      "POST /integrations/github/callback -> 201",
+      "POST /integrations/github/callback -> 201"
+    ],
+    "finalUrl": "/connect/callback?code=bogus",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "GitHub Connection Failed to exchange GitHub code for token"
+  },
+  {
+    "page": "resume",
+    "url": "/resume",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1668,
+    "screenshot": "seeded-390-resume.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200"
+    ],
+    "finalUrl": "/resume",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Resume Generator"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Resume Bullets"
+    ],
+    "inputs": 3,
+    "unlabeledInputs": 3,
+    "textSample": "Resume Generator Generate professional resume bullet points from your engineering activity Configuration From To Role Backend Frontend Fullstack Devops Manager Generate Resume Bullets"
+  },
+  {
+    "page": "appraisal",
+    "url": "/appraisal",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1658,
+    "screenshot": "seeded-390-appraisal.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200"
+    ],
+    "finalUrl": "/appraisal",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Appraisal Report"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Appraisal"
+    ],
+    "inputs": 3,
+    "unlabeledInputs": 3,
+    "textSample": "Appraisal Report Generate performance appraisal documents from your activity data Configuration Period Monthly Quarterly Yearly Month January February March April May June July August September October November December Year Generate Appraisal"
+  },
+  {
+    "page": "promotion",
+    "url": "/promotion",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1680,
+    "screenshot": "seeded-390-promotion.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200"
+    ],
+    "finalUrl": "/promotion",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Promotion Packet"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Generate Promotion Packet"
+    ],
+    "inputs": 2,
+    "unlabeledInputs": 2,
+    "textSample": "Promotion Packet Build a data-driven promotion case from your engineering contributions Configuration Current Role Target Role Generate Promotion Packet"
+  },
+  {
+    "page": "career",
+    "url": "/career",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1690,
+    "screenshot": "seeded-390-career.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200",
+      "GET /activity/commits?from=2026-05-09T06:59:33.345Z&to=2026-11-09T06:59:33.345Z&limit=200 -> 200",
+      "GET /activity/prs?from=2026-05-09T06:59:33.345Z&to=2026-11-09T06:59:33.345Z&limit=200 -> 200",
+      "GET /activity/prs?from=2026-05-09T06:59:33.347Z&to=2026-11-09T06:59:33.347Z&limit=200 -> 200",
+      "GET /activity/commits?from=2026-05-09T06:59:33.347Z&to=2026-11-09T06:59:33.347Z&limit=200 -> 200"
+    ],
+    "finalUrl": "/career",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Career Timeline"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "Career Timeline Your engineering journey visualized Q4 2026 Q4 PR #5064 acme/checkout-service closed 12 commits PR #5063 acme/web-app closed 5 commits Orders API: cursor pagination alice/dotfiles merged 12 commits PR #5062 acme/checkout-service closed PR #5061 acme/search-api closed 10 commits PR #5060 alice/dotfiles closed PR #5059 acme/web-app closed PR #5058 acme/checkout-service closed Q3 2026"
+  },
+  {
+    "page": "kpis",
+    "url": "/kpis",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1666,
+    "screenshot": "seeded-390-kpis.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200",
+      "GET /generate/impact-score?month=11&year=2026 -> 200",
+      "GET /activity/summary?from=2026-11-01T00:00:00.000Z&to=2026-11-09T06:59:35.176Z -> 200",
+      "GET /generate/impact-score?month=11&year=2026 -> 200",
+      "GET /activity/summary?from=2026-11-01T00:00:00.000Z&to=2026-11-09T06:59:35.179Z -> 200"
+    ],
+    "finalUrl": "/kpis",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "KPI Dashboard"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "KPI Dashboard Track your engineering performance metrics Productivity 3 Commits this month Code Quality 3 Pull requests this month Collaboration 2 Reviews this month Ownership 3 Repos contributed Impact Score 66 Features 74 Quality 88 Collab 90 Leadership 40 Top Repositories Repository Commits alice/dotfiles 1 acme/checkout-service 1 acme/web-app 1"
+  },
+  {
+    "page": "settings",
+    "url": "/settings",
+    "width": 390,
+    "status": 200,
+    "loadMs": 1693,
+    "screenshot": "seeded-390-settings.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200"
+    ],
+    "finalUrl": "/settings",
+    "title": "DevImpact AI — Engineering Career OS",
+    "h1": [
+      "Settings"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [
+      "Save Changes",
+      "Enable",
+      "Enable"
+    ],
+    "inputs": 2,
+    "unlabeledInputs": 2,
+    "textSample": "Settings Manage your account and preferences Profile Your personal information Name Email Save Changes Plan & Billing Manage your subscription FREE 5 generations/month, 1 integration Pro $12/mo Unlimited generations, all integrations Team $29/mo Team dashboards, shared reports Enterprise Custom SSO, custom integrations, SLA Notifications Configure notification preferences Weekly Summary Receive we"
+  },
+  {
+    "page": "not-found",
+    "url": "/does-not-exist",
+    "width": 390,
+    "status": 404,
+    "loadMs": 1703,
+    "screenshot": "seeded-390-not-found.png",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "pageErrors": [],
+    "failedRequests": [],
+    "apiCalls": [
+      "GET /auth/me -> 200",
+      "GET /auth/me -> 200"
+    ],
+    "finalUrl": "/does-not-exist",
+    "title": "404: This page could not be found.",
+    "h1": [
+      "404"
+    ],
+    "navVisible": false,
+    "anyMenuButton": false,
+    "horizontalOverflowPx": 0,
+    "mainHorizontalOverflowPx": 0,
+    "spinnerVisible": false,
+    "buttons": [],
+    "inputs": 0,
+    "unlabeledInputs": 0,
+    "textSample": "404 This page could not be found."
+  }
+]

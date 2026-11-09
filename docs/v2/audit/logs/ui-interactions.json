@@ -1,0 +1,101 @@
+[
+  {
+    "label": "resume: Generate Resume Bullets",
+    "apiRequests": [
+      "POST /generate/resume"
+    ],
+    "domChanged": true,
+    "clipboardChanged": false,
+    "navigated": null,
+    "dialogs": [],
+    "downloads": []
+  },
+  {
+    "label": "resume: Copy All",
+    "apiRequests": [],
+    "domChanged": false,
+    "clipboardChanged": false,
+    "navigated": null,
+    "dialogs": [],
+    "downloads": []
+  },
+  {
+    "label": "resume: Export PDF",
+    "apiRequests": [],
+    "domChanged": false,
+    "clipboardChanged": false,
+    "navigated": null,
+    "dialogs": [],
+    "downloads": []
+  },
+  {
+    "label": "appraisal: Generate Appraisal",
+    "apiRequests": [
+      "POST /generate/appraisal"
+    ],
+    "domChanged": true,
+    "clipboardChanged": false,
+    "navigated": null,
+    "dialogs": [],
+    "downloads": []
+  },
+  {
+    "label": "appraisal: Export Document",
+    "apiRequests": [],
+    "domChanged": false,
+    "clipboardChanged": false,
+    "navigated": null,
+    "dialogs": [],
+    "downloads": []
+  },
+  {
+    "label": "promotion: Generate Promotion Packet",
+    "apiRequests": [
+      "POST /generate/promotion"
+    ],
+    "domChanged": true,
+    "clipboardChanged": false,
+    "navigated": null,
+    "dialogs": [],
+    "downloads": []
+  },
+  {
+    "label": "settings: Save Changes",
+    "apiRequests": [],
+    "domChanged": false,
+    "clipboardChanged": false,
+    "navigated": null,
+    "dialogs": [],
+    "downloads": []
+  },
+  {
+    "label": "settings: Enable (weekly summary)",
+    "apiRequests": [],
+    "domChanged": false,
+    "clipboardChanged": false,
+    "navigated": null,
+    "dialogs": [],
+    "downloads": []
+  },
+  {
+    "label": "connect: Sync (fake token -> job fails)",
+    "apiRequests": [
+      "POST /sync/trigger",
+      "GET /sync/status"
+    ],
+    "domChanged": true,
+    "clipboardChanged": false,
+    "navigated": null,
+    "dialogs": [],
+    "downloads": []
+  },
+  {
+    "label": "dashboard: Generate Resume (quick action)",
+    "apiRequests": [],
+    "domChanged": true,
+    "clipboardChanged": false,
+    "navigated": "http://localhost:3000/resume",
+    "dialogs": [],
+    "downloads": []
+  }
+]

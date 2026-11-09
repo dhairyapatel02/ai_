@@ -1,0 +1,15 @@
+/app/dist/github/github.service.js:12
+const octokit_1 = require("octokit");
+                  ^
+
+Error [ERR_REQUIRE_ESM]: require() of ES Module /app/node_modules/octokit/dist-bundle/index.js from /app/dist/github/github.service.js not supported.
+Instead change the require of index.js in /app/dist/github/github.service.js to a dynamic import() which is available in all CommonJS modules.
+    at Object.<anonymous> (/app/dist/github/github.service.js:12:19)
+    at Object.<anonymous> (/app/dist/sync/sync.processor.js:17:26)
+    at Object.<anonymous> (/app/dist/sync/sync.module.js:14:26)
+    at Object.<anonymous> (/app/dist/app.module.js:16:23)
+    at Object.<anonymous> (/app/dist/main.js:5:22) {
+  code: 'ERR_REQUIRE_ESM'
+}
+
+Node.js v18.20.8

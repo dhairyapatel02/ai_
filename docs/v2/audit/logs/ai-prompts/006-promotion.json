@@ -1,0 +1,17 @@
+{
+  "method": "POST",
+  "url": "/v1/messages",
+  "headers": {
+    "x-api-key": "<redacted>"
+  },
+  "body": {
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 4096,
+    "messages": [
+      {
+        "role": "user",
+        "content": "You are an expert at writing promotion packets for software engineers. Build a compelling promotion evidence document.\n\nCurrent Role: undefined\nTarget Role: undefined\n\nEngineering Activity (last 6 months):\n- Total Commits: 292\n- Pull Requests: 106 (33 merged)\n- Code Reviews: 65\n- Repositories: 5\n- Average PR Size: 805 lines\n\nNotable Work:\n- PR #5064 (acme/checkout-service)\n- PR #5063 (acme/web-app)\n- Orders API: cursor pagination (alice/dotfiles)\n- PR #5062 (acme/checkout-service)\n- PR #5061 (acme/search-api)\n- PR #5060 (alice/dotfiles)\n- PR #5059 (acme/web-app)\n- PR #5058 (acme/checkout-service)\n- PR #5057 (acme/checkout-service)\n- Web: accessible checkout form (acme/search-api)\n\nCollaboration Evidence:\n- Code reviews completed: 65\n- Reviews with approvals: 37\n\nGenerate a promotion packet. Respond in JSON format:\n{\n  \"whyReady\": \"2-3 paragraph argument for why this engineer is ready for undefined\",\n  \"leadershipEvidence\": [\"Evidence point 1\", \"Evidence point 2\"],\n  \"technicalImpact\": [\"Impact 1 with metrics\", \"Impact 2 with metrics\"],\n  \"businessValue\": [\"Business value 1\", \"Business value 2\"],\n  \"mentorship\": [\"Mentorship/collaboration evidence 1\", \"Evidence 2\"],\n  \"supportingData\": {\n    \"totalContributions\": number,\n    \"crossTeamCollaboration\": number,\n    \"technicalComplexity\": \"high|medium|low\",\n    \"consistency\": \"A brief assessment of work consistency\"\n  }\n}\n\nGuidelines:\n- Focus on evidence that demonstrates readiness for the TARGET role\n- Emphasize scope expansion and increasing responsibility\n- Quantify impact wherever possible\n- Show leadership through code reviews and collaboration\n- Highlight technical decision-making and ownership"
+      }
+    ]
+  }
+}

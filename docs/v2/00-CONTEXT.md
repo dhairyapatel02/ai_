@@ -65,96 +65,43 @@ apps/web/src/components/*            # impact-score-card, activity-heatmap (unus
 .agents/skills/testing-frontend/SKILL.md # previous agent's notes on running the stack locally
 ```
 
-## 4. Verified state at planning time (2026-11-09)
+## 4. Verified state (Phase 01 audit, 2026-11-09)
 
-Commands run on the baseline in a clean container (Node 22, npm 10):
+Run on a clean container (Node 22.23, npm 10.9, Docker 29, Postgres 15 + Redis 7 via compose).
+Full evidence: [`audit/AUDIT_REPORT.md`](./audit/AUDIT_REPORT.md) and
+[`audit/ARCHITECTURE_CURRENT.md §9`](./audit/ARCHITECTURE_CURRENT.md#9-build-tooling--dependencies).
 
 | Check | Result |
 |---|---|
-| `npm ci` | ✅ passes |
-| `tsc --noEmit` (api, web) | ✅ passes |
-| `nest build` (api) | ✅ builds, but **no `dist/worker` entry** exists |
-| `next build` (web) | ❌ **fails**: `useSearchParams() should be wrapped in a suspense boundary at page "/connect/callback"` |
-| `next lint` | ❌ no ESLint config (interactive prompt) |
-| Tests | ❌ none exist |
-| Tooling available in cloud container | `docker`, `psql`, `redis-server`, PostgreSQL 16 binaries |
+| `npm ci` | ✅ (47 vulnerabilities reported; prod-only audit: 22 pkgs — 3 critical, 11 high) |
+| `npm run typecheck` | ✅ api, web, shared |
+| `npm run build` | ❌ api ✅, **web ❌** (`useSearchParams()` needs Suspense on `/connect/callback`) |
+| `npm run lint` | ❌ api: no ESLint config; web: interactive `next lint` prompt |
+| `npm test` | ❌ no tests, no script |
+| `npm run dev:api` | ❌ after any build (stale committed `tsconfig.tsbuildinfo` → empty `dist/`); ✅ once it is deleted |
+| README quick start | ❌ root `.env` not loaded by Prisma CLI or Nest (cwd `apps/api`) unless exported |
+| `docker compose up --build` | ❌ api/web/worker images fail (no `tsconfig.base.json` copied, bad `.prisma` path, missing `public/`); API crashes on Node 18 (`ERR_REQUIRE_ESM`, octokit v4); `dist/worker` missing |
+| Runtime (dev servers) | ✅ all 20 endpoints and 10 pages load; behaviour defects listed in `audit/ISSUES.md` |
+| Tooling in the cloud container | `docker` (start `dockerd` manually), `psql`, `redis-server`, Chromium + Playwright |
 
-## 5. Preliminary findings (pre-audit, from planning review)
+## 5. Known issues (verified)
 
-Phase 1 must **verify, expand and formalise** these into `docs/v2/audit/ISSUES.md` with stable
-IDs. Severity: 🔴 critical · 🟠 high · 🟡 medium · ⚪ low.
+The authoritative, prioritised backlog is [`audit/ISSUES.md`](./audit/ISSUES.md) — **106 issues:
+🔴 10 · 🟠 34 · 🟡 50 · ⚪ 12**, stable IDs (`SEC-`, `BUG-`, `DATA-`, `AI-`, `API-`, `UX-`, `GAP-`,
+`DEBT-`, `OPS-`, `PERF-`) with target phases. All 42 planning-time findings were verified (9
+amended, 0 refuted). Critical items:
 
-### Security
-- 🔴 **No real authentication.** Every controller reads `req.headers['x-user-id']` (17 places).
-  Any client can impersonate any user by setting that header.
-- 🔴 **`POST /api/auth/dev-login` is public in all environments** and accepts any email →
-  instant account takeover. The web app calls it automatically when no user is stored, so all
-  visitors share one "Dev User".
-- 🔴 **OAuth access tokens stored in plaintext** (`Integration.accessToken`).
-- 🟠 GitHub connect flow has **no OAuth `state` parameter** (CSRF / account-linking attack).
-- 🟠 Unbounded `limit` query param on `/activity/*` and `/documents` (DoS / data dump).
-- 🟠 No rate limiting, no helmet; AI endpoints are effectively open → Anthropic cost abuse.
-- 🟠 Next.js 14.2.3 has published CVEs (e.g. middleware authorization bypass, CVE-2025-29927).
-- 🟡 Untrusted commit messages / PR titles are interpolated into prompts (prompt injection).
-- 🟡 Prompts are filled with `String.prototype.replace(str, value)`; a value containing `$&`,
-  `` $` ``, `$'` or `$$` is expanded as a replacement pattern and corrupts the prompt.
+- **SEC-01/02/03** — no authentication (`x-user-id` header), public `dev-login` account takeover
+  with every visitor sharing one account, plaintext GitHub tokens.
+- **DATA-01** — reviewed-only PRs stored as the user's own PRs (61 % of a seeded user's "PRs";
+  71 % in a 30-repo simulation).
+- **BUG-01** — `next build` fails. **BUG-14** — resume page renders an empty card even on success.
+- **OPS-01/02/03** — Docker images don't build; API crashes on Node 18; worker entry missing.
+- **UX-01** — no navigation below 1024 px.
 
-### Build / infrastructure
-- 🔴 `next build` fails (see §4) → web Docker image cannot build.
-- 🔴 `docker-compose.yml` `worker` runs `node dist/worker`, which does not exist.
-- 🟠 `apps/web/Dockerfile` copies `apps/web/public`, which does not exist.
-- 🟠 Prisma migrations are git-ignored; setup relies on `db push` (no migration history).
-- 🟡 `tsconfig.tsbuildinfo` files are committed (stale incremental builds; the previous agent's
-  skill file warns about "0 errors but no dist output").
-- 🟡 `.env.example` defines `REDIS_URL` but code uses `REDIS_HOST`/`REDIS_PORT`; no Zod env
-  validation (required by spec).
-- 🟡 Node 18 base images (EOL). `packages/shared` is never imported (types duplicated inline).
-- 🟡 No ESLint/Prettier config, no tests, no CI.
-
-### Data / sync correctness
-- 🔴 When syncing reviews, PRs the user only **reviewed** are inserted as **the user's own PRs**
-  (stub `title: "PR #n"`, `state: CLOSED`). This inflates PR counts, PR lists, career timeline
-  and AI input.
-- 🟠 Dashboard card "PRs Merged" shows **total** PRs (all states).
-- 🟠 Sync covers only the 30 most recently pushed repos (reviews: 15); `fetchReviews`
-  paginates **every** PR in a repo; one extra `getCommit` call per commit (N+1). No rate-limit
-  handling: secondary-rate-limit 403s are swallowed as warnings → **silent data loss**.
-- 🟠 Commits only from the default branch; `branch` is hard-coded to `'main'`.
-- 🟠 Spec items missing: webhooks, incremental sync, scheduled 24h sync.
-- 🟡 `GET /sync/status` loads every job in the queue for all users and filters in memory; no
-  persistent sync history; no per-user job de-duplication.
-- 🟡 Date handling uses server-local time; `to=YYYY-MM-DD` is parsed as UTC midnight, so the
-  last day of a range is excluded.
-- 🟡 Disconnecting an integration cascades and deletes all synced activity without warning.
-- ⚪ `Issue` model and `refreshToken` are unused.
-
-### AI layer
-- 🟠 Model hard-coded and outdated; SDK very old.
-- 🟠 No streaming, no result caching (every click = new Claude call + new document), no schema
-  validation of AI output (greedy `/\{[\s\S]*\}/` regex + `JSON.parse`).
-- 🟠 Impact score is **entirely LLM-generated** → non-deterministic, not explainable, and it is
-  auto-requested on every Dashboard/KPIs load when uncached (cost) — even for empty months.
-- 🟡 Retries on every error, including non-retryable 400/401.
-- 🟡 AI receives only the 20 most recent commits / 15 PRs (arbitrary sampling).
-- ⚪ `enhanceCommitMessage` exists but is not exposed anywhere.
-
-### API design
-- 🟠 Errors return **HTTP 200** with `{ success:false }`; no exception filter.
-- 🟠 No request validation in practice: bodies are typed as TS interfaces, so the global
-  `ValidationPipe` does nothing; Zod (required by spec) is not used.
-- 🟡 `POST /auth/github` and `/auth/google` are stubs.
-
-### Frontend / UX
-- 🔴 Sidebar is `hidden lg:flex` with no mobile alternative → unusable below 1024px.
-- 🟠 Spec features missing: 30-day activity chart and recent-activity feed (dashboard),
-  `DateRangePicker`, KPI monthly trend charts, career year filter, functional settings,
-  documents library UI. `ActivityHeatmap` exists but is unused.
-- 🟠 "Copy All" / "Export PDF" buttons on `/resume` have **no handlers**; appraisal export missing.
-- 🟠 No `error.tsx` boundaries, no skeletons (single spinner), no route protection, `alert()` for errors.
-- 🟡 KPI cards are mislabeled ("Code Quality" = PR count, "Ownership" = top-5 repo count).
-- 🟡 Connect page shows "complete" for any connected provider regardless of real sync state;
-  polling interval not cleared on unmount.
-- 🟡 No dark mode, no design tokens beyond shadcn defaults, no onboarding flow.
+Other themes: LLM-invented impact score (AI-01), silent sync data loss and 8.7k GitHub calls per
+sync (DATA-04, PERF-01), errors returned as 200/201 and no validation (API-01/02), dead buttons and
+raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
 
 ## 6. Non-negotiable V2 principles
 

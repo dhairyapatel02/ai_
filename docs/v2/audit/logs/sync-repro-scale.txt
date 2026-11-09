@@ -1,0 +1,37 @@
+[Nest] 10073  - 11/09/2026, 6:54:52 AM     LOG [SyncProcessor] Starting sync for user cmw8wp34j0000125c2y5cgnob
+[Nest] 10073  - 11/09/2026, 6:57:05 AM     LOG [SyncProcessor] Sync complete: 6000 commits, 780 PRs, 1920 reviews
+{
+  "mode": "scale",
+  "durationMs": 133221,
+  "jobResult": {
+    "totalCommits": 6000,
+    "totalPRs": 780,
+    "totalReviews": 1920
+  },
+  "jobError": null,
+  "progressUpdates": 77,
+  "lastProgress": 98,
+  "githubCalls": {
+    "total": 8732,
+    "byEndpoint": {
+      "GET /user": 1,
+      "GET /user/repos": 1,
+      "GET /repos/:r/commits (list page)": 60,
+      "GET /repos/:r/commits/:sha (N+1 stats)": 6000,
+      "GET /repos/:r/pulls (list page, per_page=100)": 180,
+      "GET /repos/:r/pulls (list page, per_page=50)": 180,
+      "GET /repos/:r/pulls/:n/reviews": 2310
+    }
+  },
+  "db": {
+    "commits": 6000,
+    "commitBranches": [
+      "main"
+    ],
+    "pullRequests": {
+      "count": 2700,
+      "stubs": 1920
+    },
+    "codeReviews": 1920
+  }
+}

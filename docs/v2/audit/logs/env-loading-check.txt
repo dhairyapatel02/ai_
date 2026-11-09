@@ -1,0 +1,9 @@
+$ cd apps/api && env -i PATH=$PATH HOME=$HOME npx prisma validate   # root .env present, not exported
+Error: Prisma schema validation - (get-config wasm)
+Error code: P1012
+error: Environment variable not found: DATABASE_URL.
+ 7 |   url      = env("DATABASE_URL")
+Validation Error Count: 1
+
+$ (cwd=apps/api) ConfigModule.forRoot() then read process.env  # root .env present
+ANTHROPIC_API_KEY via ConfigModule (cwd=apps/api): undefined | GITHUB_CLIENT_ID: undefined

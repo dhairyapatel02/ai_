@@ -1,0 +1,17 @@
+{
+  "method": "POST",
+  "url": "/v1/messages",
+  "headers": {
+    "x-api-key": "<redacted>"
+  },
+  "body": {
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 4096,
+    "messages": [
+      {
+        "role": "user",
+        "content": "You are an engineering analytics expert. Analyze the quality and complexity of engineering work and calculate impact scores.\n\nActivity Data for 2/2020:\n- Commits: 0\n- Pull Requests: 0 (0 merged)\n- Code Reviews: 0\n- Lines Added: 0\n- Lines Deleted: 0\n- Unique Repos: 0\n\nWork Samples:\n\n\nCalculate scores (0-100) for each dimension and provide highlights. Respond in JSON format:\n{\n  \"overall\": number,\n  \"featureDelivery\": number,\n  \"codeQuality\": number,\n  \"collaboration\": number,\n  \"leadership\": number,\n  \"highlights\": [\"Key highlight 1\", \"Key highlight 2\", \"Key highlight 3\"]\n}\n\nScoring Guidelines:\n- featureDelivery: Volume and impact of features shipped (PRs merged, commit frequency, project breadth)\n- codeQuality: Code hygiene signals (refactoring ratio, deletion ratio, PR size discipline)\n- collaboration: Review activity, cross-repo contributions, PR discussions\n- leadership: Scope of influence, mentoring signals, architectural decisions\n- overall: Weighted average (featureDelivery: 30%, codeQuality: 25%, collaboration: 25%, leadership: 20%)\n\nBe calibrated — 50 is average, 70+ is strong, 85+ is exceptional."
+      }
+    ]
+  }
+}
