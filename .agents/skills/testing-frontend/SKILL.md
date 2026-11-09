@@ -1,124 +1,67 @@
 ---
 name: testing-devimpact-frontend
-description: Test the DevImpact AI Next.js frontend end-to-end. Use when verifying UI pages, navigation, API wiring, and component rendering.
+description: Run and test the DevImpact AI stack locally (API, worker, web) with seeded demo data. Use when verifying UI pages, API wiring, or running the unit/integration/E2E suites.
 ---
 
-# Testing DevImpact AI Frontend
+# Testing DevImpact AI locally
 
-## Prerequisites
+All commands run from the repo root. Requires Node 22 (`.nvmrc`). The root `.env` is read
+automatically by the API, worker, Prisma CLI, seed script and Next.js — never export it.
 
-- Node.js 20+ installed
-- Dependencies installed (`npm install` from repo root)
-- For full-stack testing (recommended): PostgreSQL + Redis running via Docker
-
-## Starting the Servers
-
-### Full-Stack (recommended)
+## One-time setup
 
 ```bash
-# 1. Start infrastructure
-cd /home/ubuntu/repos/ai_
-docker compose up -d postgres redis
-
-# 2. Sync database schema
-cd apps/api
-export $(grep -v '^#' ../../.env | xargs)
-npx prisma db push --accept-data-loss
-
-# 3. Build and start API server
-# IMPORTANT: Delete tsconfig.tsbuildinfo before first build — incremental cache
-# may prevent file emission (0 errors but no dist/ output)
-rm -f tsconfig.tsbuildinfo
-npx tsc -p tsconfig.json
-node dist/main.js &
-# API runs on http://localhost:4000
-
-# 4. Start frontend
-cd ../web
-NEXTAUTH_SECRET=test-secret NEXTAUTH_URL=http://localhost:3000 NEXT_PUBLIC_API_URL=http://localhost:4000/api npx next dev --port 3000
+npm ci                                  # also builds packages/shared + generates Prisma client
+cp .env.example .env                    # defaults work; no GitHub/Anthropic keys needed
+docker compose up -d postgres redis     # cloud container: start `dockerd` first, or use local pg/redis
+npm run db:deploy                       # apply committed migrations
+npm run db:seed                         # demo@devimpact.dev with ~9 months of data
 ```
 
-### Frontend-Only (limited testing)
+Cloud-container notes: Docker's daemon is not running by default (`dockerd > /tmp/dockerd.log 2>&1 &`)
+and Docker Hub may rate-limit; PostgreSQL 16 and `redis-server` are also installed natively
+(`pg_ctlcluster 16 main start`, `redis-server --daemonize yes`; create role/db `devimpact` with
+password `devimpact_password` plus `devimpact_test`).
+
+## Run the apps
 
 ```bash
-cd apps/web
-NEXTAUTH_SECRET=test-secret NEXTAUTH_URL=http://localhost:3000 npx next dev --port 3000
+npm run dev:api      # http://localhost:4000/api  (GET /api/health)
+npm run dev:web      # http://localhost:3000
 ```
 
-Without the API server, pages will show loading spinners or network errors instead of data.
+`NEXT_PUBLIC_DEV_LOGIN_EMAIL=demo@devimpact.dev` (default in `.env.example`) makes the auto
+dev-login open the seeded account. Reset the browser identity with
+`localStorage.removeItem('devimpact_user_id')`.
 
-## Pages to Test
+Optional AI without a key: `node docs/v2/audit/scripts/mock-anthropic.mjs 4010` and set
+`ANTHROPIC_BASE_URL=http://localhost:4010` in `.env`.
 
-All pages now call real backend API endpoints. With an empty database and placeholder credentials:
+## Test suites
 
-| Path       | API Endpoints Called                                 | Expected Behavior (empty DB)                                                    |
-| ---------- | ---------------------------------------------------- | ------------------------------------------------------------------------------- |
-| /dashboard | GET /activity/summary, GET /generate/impact-score    | 0 commits, 0 PRs, 0 reviews, "No activity data yet" + "Connect GitHub" CTA      |
-| /connect   | GET /integrations, POST /integrations/github/connect | GitHub=Connect button, GitLab/Jira/Linear=Coming Soon                           |
-| /resume    | POST /generate/resume                                | Form with date pickers + role selector; Generate shows Anthropic error          |
-| /appraisal | POST /generate/appraisal                             | Form with period/month/year; Generate shows Anthropic error                     |
-| /promotion | POST /generate/promotion                             | Pre-filled "Senior Engineer" → "Staff Engineer"; Generate shows Anthropic error |
-| /career    | GET /activity/commits, GET /activity/prs             | "No timeline data yet" + "Connect GitHub" CTA                                   |
-| /kpis      | GET /activity/summary, GET /generate/impact-score    | Productivity=0, Code Quality=0, Collaboration=0, Ownership=0                    |
-| /settings  | Uses auth context (no API call)                      | Name="Dev User", Email="dev@devimpact.ai", Plan=FREE                            |
+```bash
+npm run check        # lint + format:check + typecheck + unit tests + build
+npm run test:int     # API integration tests (needs Postgres + Redis, uses DATABASE_URL_TEST)
+npm run test:e2e     # Playwright smoke; needs `npm run build`, migrated + seeded DB
+```
 
-## Key Discriminators (API-wired vs old mock data)
+Playwright: Chromium is pre-installed in the cloud container and `@playwright/test` is pinned to
+match it — don't run `playwright install` there. Traces are off by default (`--trace on` to debug).
 
-These values distinguish whether pages are calling real API or still using old hardcoded mock data:
+## Expected UI with the seeded demo account
 
-| Check             | Old Mock Value                | Correct API Value (empty DB)    |
-| ----------------- | ----------------------------- | ------------------------------- |
-| Dashboard commits | 142                           | 0                               |
-| Dashboard PRs     | 28                            | 0                               |
-| Dashboard reviews | 45                            | 0                               |
-| Dashboard impact  | 78/100                        | 0 or —                          |
-| Resume "Generate" | 5 bullet cards after 2s delay | Red error about invalid API key |
-| Career timeline   | Q2 2024, Q1 2024, Q4 2023     | "No timeline data yet"          |
-| KPI productivity  | 142                           | 0                               |
-
-## Auth Flow
-
-The `AuthProvider` context auto-creates a dev user on first visit:
-
-1. Checks `localStorage` for `devimpact_user_id`
-2. If not found, calls `POST /api/auth/dev-login`
-3. Stores returned user ID in `localStorage`
-4. All subsequent API calls include `x-user-id` header
-
-To reset auth state: clear `localStorage.removeItem('devimpact_user_id')` in browser devtools.
-
-## Testing Flow
-
-1. Start both servers (see above)
-2. Verify API: `curl -s http://localhost:4000/api/auth/dev-login -X POST -H 'Content-Type: application/json' -d '{}'` should return `{"success":true,"data":{...}}`
-3. Verify frontend: `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/dashboard` should return 200
-4. Open browser to http://localhost:3000/dashboard
-5. Wait for auth flow to complete (loading spinner → content)
-6. Verify dashboard shows zeros (not old mock values like 142/28/45)
-7. Navigate to each page via sidebar
-8. On generation pages (Resume, Appraisal, Promotion), click Generate and verify error message appears
-9. Verify Career and KPIs show appropriate empty states
-10. Verify Settings shows "Dev User" / "dev@devimpact.ai" from API
-
-## Known Issues
-
-- **GitHub Connect with placeholder credentials**: Clicking Connect redirects to github.com with `client_id=placeholder` instead of showing a user-friendly error. The backend should validate the client ID before returning the OAuth URL.
-- **Raw JSON error on generation pages**: Anthropic 401 errors are displayed as raw JSON. Could be improved to show a friendlier message like "Is the ANTHROPIC_API_KEY configured?"
-- **TypeScript incremental build cache**: The API's `tsconfig.tsbuildinfo` file may prevent file emission on first build. Always delete it before running `npx tsc -p tsconfig.json` if `dist/` is empty despite 0 errors.
+| Path        | Expect                                                                     |
+| ----------- | -------------------------------------------------------------------------- |
+| /dashboard  | Non-zero "Commits This Month", "PRs Merged", "Reviews Done"; impact ~60–85 |
+| /kpis       | Non-zero productivity/collaboration numbers                                |
+| /career     | Timeline grouped by quarter across 5 repos                                 |
+| /connect    | GitHub shown as connected (placeholder token — Sync will fail)             |
+| /resume etc | Generation fails without `ANTHROPIC_API_KEY` (or use the mock server)      |
 
 ## Gotchas
 
-- Port 3000/4000 may already be in use. Kill with `lsof -ti:3000 | xargs kill -9`.
-- The API server requires env vars from `.env` to be exported before starting.
-- Docker containers (postgres, redis) must be healthy before running Prisma or starting the API.
-- `NEXT_PUBLIC_API_URL` must be set at frontend startup time (not just in .env) since Next.js inlines it at build/dev time.
-
-## Devin Secrets Needed
-
-For basic testing (empty DB, placeholder credentials): **None required** — the app handles missing credentials gracefully with error messages.
-
-For full integration testing:
-
-- `ANTHROPIC_API_KEY` — Claude AI API key for generation features (Resume, Appraisal, Promotion, Impact Score)
-- `GITHUB_CLIENT_ID` — GitHub OAuth app client ID (create at https://github.com/settings/developers with callback URL `http://localhost:3000/connect/callback`)
-- `GITHUB_CLIENT_SECRET` — GitHub OAuth app client secret
+- Known v0.1 behaviour bugs are tracked in `docs/v2/audit/ISSUES.md` (e.g. no real auth until P05).
+- Ports: API 4000 (`API_PORT`), web 3000 (`next dev --port`). Kill leftovers with
+  `pkill -f next-server; pkill -f dist/main.js`.
+- `prisma migrate reset` asks AI agents for explicit user consent; drop/recreate the scratch
+  database with `psql` and run `npm run db:deploy` instead when working autonomously.

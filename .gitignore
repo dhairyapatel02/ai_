@@ -37,3 +37,4 @@ blob-report/
 
 # Docker
 .docker-data/
+dump.rdb
