@@ -1,8 +1,10 @@
+import { resumeBulletsResultSchema } from '@devimpact/shared';
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { AIService } from '../ai/ai.service';
+import { DocumentType, Prisma } from '@prisma/client';
+
 import { ActivityService } from '../activity/activity.service';
-import { DocumentType } from '@prisma/client';
+import { AIService } from '../ai/ai.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class GenerateService {
@@ -20,16 +22,23 @@ export class GenerateService {
     );
     const result = await this.aiService.generateResumeBullets(activityData, dateRange, role);
 
+    // BUG-14: the model returns `{ bullets: [...] }`; validate it and return the array itself so
+    // the client never receives a nested object it can't render.
+    const parsed = resumeBulletsResultSchema.safeParse(result);
+    if (!parsed.success) {
+      throw new Error('AI response did not contain valid resume bullets. Please try again.');
+    }
+
     const doc = await this.prisma.generatedDocument.create({
       data: {
         userId,
         type: DocumentType.RESUME,
-        content: result as object,
-        dateRange: dateRange as object,
+        content: result,
+        dateRange: dateRange,
       },
     });
 
-    return { document: doc, bullets: result };
+    return { document: doc, bullets: parsed.data.bullets };
   }
 
   async generateAppraisal(userId: string, period: string, month: number, year: number) {
@@ -41,8 +50,8 @@ export class GenerateService {
       data: {
         userId,
         type: DocumentType.APPRAISAL,
-        content: result as object,
-        dateRange: { from, to } as object,
+        content: result as Prisma.InputJsonValue,
+        dateRange: { from, to },
       },
     });
 
@@ -66,8 +75,8 @@ export class GenerateService {
       data: {
         userId,
         type: DocumentType.PROMOTION,
-        content: result as object,
-        dateRange: { from, to } as object,
+        content: result as Prisma.InputJsonValue,
+        dateRange: { from, to },
       },
     });
 
@@ -123,11 +132,12 @@ export class GenerateService {
         from = new Date(year, month - 1, 1);
         to = new Date(year, month, 0, 23, 59, 59);
         break;
-      case 'quarterly':
+      case 'quarterly': {
         const quarterStart = Math.floor((month - 1) / 3) * 3;
         from = new Date(year, quarterStart, 1);
         to = new Date(year, quarterStart + 3, 0, 23, 59, 59);
         break;
+      }
       case 'yearly':
         from = new Date(year, 0, 1);
         to = new Date(year, 11, 31, 23, 59, 59);
