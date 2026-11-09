@@ -9,7 +9,8 @@ WORKDIR /app
 COPY package.json package-lock.json tsconfig.base.json ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
-# Shared sources are needed by the root postinstall (builds packages/shared).
+# The root postinstall (scripts/postinstall.mjs) builds packages/shared from source.
+COPY scripts/postinstall.mjs scripts/
 COPY packages/shared packages/shared
 RUN npm ci --workspace=apps/api --workspace=packages/shared --include-workspace-root
 COPY apps/api apps/api

@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "postinstall": "npm run build --workspace=packages/shared",
+    "postinstall": "node scripts/postinstall.mjs",
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:worker": "npm run dev:worker --workspace=apps/api",
