@@ -8,7 +8,7 @@ Every phase session updates this file before opening its PR.
 |---|---|---|---|---|---|
 | 00 | Planning (this folder) | ✅ Done | — | 2026-11-09 | Baseline `ed6ed4f` confirmed; plan written |
 | 01 | Audit & Discovery | ✅ Done | (this PR) | 2026-11-09 | 106 issues (🔴10 🟠34 🟡50 ⚪12); see `audit/` |
-| 02 | Engineering Foundation & Stabilization | ✅ Done | PR_TBD | 2026-11-09 | Green lint/typecheck/tests/build + CI, migrations, seed, worker, Docker |
+| 02 | Engineering Foundation & Stabilization | ✅ Done | #8 | 2026-11-09 | Green lint/typecheck/tests/build + CI, migrations, seed, worker, Docker |
 | 03 | V2 Blueprint | ⏳ Not started | | | |
 | 04 | UX/UI Design System & Prototype | ⏳ Not started | | | |
 | 05 | Backend Platform | ⏳ Not started | | | |
@@ -128,7 +128,7 @@ leaks), AI-07 (mislabeled prompt metrics), UX-02/04/05. Full list: `audit/ISSUES
   future sync tests should send a non-zero `retry-after` or disable throttling.
 
 ### Phase 02 — Engineering Foundation & Stabilization (2026-11-09)
-**Branch / PR:** `claude/beautiful-ride-etq7qo` → `main` / PR_TBD
+**Branch / PR:** `claude/beautiful-ride-etq7qo` → `main` / #8
 
 **Summary:**
 - Repo hygiene: untracked `tsconfig.tsbuildinfo`, committed the initial Prisma migration, `.nvmrc`,
