@@ -10,6 +10,9 @@ loadDotenv({ path: path.resolve(__dirname, '../../.env'), quiet: true });
 
 export default defineConfig({
   schema: path.join('prisma', 'schema.prisma'),
+  // Prisma 7: Migrate reads the URL here (not from the schema). Empty when unset so commands that
+  // need no database (generate, validate) still work.
+  datasource: { url: process.env.DATABASE_URL ?? '' },
   migrations: {
     path: path.join('prisma', 'migrations'),
     seed: 'tsx prisma/seed.ts',

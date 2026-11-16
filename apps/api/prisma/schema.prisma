@@ -2,9 +2,9 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Connection URL lives in prisma.config.ts (Migrate) and the driver adapter (runtime), Prisma 7.
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum Plan {
@@ -56,6 +56,55 @@ enum PRState {
   MERGED
 }
 
+enum ReviewState {
+  APPROVED
+  CHANGES_REQUESTED
+  COMMENTED
+  DISMISSED
+}
+
+enum SyncTrigger {
+  INITIAL
+  MANUAL
+  SCHEDULED
+  WEBHOOK
+  RECONNECT
+}
+
+enum SyncKind {
+  BACKFILL
+  INCREMENTAL
+  TARGETED
+}
+
+enum SyncStatus {
+  QUEUED
+  RUNNING
+  WAITING_RATE_LIMIT
+  SUCCEEDED
+  PARTIAL
+  FAILED
+  CANCELLED
+}
+
+enum SyncStage {
+  PREPARE
+  REPOSITORIES
+  AUTHORED_PRS
+  REVIEWED_PRS
+  COMMITS
+  PERSIST
+  ROLLUPS
+  DONE
+}
+
+enum WebhookStatus {
+  RECEIVED
+  PROCESSED
+  IGNORED
+  FAILED
+}
+
 enum IssueStatus {
   TODO
   IN_PROGRESS
@@ -88,10 +137,12 @@ model User {
   accounts     Account[]
   settings     UserSettings?
   integrations Integration[]
+  repositories Repository[]
   commits      Commit[]
   pullRequests PullRequest[]
+  reviews      PullRequestReview[]
   issues       Issue[]
-  codeReviews  CodeReview[]
+  syncRuns     SyncRun[]
   documents    GeneratedDocument[]
   impactScores ImpactScore[]
 
@@ -211,9 +262,12 @@ model Integration {
 
   user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   installations GitHubInstallation[]
+  repositories  Repository[]
   commits       Commit[]
   prs           PullRequest[]
+  reviews       PullRequestReview[]
   issues        Issue[]
+  syncRuns      SyncRun[]
 
   @@unique([provider, externalAccountId]) // one GitHub account -> one DevImpact user
   @@index([userId, provider])
@@ -238,46 +292,148 @@ model GitHubInstallation {
   @@map("github_installations")
 }
 
+// ───────────── Activity (DATA_MODEL_V2 §3, migrations P06-1/P06-2) ─────────────
+// Every row belongs to one user; provider records are keyed by provider node id *and* a natural
+// key so upserts are idempotent and legacy v0.1 rows are matched (DATA_MODEL_V2 §1).
+model Repository {
+  id              String    @id @default(cuid())
+  userId          String    @map("user_id")
+  integrationId   String    @map("integration_id")
+  externalId      String    @map("external_id") // GitHub node id; "legacy:<fullName>" until first v2 sync
+  fullName        String    @map("full_name") // owner/name
+  ownerLogin      String    @map("owner_login")
+  name            String
+  isPrivate       Boolean   @default(false) @map("is_private")
+  isFork          Boolean   @default(false) @map("is_fork")
+  isArchived      Boolean   @default(false) @map("is_archived")
+  defaultBranch   String?   @map("default_branch")
+  htmlUrl         String?   @map("html_url")
+  installationId  BigInt?   @map("installation_id") // null = reachable as public repo only
+  accessible      Boolean   @default(true)
+  included        Boolean   @default(true)
+  inclusionSource String    @default("DEFAULT") @map("inclusion_source") // DEFAULT | USER
+  commitCursor    DateTime? @map("commit_cursor")
+  lastActivityAt  DateTime? @map("last_activity_at")
+  lastSyncedAt    DateTime? @map("last_synced_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration  Integration   @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  pullRequests PullRequest[]
+  commits      Commit[]
+
+  @@unique([integrationId, externalId])
+  @@unique([integrationId, fullName])
+  @@index([userId, included])
+  @@map("repositories")
+}
+
 model Commit {
-  id            String   @id @default(cuid())
-  userId        String
-  integrationId String
-  sha           String
-  message       String
-  repo          String
-  branch        String
-  additions     Int      @default(0)
-  deletions     Int      @default(0)
-  timestamp     DateTime
+  id                 String    @id @default(cuid())
+  userId             String
+  integrationId      String
+  repositoryId       String    @map("repository_id")
+  sha                String
+  messageHeadline    String    @map("message_headline")
+  messageBody        String?   @map("message_body")
+  branch             String // default branch name the commit was found on
+  authoredAt         DateTime  @map("authored_at")
+  committedAt        DateTime? @map("committed_at")
+  additions          Int       @default(0)
+  deletions          Int       @default(0)
+  changedFiles       Int?      @map("changed_files")
+  parentsCount       Int       @default(1) @map("parents_count")
+  associatedPrNumber Int?      @map("associated_pr_number")
+  authorExternalId   String?   @map("author_external_id")
+  syncedAt           DateTime  @default(now()) @map("synced_at")
 
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  repository  Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, sha])
-  @@index([userId, timestamp])
+  @@unique([userId, sha]) // de-duplicates forks/mirrors
+  @@index([userId, authoredAt])
+  @@index([repositoryId, authoredAt])
   @@map("commits")
 }
 
+/// One row per (user, PR). `isAuthoredByUser = false` rows are PRs the user reviewed; they store
+/// no body and no third-party review content (data minimisation, ARCHITECTURE_V2 §12).
 model PullRequest {
-  id            String    @id @default(cuid())
-  userId        String
-  integrationId String
-  number        Int
-  title         String
-  body          String?
-  state         PRState
-  repo          String
-  mergedAt      DateTime?
-  reviewCount   Int       @default(0)
-  timestamp     DateTime
+  id                    String    @id @default(cuid())
+  userId                String
+  integrationId         String
+  repositoryId          String    @map("repository_id")
+  externalId            String?   @map("external_id") // node id (null for legacy rows until refreshed)
+  number                Int
+  title                 String
+  body                  String? // stored only when isAuthoredByUser
+  url                   String?
+  state                 PRState
+  isDraft               Boolean   @default(false) @map("is_draft")
+  isAuthoredByUser      Boolean   @map("is_authored_by_user")
+  authorExternalId      String?   @map("author_external_id")
+  authorLogin           String?   @map("author_login")
+  labels                String[]  @default([])
+  baseRef               String?   @map("base_ref")
+  createdAtRemote       DateTime  @map("created_at_remote") // GitHub createdAt (v0.1 "timestamp")
+  readyForReviewAt      DateTime? @map("ready_for_review_at")
+  mergedAt              DateTime?
+  closedAt              DateTime? @map("closed_at")
+  updatedAtRemote       DateTime? @map("updated_at_remote")
+  additions             Int?
+  deletions             Int?
+  changedFiles          Int?      @map("changed_files")
+  commitsCount          Int?      @map("commits_count")
+  // reviews received (authored PRs only; aggregates, no third-party content)
+  firstReviewAt         DateTime? @map("first_review_at")
+  reviewersCount        Int?      @map("reviewers_count")
+  approvalsCount        Int?      @map("approvals_count")
+  changesRequestedCount Int?      @map("changes_requested_count")
+  // revert detection (KPI_METHODOLOGY §3.2)
+  isRevert              Boolean   @default(false) @map("is_revert")
+  revertedAt            DateTime? @map("reverted_at")
+  revertedByUrl         String?   @map("reverted_by_url")
+  legacyStub            Boolean   @default(false) @map("legacy_stub") // v0.1 "PR #n" stub awaiting refresh
+  syncedAt              DateTime  @default(now()) @map("synced_at")
 
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  integration Integration  @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-  reviews     CodeReview[]
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration         @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  repository  Repository          @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  reviews     PullRequestReview[]
 
-  @@unique([userId, repo, number])
-  @@index([userId, timestamp])
+  @@unique([userId, repositoryId, number]) // natural key (matches legacy rows)
+  @@unique([userId, externalId])
+  @@index([userId, isAuthoredByUser, mergedAt])
+  @@index([userId, isAuthoredByUser, createdAtRemote])
+  @@index([userId, isAuthoredByUser, closedAt])
+  @@index([userId, firstReviewAt])
   @@map("pull_requests")
+}
+
+/// Reviews submitted BY the user on other people's PRs (the PR row has isAuthoredByUser = false).
+model PullRequestReview {
+  id                String      @id @default(cuid())
+  userId            String      @map("user_id")
+  integrationId     String      @map("integration_id")
+  pullRequestId     String      @map("pull_request_id")
+  externalId        String      @map("external_id") // review node id; "legacy:<v0.1 id>" for migrated rows
+  state             ReviewState
+  submittedAt       DateTime    @map("submitted_at")
+  hasBody           Boolean     @default(false) @map("has_body")
+  commentsCount     Int         @default(0) @map("comments_count") // inline comments in this review
+  reviewRequestedAt DateTime?   @map("review_requested_at") // earliest request <= submittedAt
+  syncedAt          DateTime    @default(now()) @map("synced_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  pullRequest PullRequest @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, externalId])
+  @@index([userId, submittedAt])
+  @@index([pullRequestId])
+  @@map("pull_request_reviews")
 }
 
 model Issue {
@@ -299,20 +455,59 @@ model Issue {
   @@map("issues")
 }
 
-model CodeReview {
-  id        String   @id @default(cuid())
-  userId    String
-  prId      String
-  comments  Int      @default(0)
-  approved  Boolean  @default(false)
-  timestamp DateTime
+// ───────────── Sync (ADR-0007) ─────────────
+/// Source of truth for sync status, progress and history (survives Redis loss).
+model SyncRun {
+  id                      String      @id @default(cuid())
+  userId                  String      @map("user_id")
+  integrationId           String      @map("integration_id")
+  trigger                 SyncTrigger
+  kind                    SyncKind
+  status                  SyncStatus  @default(QUEUED)
+  stage                   SyncStage   @default(PREPARE)
+  progress                Int         @default(0) // 0..100, from planned work units
+  windowFrom              DateTime?   @map("window_from")
+  windowTo                DateTime?   @map("window_to")
+  counts                  Json        @default("{}") // { repos, prsAuthored, prsReviewed, reviews, commits, created, updated }
+  apiCalls                Int         @default(0) @map("api_calls")
+  rateLimitRemaining      Int?        @map("rate_limit_remaining")
+  resumeAt                DateTime?   @map("resume_at")
+  /// Resumable position (slice index, completed stages, work units) for rate-limit pauses.
+  checkpoint              Json        @default("{}")
+  /// Set when the newest-30-days slice of a backfill is persisted (API_CONTRACT_V2 A-4).
+  recentWindowCompletedAt DateTime?   @map("recent_window_completed_at")
+  errorCode               String?     @map("error_code")
+  errorMessage            String?     @map("error_message") // safe, user-facing
+  errors                  Json        @default("[]") // [{ stage, repo?, code, message, at }]
+  jobId                   String?     @map("job_id")
+  webhookDeliveryId       String?     @map("webhook_delivery_id")
+  queuedAt                DateTime    @default(now()) @map("queued_at")
+  startedAt               DateTime?   @map("started_at")
+  finishedAt              DateTime?   @map("finished_at")
 
-  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pr   PullRequest @relation(fields: [prId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, prId, timestamp])
-  @@index([userId, timestamp])
-  @@map("code_reviews")
+  @@index([integrationId, queuedAt(sort: Desc)])
+  @@index([userId, queuedAt(sort: Desc)])
+  @@index([status])
+  @@map("sync_runs")
+}
+
+/// Global (not user-owned): webhook idempotency + audit. Retained 14 days.
+model WebhookDelivery {
+  id             String        @id // X-GitHub-Delivery GUID
+  provider       Provider
+  event          String
+  action         String?
+  installationId BigInt?       @map("installation_id")
+  status         WebhookStatus @default(RECEIVED)
+  error          String?
+  receivedAt     DateTime      @default(now()) @map("received_at")
+  processedAt    DateTime?     @map("processed_at")
+
+  @@index([receivedAt])
+  @@map("webhook_deliveries")
 }
 
 model GeneratedDocument {

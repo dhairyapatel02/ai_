@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@devimpact/shared": "*",
-    "@prisma/client": "6.19.3",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
     "@radix-ui/react-progress": "^1.0.3",
     "@radix-ui/react-separator": "^1.0.3",
     "@radix-ui/react-slot": "^1.0.2",
@@ -39,7 +40,7 @@
     "autoprefixer": "^10.4.21",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.0",
-    "prisma": "6.19.3",
+    "prisma": "7.10.1",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.9.3",
     "vite-tsconfig-paths": "^5.1.0",

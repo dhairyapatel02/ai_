@@ -5,7 +5,8 @@ ARG NODE_IMAGE=node:22-alpine
 
 FROM ${NODE_IMAGE} AS build
 WORKDIR /app
-# Prisma's engines need libssl, which node:22-alpine already ships (libssl3).
+# Prisma 7 queries through the pg driver adapter; only the migrate schema engine (libssl3, shipped
+# by node:22-alpine) remains in @prisma/engines.
 COPY package.json package-lock.json tsconfig.base.json ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
@@ -24,7 +25,7 @@ COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
 # Production dependencies only; lifecycle scripts are skipped, so the generated Prisma client,
-# the Prisma engines and the built shared package are copied from the build stage instead.
+# the Prisma schema engine (migrations) and the built shared package are copied from the build stage instead.
 RUN npm ci --omit=dev --ignore-scripts --workspace=apps/api && npm cache clean --force
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /app/node_modules/@prisma/engines ./node_modules/@prisma/engines
