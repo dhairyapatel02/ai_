@@ -8,4 +8,3 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const API_BASE = publicEnv.NEXT_PUBLIC_API_URL;
-export const DEV_LOGIN_EMAIL = publicEnv.NEXT_PUBLIC_DEV_LOGIN_EMAIL;

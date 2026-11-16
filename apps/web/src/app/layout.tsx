@@ -1,6 +1,5 @@
 import { Inter } from 'next/font/google';
 
-import { Sidebar } from '@/components/sidebar';
 import { AuthProvider } from '@/lib/auth-context';
 
 import type { Metadata } from 'next';
@@ -18,12 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>
-          <div className="flex h-screen">
-            <Sidebar />
-            <main className="flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>
-          </div>
-        </AuthProvider>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

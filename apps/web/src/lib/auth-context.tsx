@@ -1,21 +1,27 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { createContext, useCallback, useContext, useMemo } from 'react';
 
-import { API_BASE, DEV_LOGIN_EMAIL } from './utils';
+import { authClient, clearApiToken, getApiToken } from './auth-client';
+import { API_BASE } from './utils';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   name: string;
-  avatar: string | null;
+  image: string | null;
   plan: string;
 }
 
 export interface ApiResult<T> {
   success: boolean;
   data?: T;
+  meta?: Record<string, unknown>;
+  /** Human-readable message from the API error envelope (API_CONTRACT_V2 §2). */
   error?: string;
+  code?: string;
+  status?: number;
 }
 
 export type ApiFetch = <T>(path: string, options?: RequestInit) => Promise<ApiResult<T>>;
@@ -24,12 +30,14 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   apiFetch: ApiFetch;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   apiFetch: () => Promise.resolve({ success: false, error: 'Not initialized' }),
+  signOut: () => Promise.resolve(),
 });
 
 function headersToRecord(headers: HeadersInit | undefined): Record<string, string> {
@@ -37,70 +45,85 @@ function headersToRecord(headers: HeadersInit | undefined): Record<string, strin
   return Object.fromEntries(new Headers(headers).entries());
 }
 
+interface Envelope<T> {
+  success: boolean;
+  data?: T;
+  meta?: Record<string, unknown>;
+  error?: { code?: string; message?: string };
+}
+
+/**
+ * Session from Better Auth (cookie on the web origin) + a short-lived Bearer JWT for the API.
+ * Replaces the v0.1 localStorage user id and `x-user-id` header (SEC-01/02). P09 replaces this
+ * with the typed client + TanStack Query (ADR-0010).
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
+
+  const user = useMemo<User | null>(() => {
+    if (!session?.user) return null;
+    const u = session.user as typeof session.user & { plan?: string | null };
+    return {
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      image: u.image ?? null,
+      plan: u.plan ?? 'FREE',
+    };
+  }, [session]);
 
   const apiFetch = useCallback<ApiFetch>(
     async <T,>(path: string, options?: RequestInit): Promise<ApiResult<T>> => {
-      const userId = user?.id || localStorage.getItem('devimpact_user_id') || '';
-      try {
-        const res = await fetch(`${API_BASE}${path}`, {
+      const call = async (forceRefresh: boolean) => {
+        const token = await getApiToken({ forceRefresh });
+        return fetch(`${API_BASE}${path}`, {
           ...options,
+          credentials: 'omit',
           headers: {
             'Content-Type': 'application/json',
-            'x-user-id': userId,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...headersToRecord(options?.headers),
           },
         });
-        return (await res.json()) as ApiResult<T>;
+      };
+      try {
+        let res = await call(false);
+        if (res.status === 401) {
+          // Refresh the JWT once (expired/rotated), then give up and sign in again.
+          res = await call(true);
+          if (res.status === 401) {
+            clearApiToken();
+            router.push(`/sign-in?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
+          }
+        }
+        const body = (await res.json().catch(() => ({}))) as Envelope<T>;
+        if (res.ok && body.success) {
+          return { success: true, data: body.data, meta: body.meta, status: res.status };
+        }
+        return {
+          success: false,
+          error: body.error?.message ?? `Request failed (${res.status})`,
+          code: body.error?.code,
+          status: res.status,
+        };
       } catch {
         return { success: false, error: 'Network error' };
       }
     },
-    [user?.id],
+    [router],
   );
 
-  useEffect(() => {
-    async function init() {
-      const storedId = localStorage.getItem('devimpact_user_id');
-      if (storedId) {
-        try {
-          const res = await fetch(`${API_BASE}/auth/me`, {
-            headers: { 'x-user-id': storedId },
-          });
-          const json = (await res.json()) as ApiResult<User>;
-          if (json.success && json.data) {
-            setUser(json.data);
-            setLoading(false);
-            return;
-          }
-        } catch {
-          // fall through to dev-login
-        }
-      }
-
-      try {
-        const res = await fetch(`${API_BASE}/auth/dev-login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(DEV_LOGIN_EMAIL ? { email: DEV_LOGIN_EMAIL } : {}),
-        });
-        const json = (await res.json()) as ApiResult<User>;
-        if (json.success && json.data) {
-          localStorage.setItem('devimpact_user_id', json.data.id);
-          setUser(json.data);
-        }
-      } catch {
-        // API not available - show app without auth
-      }
-      setLoading(false);
-    }
-    void init();
-  }, []);
+  const signOut = useCallback(async () => {
+    clearApiToken();
+    await authClient.signOut();
+    router.push('/sign-in');
+  }, [router]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, apiFetch }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading: isPending, apiFetch, signOut }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

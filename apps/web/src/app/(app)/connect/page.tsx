@@ -12,9 +12,9 @@ import { useAuth } from '@/lib/auth-context';
 interface Integration {
   id: string;
   provider: string;
-  metadata: Record<string, unknown>;
+  status: 'active' | 'needs_reauth' | 'suspended' | 'disconnected' | 'error';
+  externalLogin: string | null;
   createdAt: string;
-  updatedAt: string;
 }
 
 interface SyncStatus {
@@ -87,19 +87,33 @@ export default function ConnectPage() {
       setConnectingProvider('GITHUB');
       const res = await apiFetch<{ url: string }>('/integrations/github/connect', {
         method: 'POST',
+        body: JSON.stringify({ returnTo: '/connect' }),
       });
       if (res.success && res.data?.url) {
         window.location.href = res.data.url;
       } else {
         setConnectingProvider(null);
-        alert(res.error || 'Failed to get GitHub OAuth URL. Check GITHUB_CLIENT_ID is configured.');
+        alert(res.error || 'Failed to start the GitHub connection.');
       }
     }
   };
 
+  const handleReconnect = async (integrationId: string) => {
+    const res = await apiFetch<{ url: string }>(`/integrations/${integrationId}/reconnect`, {
+      method: 'POST',
+    });
+    if (res.success && res.data?.url) window.location.href = res.data.url;
+    else alert(res.error || 'Failed to start the GitHub reconnection.');
+  };
+
   const handleDisconnect = async (integrationId: string) => {
+    // Confirmable (F-17): revoke access, then keep or purge the synced activity.
+    if (!window.confirm('Disconnect GitHub? DevImpact will revoke its access token.')) return;
+    const purge = window.confirm(
+      'Also delete the activity synced from this account? Press Cancel to keep it.',
+    );
     setDisconnecting(integrationId);
-    await apiFetch(`/integrations/${integrationId}`, { method: 'DELETE' });
+    await apiFetch(`/integrations/${integrationId}?purgeData=${purge}`, { method: 'DELETE' });
     await fetchIntegrations();
     setDisconnecting(null);
   };
@@ -126,10 +140,12 @@ export default function ConnectPage() {
     }, 2000);
   };
 
-  const isConnected = (providerId: string) => integrations.some((i) => i.provider === providerId);
+  const live = integrations.filter((i) => i.status !== 'disconnected');
+  const isConnected = (providerId: string) =>
+    live.some((i) => i.provider.toUpperCase() === providerId);
 
   const getIntegration = (providerId: string) =>
-    integrations.find((i) => i.provider === providerId);
+    live.find((i) => i.provider.toUpperCase() === providerId);
 
   if (loading && user) {
     return (
@@ -177,12 +193,19 @@ export default function ConnectPage() {
                         Last sync: {new Date(syncStatus.lastSync).toLocaleString()}
                       </span>
                     )}
-                    {connected && integration?.metadata && (
+                    {connected && integration?.externalLogin && (
                       <span className="text-xs text-muted-foreground">
-                        {(integration.metadata as Record<string, string>).username
-                          ? `@${(integration.metadata as Record<string, string>).username}`
-                          : ''}
+                        @{integration.externalLogin}
                       </span>
+                    )}
+                    {integration?.status === 'needs_reauth' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void handleReconnect(integration.id)}
+                      >
+                        Reconnect
+                      </Button>
                     )}
                   </div>
                   <div className="flex gap-2">

@@ -87,16 +87,13 @@ export default function CareerPage() {
       const to = new Date().toISOString();
 
       const [commitsRes, prsRes] = await Promise.all([
-        apiFetch<{ data: CommitData[]; total: number }>(
-          `/activity/commits?from=${from}&to=${to}&limit=200`,
-        ),
-        apiFetch<{ data: PRData[]; total: number }>(
-          `/activity/prs?from=${from}&to=${to}&limit=200`,
-        ),
+        // Cursor-paginated (max 100 per page); P10 replaces this page with /career/timeline.
+        apiFetch<CommitData[]>(`/activity/commits?from=${from}&to=${to}&limit=100`),
+        apiFetch<PRData[]>(`/activity/prs?from=${from}&to=${to}&limit=100`),
       ]);
 
-      const commits = commitsRes.success && commitsRes.data ? commitsRes.data.data : [];
-      const prs = prsRes.success && prsRes.data ? prsRes.data.data : [];
+      const commits = commitsRes.success && commitsRes.data ? commitsRes.data : [];
+      const prs = prsRes.success && prsRes.data ? prsRes.data : [];
       setTimeline(groupByQuarter(commits, prs));
       setLoading(false);
     }
