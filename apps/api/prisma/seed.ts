@@ -21,6 +21,8 @@ import {
 } from '@prisma/client';
 
 import { loadEnvFiles } from '../src/config/load-env';
+import { scheduleSlotFor } from '../src/integrations/integration.mapper';
+import { createPrismaClient } from '../src/prisma/create-client';
 
 loadEnvFiles();
 
@@ -210,6 +212,41 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
     },
   });
 
+  // Repositories (DATA_MODEL_V2: activity rows reference a Repository of the same user).
+  const repoRow = (userId: string, integrationId: string, fullName: string) => {
+    const [ownerLogin = fullName, name = fullName] = fullName.split('/');
+    return {
+      userId,
+      integrationId,
+      externalId: `seed:${userId}:${fullName}`,
+      fullName,
+      ownerLogin,
+      name,
+      isPrivate: ownerLogin === 'acme',
+      defaultBranch: 'main',
+      htmlUrl: `https://github.com/${fullName}`,
+      included: true,
+      lastSyncedAt: anchor,
+      commitCursor: anchor,
+    };
+  };
+  await prisma.repository.createMany({
+    data: [
+      ...REPOS.map(([fullName]) => repoRow(demo.id, demoGh.id, fullName)),
+      ...REPOS.map(([fullName]) => repoRow(teammate.id, teammateGh.id, fullName)),
+    ],
+  });
+  const repoIds = new Map(
+    (await prisma.repository.findMany({ select: { id: true, userId: true, fullName: true } })).map(
+      (r) => [`${r.userId}:${r.fullName}`, r.id],
+    ),
+  );
+  const repoId = (userId: string, fullName: string) => {
+    const id = repoIds.get(`${userId}:${fullName}`);
+    if (!id) throw new Error(`seed: unknown repository ${fullName}`);
+    return id;
+  };
+
   const commits: Prisma.CommitCreateManyInput[] = [];
   const prs: Prisma.PullRequestCreateManyInput[] = [];
   const issues: Prisma.IssueCreateManyInput[] = [];
@@ -242,16 +279,20 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
       ] as const);
       const additions =
         size === 's' ? rng.int(1, 40) : size === 'm' ? rng.int(40, 250) : rng.int(250, 900);
+      const authoredAt = at(daysAgo, rng.int(9, 18), rng.int(0, 59));
       commits.push({
         userId: demo.id,
         integrationId: demoGh.id,
+        repositoryId: repoId(demo.id, rng.chance(0.85) ? repo : rng.weighted(REPOS)),
         sha: rng.hex(40),
-        message: `${type}: ${subject}`,
-        repo: rng.chance(0.85) ? repo : rng.weighted(REPOS),
+        messageHeadline: `${type}: ${subject}`,
         branch: 'main',
         additions,
         deletions: Math.round(additions * rng.next() * 0.6),
-        timestamp: at(daysAgo, rng.int(9, 18), rng.int(0, 59)),
+        changedFiles: rng.int(1, 12),
+        authoredAt,
+        committedAt: authoredAt,
+        authorExternalId: 'seed:dana-demo',
       });
     }
 
@@ -266,20 +307,43 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
               [PRState.CLOSED, 12],
             ] as const);
       const createdAt = at(daysAgo, rng.int(10, 17));
+      const mergedAt =
+        state === PRState.MERGED
+          ? new Date(createdAt.getTime() + rng.int(2, 72) * 3_600_000)
+          : null;
+      const closedAt =
+        state === PRState.OPEN
+          ? null
+          : (mergedAt ?? new Date(createdAt.getTime() + rng.int(4, 96) * 3_600_000));
+      const additions = rng.int(10, 600);
+      const reviewers = rng.int(1, 3);
+      const number = nextPrNumber(repo);
       prs.push({
         userId: demo.id,
         integrationId: demoGh.id,
-        number: nextPrNumber(repo),
+        repositoryId: repoId(demo.id, repo),
+        externalId: `seed:pr:${repo}#${number}`,
+        number,
         title: rng.pick(PR_TITLES),
         body: 'Seeded demo pull request.',
+        url: `https://github.com/${repo}/pull/${number}`,
         state,
-        repo,
-        mergedAt:
-          state === PRState.MERGED
-            ? new Date(createdAt.getTime() + rng.int(2, 72) * 3_600_000)
-            : null,
-        reviewCount: rng.int(1, 3),
-        timestamp: createdAt,
+        isAuthoredByUser: true,
+        authorLogin: 'dana-demo',
+        authorExternalId: 'seed:dana-demo',
+        baseRef: 'main',
+        createdAtRemote: createdAt,
+        updatedAtRemote: closedAt ?? createdAt,
+        mergedAt,
+        closedAt,
+        additions,
+        deletions: Math.round(additions * rng.next() * 0.5),
+        changedFiles: rng.int(1, 20),
+        commitsCount: rng.int(1, 8),
+        firstReviewAt: new Date(createdAt.getTime() + rng.int(1, 30) * 3_600_000),
+        reviewersCount: reviewers,
+        approvalsCount: state === PRState.MERGED ? Math.min(reviewers, rng.int(1, 2)) : 0,
+        changesRequestedCount: rng.chance(0.2) ? 1 : 0,
       });
     }
 
@@ -299,41 +363,118 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
     }
   }
 
-  await prisma.commit.createMany({ data: commits });
-  await prisma.pullRequest.createMany({ data: prs });
-  await prisma.issue.createMany({ data: issues });
-
-  // Teammate PRs reviewed by the demo user: stored under the teammate, reviews under the demo user.
-  let reviewCount = 0;
+  // Teammate PRs reviewed by the demo user. The teammate owns the authored row; the demo user gets
+  // a reviewed copy (isAuthoredByUser = false, no body) plus their own review — reviewed PRs are
+  // never stored as the demo user's authored PRs (DATA-01, ARCHITECTURE_V2 §12).
+  const reviews: Prisma.PullRequestReviewCreateManyInput[] = [];
   for (let daysAgo = DAYS; daysAgo >= 0; daysAgo -= rng.int(2, 5)) {
     if (isGap(daysAgo)) continue;
     const repo = rng.weighted(REPOS);
     const createdAt = at(daysAgo, rng.int(9, 16));
-    const pr = await prisma.pullRequest.create({
-      data: {
-        userId: teammate.id,
-        integrationId: teammateGh.id,
-        number: nextPrNumber(repo),
-        title: rng.pick(TEAMMATE_PR_TITLES),
-        state: PRState.MERGED,
-        repo,
-        mergedAt: new Date(createdAt.getTime() + rng.int(4, 48) * 3_600_000),
-        reviewCount: 1,
-        timestamp: createdAt,
-      },
+    const mergedAt = new Date(createdAt.getTime() + rng.int(4, 48) * 3_600_000);
+    const number = nextPrNumber(repo);
+    const title = rng.pick(TEAMMATE_PR_TITLES);
+    const shared = {
+      number,
+      title,
+      url: `https://github.com/${repo}/pull/${number}`,
+      state: PRState.MERGED,
+      authorLogin: 'taylor-teammate',
+      authorExternalId: 'seed:taylor-teammate',
+      baseRef: 'main',
+      createdAtRemote: createdAt,
+      updatedAtRemote: mergedAt,
+      mergedAt,
+      closedAt: mergedAt,
+    };
+    prs.push({
+      userId: teammate.id,
+      integrationId: teammateGh.id,
+      repositoryId: repoId(teammate.id, repo),
+      externalId: `seed:pr:${repo}#${number}`,
+      isAuthoredByUser: true,
+      ...shared,
+    });
+    prs.push({
+      userId: demo.id,
+      integrationId: demoGh.id,
+      repositoryId: repoId(demo.id, repo),
+      externalId: `seed:pr:${repo}#${number}`,
+      isAuthoredByUser: false,
+      ...shared,
     });
     const changesRequested = rng.chance(0.25);
-    await prisma.codeReview.create({
-      data: {
-        userId: demo.id,
-        prId: pr.id,
-        comments: rng.int(changesRequested ? 2 : 0, changesRequested ? 9 : 3),
-        approved: !changesRequested,
-        timestamp: new Date(createdAt.getTime() + rng.int(1, 20) * 3_600_000),
-      },
+    const submittedAt = new Date(createdAt.getTime() + rng.int(1, 20) * 3_600_000);
+    reviews.push({
+      userId: demo.id,
+      integrationId: demoGh.id,
+      pullRequestId: `pending:${repo}#${number}`,
+      externalId: `seed:review:${repo}#${number}`,
+      state: changesRequested ? 'CHANGES_REQUESTED' : 'APPROVED',
+      submittedAt,
+      hasBody: changesRequested || rng.chance(0.4),
+      commentsCount: rng.int(changesRequested ? 2 : 0, changesRequested ? 9 : 3),
+      reviewRequestedAt: new Date(createdAt.getTime() + 30 * 60_000),
     });
-    reviewCount++;
   }
+
+  await prisma.commit.createMany({ data: commits });
+  await prisma.pullRequest.createMany({ data: prs });
+  await prisma.issue.createMany({ data: issues });
+  const reviewedIds = new Map(
+    (
+      await prisma.pullRequest.findMany({
+        where: { userId: demo.id, isAuthoredByUser: false },
+        select: { id: true, number: true, repository: { select: { fullName: true } } },
+      })
+    ).map((p) => [`pending:${p.repository.fullName}#${p.number}`, p.id]),
+  );
+  await prisma.pullRequestReview.createMany({
+    data: reviews.map((r) => ({ ...r, pullRequestId: reviewedIds.get(r.pullRequestId) ?? '' })),
+  });
+  const reviewCount = reviews.length;
+  const authoredCount = prs.filter((p) => p.userId === demo.id && p.isAuthoredByUser).length;
+
+  // One finished backfill so sync status/history render without GitHub.
+  await prisma.integration.update({
+    where: { id: teammateGh.id },
+    data: { scheduleSlotMinute: scheduleSlotFor(teammateGh.id) },
+  });
+  await prisma.integration.update({
+    where: { id: demoGh.id },
+    data: {
+      scheduleSlotMinute: scheduleSlotFor(demoGh.id),
+      backfillFrom: at(DAYS, 0),
+      syncCursor: {
+        authoredPrsUpdatedAt: anchor.toISOString(),
+        reviewedPrsUpdatedAt: anchor.toISOString(),
+      },
+    },
+  });
+  await prisma.syncRun.create({
+    data: {
+      userId: demo.id,
+      integrationId: demoGh.id,
+      trigger: 'INITIAL',
+      kind: 'BACKFILL',
+      status: 'SUCCEEDED',
+      stage: 'DONE',
+      progress: 100,
+      windowFrom: at(DAYS, 0),
+      windowTo: anchor,
+      counts: {
+        repos: REPOS.length,
+        prsAuthored: authoredCount,
+        prsReviewed: reviewCount,
+        reviews: reviewCount,
+        commits: commits.length,
+      },
+      queuedAt: anchor,
+      startedAt: anchor,
+      finishedAt: anchor,
+      recentWindowCompletedAt: anchor,
+    },
+  });
 
   // Monthly impact scores for the last 6 months (incl. the current one) so the dashboard never
   // has to call the AI. Placeholder numbers — the deterministic engine replaces them in P07.
@@ -400,7 +541,7 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
             { title: 'Refunds API', evidence: 'Refunds API (partial + full)' },
           ],
           metrics: {
-            prCount: prs.length,
+            prCount: authoredCount,
             reviewCount,
             featuresShipped: 6,
             commitsCount: commits.length,
@@ -421,7 +562,7 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
           technicalImpact: ['Ledger write batching', 'Idempotent payment intents'],
           businessValue: ['Reduced refund-related support load'],
           mentorship: ['Onboarded two engineers to the payments codebase'],
-          supportingData: { commits: commits.length, prs: prs.length, reviews: reviewCount },
+          supportingData: { commits: commits.length, prs: authoredCount, reviews: reviewCount },
         },
       },
     ],
@@ -431,7 +572,7 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
     user: demo.email,
     userId: demo.id,
     commits: commits.length,
-    pullRequests: prs.length,
+    pullRequests: authoredCount,
     reviews: reviewCount,
     issues: issues.length,
     impactScores: scores.length,
@@ -440,7 +581,7 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
 }
 
 async function main() {
-  const prisma = new PrismaClient();
+  const prisma = createPrismaClient();
   try {
     const summary = await seed(prisma);
     console.log('Seeded demo data:', summary);

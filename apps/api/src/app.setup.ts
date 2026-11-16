@@ -11,8 +11,11 @@ import { mountOpenApiDocs } from './openapi/openapi';
 import type { Env } from './config/env';
 import type { INestApplication } from '@nestjs/common';
 
-/** Max JSON body (API_CONTRACT_V2 §1). Webhooks (P06) get their own raw-body parser. */
+/** Max JSON body (API_CONTRACT_V2 §1). Webhooks get their own raw-body parser (below). */
 export const JSON_BODY_LIMIT = '256kb';
+/** GitHub caps webhook payloads at 25 MB (API_CONTRACT_V2 §18). */
+export const WEBHOOK_BODY_LIMIT = '25mb';
+export const WEBHOOK_PATHS = ['/api/webhooks/github'];
 
 /**
  * HTTP configuration shared by `main.ts` and the integration-test app (`test/utils/app.ts`).
@@ -46,6 +49,19 @@ export function configureApp(
       'Retry-After',
     ],
     maxAge: 600,
+  });
+
+  // Webhooks: the HMAC is computed over the exact bytes GitHub sent, so these routes get the raw
+  // body (Buffer) and never pass through the JSON parser (body-parser skips parsed requests).
+  const raw = express.raw({ type: () => true, limit: WEBHOOK_BODY_LIMIT });
+  app.use(WEBHOOK_PATHS, (req: Request, res: Response, next: NextFunction) => {
+    raw(req, res, (err?: unknown) => {
+      if (err) {
+        sendError(req, res, err);
+        return;
+      }
+      next();
+    });
   });
 
   // JSON body parser with the 256 KB limit; parse/size errors use the error envelope.

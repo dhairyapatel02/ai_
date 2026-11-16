@@ -1,0 +1,27 @@
+{
+  "action": "edited",
+  "number": 10,
+  "pull_request": {
+    "id": 1010,
+    "node_id": "PR_api_10",
+    "number": 10,
+    "state": "closed",
+    "title": "Billing v2 (renamed)",
+    "user": { "login": "octo", "id": 1, "node_id": "U_octo", "type": "User" },
+    "merged": true
+  },
+  "repository": {
+    "id": 202,
+    "node_id": "R_acme_api",
+    "name": "api",
+    "full_name": "acme/api",
+    "private": true,
+    "owner": { "login": "acme", "id": 9, "node_id": "O_acme", "type": "Organization" },
+    "html_url": "https://github.com/acme/api",
+    "fork": false,
+    "archived": false,
+    "default_branch": "trunk"
+  },
+  "installation": { "id": 102, "node_id": "I_102" },
+  "sender": { "login": "octo", "id": 1, "node_id": "U_octo", "type": "User" }
+}

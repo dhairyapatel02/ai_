@@ -7,6 +7,7 @@ import { CryptoModule } from './crypto/crypto.module';
 import { loggerModule, type LoggingOptions } from './logging/logger';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
+import { QueuesModule } from './sync/queues.module';
 
 /**
  * Modules shared by the HTTP API (`main.ts`) and the queue worker (`worker.ts`):
@@ -25,8 +26,11 @@ export function infrastructureImports(logging: LoggingOptions = {}) {
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) => ({
         connection: redisOptionsFromUrl(config.get('REDIS_URL', { infer: true })),
+        // Per-environment key prefix so test runs never feed a dev worker (OPS-17).
+        prefix: config.get('QUEUE_PREFIX', { infer: true }),
       }),
     }),
+    QueuesModule,
     RedisModule,
     PrismaModule,
     CryptoModule,

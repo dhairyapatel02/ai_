@@ -28,7 +28,7 @@ Legend for tables/endpoints: see [DATA_MODEL_V2](DATA_MODEL_V2.md) and [API_CONT
 | F-15 Sync status/progress/history | M | ADR-0007 | SyncRun | `GET /sync/status`, `/sync/runs`, `/sync/stream` | `/settings/integrations`, top bar | P06, P10 |
 | F-16 Needs-reconnection + reconnect | M | ADR-0004 | Integration.status | `POST /integrations/:id/reconnect`, `/sync/status` | banner, integrations | P06, P10 |
 | F-17 Disconnect keep/purge | M | ADR-0004, DATA_MODEL §6 | Integration, activity | `DELETE /integrations/:id?purgeData=` | confirm dialog | P05, P06, P10 |
-| F-18 Authored vs reviewed PRs | M | KPI §2.2, ADR-0007 | PullRequest.isAuthoredByUser, PullRequestReview | `/activity/prs?role=` | activity explorer | P06 |
+| F-18 Authored vs reviewed PRs | M | KPI §2.2, ADR-0007 | PullRequest.isAuthoredByUser, PullRequestReview | `/activity/prs?role=` (P06: optional, default `authored`) | activity explorer | P06 |
 | F-20 Stat cards + deltas | M | KPI §3.7 | MetricSnapshot, fact tables | `GET /metrics/overview` | `/dashboard` | P07, P10 |
 | F-21 30-day chart | M | KPI §4 | MetricSnapshot | `GET /metrics/timeseries` | `/dashboard` | P07, P10 |
 | F-22 Heatmap | S | KPI §4 | MetricSnapshot | `GET /metrics/heatmap` | `/dashboard` | P07, P10 |
@@ -153,7 +153,7 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | GAP-09 | 🟡 | ADR-0006, ADR-0010 | P02, P05, P09 | |
 | DEBT-06 | 🟡 | ADR-0010 | P09 | |
 | DEBT-07 | ⚪ | ADR-0002 | P02, P09 | |
-| DEBT-10 | ⚪ | ADR-0002 (end-state versions) | P05 (Prisma major with auth migrations), P06, P08 (SDK 1.x), P09 (Next/ESLint), P14 (TS 7 evaluation) | added by P02 |
+| DEBT-10 | ⚪ | ADR-0002 (end-state versions) | P05 (Prisma major with auth migrations), P06, P08 (SDK 1.x), P09 (Next/ESLint), P14 (TS 7 evaluation) | added by P02; P06 adopted Prisma 7.10.1 (D-022) |
 | SEC-15 | ⚪ | ADR-0003 | P05, P09 | NextAuth route removed |
 | BUG-13 | ⚪ | F-20 (formatting helpers) | P10 | |
 | OPS-15 | ⚪ | ADR-0009 | P08 | |
@@ -165,5 +165,10 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | SEC-17 | ⚪ | ADR-0006 (rate classes), ADR-0013 | P15 | added by P05: `trust proxy` per host |
 | OPS-17 | 🟡 | ADR-0007 | P06 | added by P05: per-environment queue prefix |
 | DEBT-11 | ⚪ | ADR-0002, ADR-0011 | P09 | added by P05: vitest ≥ 5.1, drop `--omit=optional` |
+| SEC-18 | 🟡 | ADR-0004, ADR-0013 | P15 | added by P06: require webhook secret / App credentials in production env |
+| OPS-18 | 🟡 | DATA_MODEL §6, ARCHITECTURE §2 | P14 | added by P06: retention jobs for `sync_runs`, `webhook_deliveries` |
+| DATA-11 | ⚪ | F-15, F-16, DATA_MODEL §4 | P14 | added by P06: automatic `ERROR` / `SUSPENDED` integration status |
+| GAP-11 | ⚪ | F-15, API_CONTRACT §8 | P10 | added by P06: optional `GET /sync/stream` SSE (polling contract exists) |
+| DEBT-12 | ⚪ | ADR-0002 | P09, P14 | added by P06: ESM `prisma-client` generator, drop root Prisma devDependencies |
 
 Every open ISSUES row with a target of P05 or later is mapped above; one (GAP-10) is won't-fix for v2.0.

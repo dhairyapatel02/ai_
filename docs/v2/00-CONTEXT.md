@@ -163,3 +163,22 @@ raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
 - **New env:** `BETTER_AUTH_SECRET`, `ENABLE_DEV_LOGIN`, `GITHUB_SIGNIN_*`, `GOOGLE_*`, `AUTH_JWT_*`,
   `AUTH_JWKS_URL`, `GITHUB_APP_*`, `GITHUB_WEB_URL`/`GITHUB_API_URL`, `TOKEN_ENCRYPTION_KEYS`,
   `TOKEN_ENCRYPTION_ACTIVE_KEY`, `OAUTH_STATE_SECRET`, `LOG_LEVEL` (see `.env.example`).
+
+### After Phase 06 (2026-11-16)
+- **Sync engine v2:** GitHub App user-token sync via `ActivityProvider`/`GitHubProvider` (GraphQL search
+  for authored vs reviewed PRs, contributions + batched default-branch history), `SyncRun` persistence
+  (status/progress/history from Postgres), newest-30-days-first backfill then monthly slices,
+  incremental cursors, rate-limit pause/resume, token refresh + `NEEDS_REAUTH`, hourly fan-out (each
+  active integration once per 24 h), GitHub App webhooks (`POST /api/webhooks/github`, HMAC, idempotent).
+  Reference fixture: 119 requests (v0.1: 8,732 for a smaller fixture).
+- **Schema:** migrations P06-1/P06-2 applied (`repositories`, PR/commit v2 columns,
+  `pull_request_reviews`, `sync_runs`, `webhook_deliveries`; `code_reviews` dropped). Reviewed PRs are
+  `PullRequest.isAuthoredByUser = false`; v0.1 stubs are `legacy_stub` until the first v2 backfill
+  purges them (DATA-01 fixed). **Prisma 7.10.1** with the `pg` driver adapter (D-022).
+- **API:** `POST /sync` (replaces `/sync/trigger`), `GET /sync/status|runs|runs/:id`, `GET/PATCH /repos`,
+  `POST /repos/:id/purge`, `/activity/prs?role=`; callback returns `syncRun`. Queues `sync` + `metrics`
+  under `QUEUE_PREFIX` (tests: `devimpact-test`, OPS-17); `metrics.recompute` is queued but consumed as
+  a no-op until P07.
+- **New env:** `GITHUB_APP_PRIVATE_KEY_FILE`, `GITHUB_WEBHOOK_SECRET` (now used), `GITHUB_REQUEST_RETRIES`,
+  `GITHUB_THROTTLING`, `SYNC_RATE_LIMIT_MIN_REMAINING`, `QUEUE_PREFIX` (see `.env.example`).
+

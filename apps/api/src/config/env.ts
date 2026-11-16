@@ -91,6 +91,11 @@ export const envSchema = z
     // When true (local default) the API process also consumes BullMQ queues.
     // Docker Compose sets it to false and runs `node dist/worker.js` separately.
     RUN_WORKER_IN_API: booleanString.default(true),
+    // BullMQ key prefix. Defaults to "devimpact", or "devimpact-test" when NODE_ENV=test, so test
+    // runs never feed a local dev worker (OPS-17).
+    QUEUE_PREFIX: optionalString,
+    // Sync pauses (WAITING_RATE_LIMIT) when GitHub's remaining budget drops below this (ADR-0007).
+    SYNC_RATE_LIMIT_MIN_REMAINING: z.coerce.number().int().min(0).default(200),
     // Worker liveness file touched every few seconds (used by the compose healthcheck).
     WORKER_HEARTBEAT_FILE: optionalString,
 
@@ -104,8 +109,15 @@ export const envSchema = z
     GITHUB_APP_SLUG: optionalString,
     GITHUB_APP_CLIENT_ID: optionalString,
     GITHUB_APP_CLIENT_SECRET: optionalString,
+    // App private key (installation tokens): PEM (raw, `\n`-escaped or base64) or a mounted file.
     GITHUB_APP_PRIVATE_KEY: optionalString,
+    GITHUB_APP_PRIVATE_KEY_FILE: optionalString,
+    // HMAC secret of the App webhook (`POST /api/webhooks/github`); deliveries are rejected without it.
     GITHUB_WEBHOOK_SECRET: optionalString,
+    // Retries for transient GitHub errors (5xx, network) inside one request (plugin-retry).
+    GITHUB_REQUEST_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
+    // @octokit/plugin-throttling request pacing (1 s between POSTs per token). Tests turn it off.
+    GITHUB_THROTTLING: booleanString.default(true),
     // github.com (OAuth endpoints) and REST API base; overridable for tests/GHES.
     GITHUB_WEB_URL: z.url().default('https://github.com'),
     GITHUB_API_URL: z.url().default('https://api.github.com'),
@@ -135,6 +147,7 @@ export const envSchema = z
       AUTH_JWT_ISSUER: env.AUTH_JWT_ISSUER ?? webUrl,
       AUTH_JWKS_URL: env.AUTH_JWKS_URL ?? `${webUrl}/api/auth/jwks`,
       LOG_LEVEL: env.LOG_LEVEL ?? (env.NODE_ENV === 'test' ? 'silent' : 'info'),
+      QUEUE_PREFIX: env.QUEUE_PREFIX ?? (env.NODE_ENV === 'test' ? 'devimpact-test' : 'devimpact'),
     };
   });
 

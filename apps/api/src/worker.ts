@@ -27,7 +27,7 @@ async function bootstrap() {
     setInterval(beat, HEARTBEAT_INTERVAL_MS).unref();
   }
 
-  logger.log('Worker started; consuming queue "github-sync"');
+  logger.log(`Worker started; consuming queues "sync" and "metrics" (prefix ${env.QUEUE_PREFIX})`);
 }
 
 void bootstrap();

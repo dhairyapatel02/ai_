@@ -40,8 +40,12 @@ export const RATE_LIMIT_CLASSES = {
   default: ['default'],
   public: ['public'],
   ai: ['ai-minute', 'ai-day'],
-  sync: ['sync'],
+  // Enforced per integration by SyncService (the integration is only known after the body is
+  // resolved), not by the guard.
+  sync: [],
   destructive: ['destructive'],
+  // Signature-gated and answered fast; never throttled (API_CONTRACT_V2 §1.1).
+  webhook: [],
 } as const satisfies Record<string, readonly WindowName[]>;
 export type RateLimitClass = keyof typeof RATE_LIMIT_CLASSES;
 

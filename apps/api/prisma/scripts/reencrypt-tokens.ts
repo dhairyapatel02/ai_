@@ -8,17 +8,16 @@
  *
  * Never prints token values.
  */
-import { PrismaClient } from '@prisma/client';
-
 import { validateEnv } from '../../src/config/env';
 import { loadEnvFiles } from '../../src/config/load-env';
 import { TokenCipher, type TokenField } from '../../src/crypto/token-cipher';
+import { createPrismaClient } from '../../src/prisma/create-client';
 
 async function main() {
   loadEnvFiles();
   const env = validateEnv(process.env);
   const cipher = new TokenCipher(env.TOKEN_ENCRYPTION_KEYS, env.TOKEN_ENCRYPTION_ACTIVE_KEY);
-  const prisma = new PrismaClient();
+  const prisma = createPrismaClient();
   let updated = 0;
   let failed = 0;
   try {

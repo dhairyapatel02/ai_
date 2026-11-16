@@ -313,3 +313,56 @@ Within D-003/D-005/D-006 and ADR-0003–0006, Phase 05 chose:
   `error`/`errorDescription` (denied consent) and omits `code` for `setupAction=request` (additive).
 *Consequences:* later backend phases follow the "adding an endpoint" pattern in the root README; P06
 owns the Prisma major, token refresh and `SyncRun`; P09 replaces the functional sign-in/auth-context.
+
+### D-022 · P06 implementation choices (sync engine, Prisma 7) · APPLIED (P06)
+Within D-004/D-005/D-008 and ADR-0004/0007, Phase 06 chose:
+- **Prisma 7.10.1** (DEBT-10): the latest *stable* major — `latest` on npm is 8.0.0-rc and Better Auth
+  1.7.25's Prisma adapter accepts `^5 || ^6 || ^7`. Pinned exact in api and web. Queries go through the
+  `pg` driver adapter (`@prisma/adapter-pg`, `src/prisma/create-client.ts`); the datasource URL moved to
+  `prisma.config.ts`. The `prisma-client-js` generator is kept (still supported in 7) so no import paths
+  change; the ESM `prisma-client` generator can follow with Next 16 (P09). `prisma` and `@prisma/client`
+  are also root devDependencies: without them npm 10 nested a copy per workspace (two generated
+  clients). `pg` is an API devDependency for the migration test.
+- **Octokit:** `@octokit/core` + `@octokit/plugin-throttling` + `@octokit/plugin-retry` directly (the
+  `octokit` meta-package is dropped). One instance per job; tokens injected per request (refresh-safe);
+  primary rate limits are never slept on inside a job (checkpoint + delayed job instead). The throttling
+  plugin paces POSTs — GraphQL included — 1 s apart, keyed **per integration** (`throttle.id`), not
+  globally; `GITHUB_THROTTLING=false` disables pacing (tests only). Jest transpiles the ESM packages
+  like `jose` (no stub), and tests intercept `fetch` with an in-process fake GitHub (REST + the exact
+  GraphQL documents) instead of MSW — the pattern P05 established (`test/utils/fake-github.ts`).
+- **Fetch shape:** commit history is fetched for up to 10 repositories per GraphQL request (aliases),
+  so the call count follows commit pages, not repositories. Backfill = newest 30 days, then calendar-
+  month slices backwards for every stage. Reference fixture: 119 requests / ~680 points (budget 250 /
+  2,500).
+- **Job ids** `sync-<integrationId>` / `sync-t-<deliveryId>`: BullMQ custom ids cannot contain `:`.
+  Uniqueness of active runs is also enforced in Postgres (row lock + active-run check); a queued/
+  running run whose job vanished for > 2 minutes is reaped so Redis loss never blocks syncing.
+- **Rate classes:** `sync` (6/hour) is enforced **per integration** inside `SyncService` (the
+  integration is only known after the body is resolved), so the guard skips that class; `webhook` is
+  a no-window class (never throttled).
+- **Repository inclusion:** PR searches cannot be filtered by repository, so PRs/reviews of excluded
+  repos are still stored but every read filters `repository.included`; commits of excluded or
+  inaccessible repos are never fetched. Re-including a repo makes the next incremental run fetch its
+  missing history (stale `commitCursor`).
+- **Legacy data (P06-2/3):** stub detection keeps the blueprint's title/state/review rules but replaces
+  `body IS NULL` (the P01 fixture's stubs carry a marker body) with the stricter
+  `title = 'PR #' || number AND mergedAt IS NULL`. v0.1 reviews stored on *another* user's PR (P02 demo
+  seed) get a reviewer-owned copy of that PR (`is_authored_by_user = false`, no body), so every review
+  points at its owner's row (ARCHITECTURE_V2 §12).
+- **Webhooks:** the API parses the event into a normalised `ProviderWebhookEvent` (job payload, no raw
+  body); unhandled events are stored as `IGNORED` without a job; targeted work is recorded as `TARGETED`
+  sync runs (visible in `/sync/runs`, excluded from `/sync/status` current/last run). Installation
+  events use an **installation token** (App JWT, `GITHUB_APP_PRIVATE_KEY[_FILE]`) only to refresh
+  repositories a user already has, then queue a sync that lists new repositories with that user's own
+  token — an installation's full repo list is not filtered by what each linked user may see (security
+  review).
+- **Token lifecycle:** refresh 10 minutes before expiry or after a 401, under `SELECT … FOR UPDATE` on
+  the integration row; on refusal (or `github_app_authorization.revoked`) the integration becomes
+  `NEEDS_REAUTH` with tokens dropped and data kept.
+- **API details (additive):** `GET /activity/prs?role=` defaults to `authored` (the contract marks it
+  required; P07 may make it required); `GET /repos` uses an opaque offset cursor because its default sort
+  is by name; webhooks answer 202 for duplicates too (`duplicate: true`); `GET /sync/stream` (Should) is
+  not built — the polling contract is complete (P10 decides).
+*Consequences:* P07 consumes `metrics.recompute { userId, from, to, reason }` and reads only
+`isAuthoredByUser`, `legacyStub = false` and `repository.included` rows; P09 can move to the ESM Prisma
+generator; P14 adds the retention jobs (`SyncRun`, `WebhookDelivery`) and Bull Board.

@@ -32,7 +32,7 @@ ENV NODE_ENV=production \
 COPY --from=build /app/apps/web/.next/standalone ./
 COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build /app/apps/web/public ./apps/web/public
-# Prisma query engine + generated client (not always picked up by Next's file tracing).
+# Generated Prisma client (Prisma 7: pg driver adapter, no query-engine binary); not always picked up by file tracing.
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 USER node
 EXPOSE 3000

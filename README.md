@@ -14,7 +14,7 @@ KPI dashboards, promotion packets and impact scores.
 | -------- | ------------------------------------------------------------------------- |
 | Frontend | Next.js 14 (App Router), Tailwind CSS, shadcn/ui                          |
 | Backend  | NestJS 11 (REST API) + a separate BullMQ worker process                   |
-| Database | PostgreSQL 16 + Prisma 6 (committed migrations)                           |
+| Database | PostgreSQL 16 + Prisma 7 (`pg` driver adapter, committed migrations)      |
 | Queue    | Redis 7 + BullMQ                                                          |
 | AI       | Anthropic Claude API                                                      |
 | Shared   | `packages/shared` — Zod schemas and types used by API and web             |
@@ -124,6 +124,10 @@ npm run db:migrate -- --name describe_your_change
 > Databases created with the old `prisma db push` flow can be baselined with
 > `npx prisma migrate resolve --applied 20261109075145_init` (run in `apps/api`).
 
+Prisma 7 notes: the connection URL lives in `apps/api/prisma.config.ts` (Migrate) and in the `pg`
+driver adapter (runtime, `src/prisma/create-client.ts`), not in `schema.prisma`; `migrate dev` no
+longer seeds or generates implicitly (`npm run db:seed`, `npm run db:generate`).
+
 ## Authentication setup
 
 Sign-in and the GitHub data source are **two separate GitHub registrations** (ADR-0003, ADR-0004).
@@ -159,18 +163,94 @@ v0.1 users on their first sign-in.
 2. **Callback URL `http://localhost:3000/integrations/github/callback`**; enable **"Request user
    authorization (OAuth) during installation"** and **"Expire user authorization tokens"**.
    Setup URL: same as the callback, with "Redirect on update" checked.
-3. Webhook: active, URL `<public API URL>/api/webhooks/github` (endpoint lands in P06; use
-   `smee.io` or `gh webhook forward` locally), secret → `GITHUB_WEBHOOK_SECRET`.
+3. Webhook: **active**, URL `<public API URL>/api/webhooks/github`, content type
+   `application/json`, a random secret (`openssl rand -hex 32`) → `GITHUB_WEBHOOK_SECRET`.
+   Locally, forward deliveries (see [Local webhook forwarding](#local-webhook-forwarding)).
 4. Repository permissions (all **read-only**): Metadata, Contents, Pull requests. No write
-   permissions. Events: Pull request, Pull request review, Push (installation events are implicit).
+   permissions. Subscribe to events: **Pull request**, **Pull request review**, **Push**
+   (`installation`, `installation_repositories` and `github_app_authorization` are always sent).
 5. After creating: App ID → `GITHUB_APP_ID`; the slug from the public URL
    (`github.com/apps/<slug>`) → `GITHUB_APP_SLUG`; Client ID / a new client secret →
    `GITHUB_APP_CLIENT_ID` / `GITHUB_APP_CLIENT_SECRET`; generate a private key (PEM) →
-   `GITHUB_APP_PRIVATE_KEY` (used from P06).
+   `GITHUB_APP_PRIVATE_KEY` (or mount the file and set `GITHUB_APP_PRIVATE_KEY_FILE`). The key
+   signs App JWTs for installation tokens (installation repository lists).
 
 Then **Integrations → Connect** installs the app (or asks you to authorize it if it is already
 installed). The connect `state` is HMAC-signed, single-use and expires after 10 minutes; tokens are
 stored AES-256-GCM encrypted.
+
+### How sync works
+
+Implementation: `apps/api/src/sync/` (orchestrator, queues, scheduler, webhooks handler) and
+`apps/api/src/providers/github/` (the `ActivityProvider` for GitHub). Design: ADR-0007.
+
+- **Queues** (BullMQ, prefix `QUEUE_PREFIX`, default `devimpact`; `devimpact-test` in tests):
+  `sync` — `sync.backfill`, `sync.incremental` (job id `sync-<integrationId>`, one run per
+  integration, 3 attempts with exponential backoff), `sync.targeted` (webhooks, `sync-t-<deliveryId>`),
+  `sync.fanout` (hourly job scheduler); `metrics` — `metrics.recompute` (consumer is a no-op until
+  P07). Jobs carry ids only, never tokens. The worker (`node dist/worker.js`, or the API with
+  `RUN_WORKER_IN_API=true`) consumes them and upserts the `sync-fanout` scheduler on boot.
+- **Runs:** `POST /api/sync` (or connect/reconnect, the scheduler, a webhook) creates a `SyncRun`;
+  `GET /api/sync/status`, `/sync/runs`, `/sync/runs/:id` read it from Postgres, so status
+  survives a Redis restart. Poll `/sync/status` every 2 s while `queued`/`running` (30 s while
+  `waiting_rate_limit`).
+- **Stages:** prepare → repositories (installations + their repos) → authored PRs (GraphQL search
+  `is:pr author:<login> updated:<range>`) → reviewed PRs (`reviewed-by:<login> -author:<login>`,
+  the user's own reviews only) → commits (`contributionsCollection` finds repos with commits, then
+  default-branch `history(author:)` batched 10 repos per request) → persist → rollups. Searches
+  above 1,000 results split their window. Writes are idempotent batches per page.
+- **Backfill** (first sync): the plan's history window (FREE 12 months), newest 30 days first —
+  then `SyncRun.recentWindowCompletedAt` is set and metrics are queued so the dashboard can render —
+  then month by month backwards. **Incremental** (every later sync): from the cursors
+  (`Integration.syncCursor`, `Repository.commitCursor`) minus a 1-hour overlap; cursors advance
+  only after the run committed.
+- **Budget:** the ADR-0007 reference fixture (50 repos × 300 commits, 600 authored + 900 reviewed
+  PRs, 12 months) takes **119 requests / ~680 GraphQL points** (budget ≤ 250 / 2,500; v0.1 made
+  8,732 calls for 30 × 200). Asserted by `test/integration/sync-budget.int-spec.ts`.
+- **Rate limits:** `@octokit/plugin-throttling` + `plugin-retry`, one Octokit per job. When the
+  remaining budget drops below `SYNC_RATE_LIMIT_MIN_REMAINING` (200) the run checkpoints, becomes
+  `waiting_rate_limit` with `resumeAt`, and the same job is delayed until GitHub's reset.
+- **Repositories:** repos with your activity are included by default, installation-only repos are
+  not; `PATCH /api/repos/:id` (`inclusionSource=user`) is never overridden. Excluded repos are
+  never fetched or counted; their stored data stays until `POST /api/repos/:id/purge`.
+- **Tokens:** user tokens (8 h) are refreshed 10 minutes before expiry or after a 401, under a row
+  lock (refresh tokens rotate). A rejected refresh or `github_app_authorization.revoked` sets the
+  integration to `needs_reauth`: tokens dropped, data kept, schedule paused, `POST /sync` → 409.
+- **Schedule:** the hourly fan-out queues every `active` integration whose daily slot
+  (`scheduleSlotMinute`, hash of the id) falls in that hour, delayed to its minute.
+  Inspect: `npx tsx apps/api/prisma/scripts/inspect-sync-schedule.ts`.
+- **Webhooks** (`POST /api/webhooks/github`, public, raw body ≤ 25 MB): HMAC-SHA256 over the raw
+  bytes (timing-safe, 401 otherwise), idempotent per `X-GitHub-Delivery` (`webhook_deliveries`),
+  202 within milliseconds; the worker refetches only the affected PR (`pull_request`,
+  `pull_request_review`), commits (`push` to the default branch) or repo access (`installation*`: existing rows only, then a
+  user-token sync discovers newly granted repos).
+- **Not captured (v2.0):** commits that never reach the default branch, issues (Jira/Linear are
+  v2.1), other people's review comments (aggregates only), PR bodies of reviewed PRs.
+
+### Local webhook forwarding
+
+GitHub cannot reach `localhost`. Either:
+
+```bash
+npx smee-client --url https://smee.io/<your-channel> --target http://localhost:4000/api/webhooks/github
+```
+
+(set the App's webhook URL to the smee channel), or with the GitHub CLI extension
+(`gh extension install cli/gh-webhook`; repository-level hooks only):
+
+```bash
+gh webhook forward --repo=<owner>/<repo> --events=pull_request,pull_request_review,push --url=http://localhost:4000/api/webhooks/github --secret="$GITHUB_WEBHOOK_SECRET"
+```
+
+**Replay a delivery locally:** GitHub App settings → Advanced → Recent deliveries → Redeliver
+(a redelivery keeps its `X-GitHub-Delivery`, so DevImpact acknowledges it as a duplicate; delete the
+row from `webhook_deliveries` first to process it again). Or sign a payload yourself:
+
+```bash
+BODY=$(cat apps/api/test/fixtures/github/webhooks/pull_request.edited.json)
+SIG="sha256=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$GITHUB_WEBHOOK_SECRET" -hex | sed 's/^.* //')"
+curl -i -X POST http://localhost:4000/api/webhooks/github -H 'content-type: application/json' -H 'x-github-event: pull_request' -H "x-github-delivery: $(uuidgen)" -H "x-hub-signature-256: $SIG" --data "$BODY"
+```
 
 ### Secrets and key rotation
 
@@ -178,6 +258,8 @@ stored AES-256-GCM encrypted.
   `jwks` table: after changing it, delete those rows (`DELETE FROM jwks;`) so a new key pair is
   generated, and sign in again.
 - `OAUTH_STATE_SECRET` — `openssl rand -base64 48`.
+- `GITHUB_WEBHOOK_SECRET` — `openssl rand -hex 32`; rotate on GitHub and in the env together
+  (deliveries signed with the old secret are rejected).
 - `TOKEN_ENCRYPTION_KEYS` / `TOKEN_ENCRYPTION_ACTIVE_KEY` — `openssl rand -base64 32` per key.
   **Rotation:** add the new key (`1:<old>,2:<new>`), set `TOKEN_ENCRYPTION_ACTIVE_KEY=2`, deploy,
   run `npx tsx apps/api/prisma/scripts/reencrypt-tokens.ts`, then remove the old key.
@@ -258,7 +340,8 @@ to `main`:
 
 ## API endpoints
 
-All routes are prefixed with `/api` and require `Authorization: Bearer <jwt>` except health.
+All routes are prefixed with `/api` and require `Authorization: Bearer <jwt>` except health and
+the signature-gated GitHub webhook.
 Responses use the envelope `{ success: true, data, meta? }` / `{ success: false, error: { code,
 message, details?, requestId } }` with real HTTP status codes; the full contract (error codes,
 rate-limit classes, pagination) is [`docs/v2/blueprint/API_CONTRACT_V2.md`](docs/v2/blueprint/API_CONTRACT_V2.md)
@@ -276,8 +359,12 @@ and the live schema is at `/api/docs` outside production.
 | POST   | /api/integrations/github/callback          | Verify state, exchange code, store encrypted tokens |
 | POST   | /api/integrations/:id/reconnect            | Authorize again                                     |
 | DELETE | /api/integrations/:id?purgeData=           | Disconnect (revoke token; keep or purge data)       |
-| POST   | /api/sync/trigger · GET /sync/status       | Queue a sync · job status (v2 sync arrives in P06)  |
-| GET    | /api/activity/commits · /prs               | Cursor-paginated activity                           |
+| POST   | /api/sync                                  | Queue a sync (202; 409 in progress / needs reauth)  |
+| GET    | /api/sync/status · /sync/runs · /runs/:id  | DB-backed state, progress, history                  |
+| GET    | /api/repos · PATCH /repos · /repos/:id     | Repositories; include/exclude (recomputes KPIs)     |
+| POST   | /api/repos/:id/purge                       | Delete a repository's synced activity               |
+| POST   | /api/webhooks/github                       | GitHub App webhook (public, HMAC, idempotent, 202)  |
+| GET    | /api/activity/commits · /prs?role=         | Cursor-paginated activity (`authored`/`reviewed`)   |
 | GET    | /api/activity/summary                      | Aggregated stats (deprecated → P07 metrics)         |
 | POST   | /api/generate/{resume,appraisal,promotion} | v1 generators (AI rate limit; P08 → /documents)     |
 | GET    | /api/generate/impact-score                 | Deprecated LLM score (P07 → /impact)                |

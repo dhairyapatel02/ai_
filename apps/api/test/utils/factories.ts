@@ -27,61 +27,112 @@ export function buildFactories(prisma: PrismaClient) {
       });
     },
 
-    commit(
+    /** Repository row (activity references a repository of the same user). */
+    async repository(
       userId: string,
       integrationId: string,
-      overrides: Partial<Prisma.CommitUncheckedCreateInput> = {},
+      fullName = 'acme/api',
+      overrides: Partial<Prisma.RepositoryUncheckedCreateInput> = {},
+    ) {
+      const existing = await prisma.repository.findFirst({
+        where: { userId, integrationId, fullName },
+      });
+      if (existing && Object.keys(overrides).length === 0) return existing;
+      const [ownerLogin = fullName, name = fullName] = fullName.split('/');
+      return prisma.repository.upsert({
+        where: { integrationId_fullName: { integrationId, fullName } },
+        update: overrides,
+        create: {
+          userId,
+          integrationId,
+          externalId: `node-repo-${fullName}`,
+          fullName,
+          ownerLogin,
+          name,
+          defaultBranch: 'main',
+          ...overrides,
+        },
+      });
+    },
+
+    /** v1-style overrides (`repo`, `message`, `timestamp`) are mapped onto the v2 columns. */
+    async commit(
+      userId: string,
+      integrationId: string,
+      overrides: Partial<Prisma.CommitUncheckedCreateInput> & {
+        repo?: string;
+        message?: string;
+        timestamp?: Date;
+      } = {},
     ) {
       const n = next();
+      const { repo = 'acme/api', message, timestamp, ...rest } = overrides;
+      const repository = await this.repository(userId, integrationId, repo);
       return prisma.commit.create({
         data: {
           userId,
           integrationId,
+          repositoryId: repository.id,
           sha: `sha${n.toString().padStart(8, '0')}`,
-          message: `feat: change ${n}`,
-          repo: 'acme/api',
+          messageHeadline: message ?? `feat: change ${n}`,
           branch: 'main',
           additions: 10,
           deletions: 2,
-          timestamp: new Date('2026-10-15T12:00:00Z'),
-          ...overrides,
+          authoredAt: timestamp ?? new Date('2026-10-15T12:00:00Z'),
+          ...rest,
         },
       });
     },
 
-    pullRequest(
+    async pullRequest(
       userId: string,
       integrationId: string,
-      overrides: Partial<Prisma.PullRequestUncheckedCreateInput> = {},
+      overrides: Partial<Prisma.PullRequestUncheckedCreateInput> & {
+        repo?: string;
+        timestamp?: Date;
+      } = {},
     ) {
       const n = next();
+      const { repo = 'acme/api', timestamp, ...rest } = overrides;
+      const repository = await this.repository(userId, integrationId, repo);
       return prisma.pullRequest.create({
         data: {
           userId,
           integrationId,
+          repositoryId: repository.id,
           number: n,
           title: `Add feature ${n}`,
           state: PRState.MERGED,
-          repo: 'acme/api',
+          isAuthoredByUser: true,
           mergedAt: new Date('2026-10-16T12:00:00Z'),
-          timestamp: new Date('2026-10-15T12:00:00Z'),
-          ...overrides,
+          createdAtRemote: timestamp ?? new Date('2026-10-15T12:00:00Z'),
+          ...rest,
         },
       });
     },
 
-    codeReview(
+    /** A review by `userId` on someone else's PR (stored as a reviewed, non-authored PR row). */
+    async review(
       userId: string,
-      prId: string,
-      overrides: Partial<Prisma.CodeReviewUncheckedCreateInput> = {},
+      integrationId: string,
+      overrides: Partial<Prisma.PullRequestReviewUncheckedCreateInput> = {},
     ) {
-      return prisma.codeReview.create({
+      const pr = await this.pullRequest(userId, integrationId, {
+        isAuthoredByUser: false,
+        authorLogin: 'teammate',
+        body: null,
+      });
+      const n = next();
+      return prisma.pullRequestReview.create({
         data: {
           userId,
-          prId,
-          comments: 1,
-          approved: true,
-          timestamp: new Date('2026-10-17T12:00:00Z'),
+          integrationId,
+          pullRequestId: pr.id,
+          externalId: `node-review-${n}`,
+          state: 'APPROVED',
+          submittedAt: new Date('2026-10-17T12:00:00Z'),
+          commentsCount: 1,
+          hasBody: true,
           ...overrides,
         },
       });

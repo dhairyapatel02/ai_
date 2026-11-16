@@ -1,0 +1,284 @@
+{
+  "$comment": "GitHub data for user `octo` (node U_octo) and teammate `alice`. Times are relative to the test run: \"-40d\" = 40 days ago, \"-3h\" = 3 hours ago. Shapes follow the GraphQL/REST fields DevImpact reads (see src/providers/github/queries.ts).",
+  "repos": [
+    {
+      "nodeId": "R_octo_app",
+      "fullName": "octo/app",
+      "installationId": 101,
+      "defaultBranch": "main"
+    },
+    {
+      "nodeId": "R_acme_api",
+      "fullName": "acme/api",
+      "installationId": 102,
+      "private": true,
+      "defaultBranch": "trunk"
+    },
+    { "nodeId": "R_acme_web", "fullName": "acme/web", "installationId": 102, "private": true },
+    { "nodeId": "R_acme_quiet", "fullName": "acme/quiet", "installationId": 102, "private": true },
+    { "nodeId": "R_oss_lib", "fullName": "oss/lib", "installationId": null }
+  ],
+  "pullRequests": [
+    {
+      "nodeId": "PR_app_1",
+      "repo": "octo/app",
+      "number": 1,
+      "title": "Add login",
+      "body": "Implements login.",
+      "author": "octo",
+      "state": "MERGED",
+      "createdAt": "-60d",
+      "updatedAt": "-58d",
+      "mergedAt": "-58d",
+      "closedAt": "-58d",
+      "additions": 120,
+      "deletions": 10,
+      "changedFiles": 6,
+      "commits": 3,
+      "labels": ["feature"],
+      "reviews": [
+        {
+          "id": "RV_bot_1",
+          "author": "dependabot[bot]",
+          "authorType": "Bot",
+          "state": "COMMENTED",
+          "submittedAt": "-59d"
+        },
+        {
+          "id": "RV_alice_1",
+          "author": "alice",
+          "state": "CHANGES_REQUESTED",
+          "submittedAt": "-59d"
+        },
+        { "id": "RV_alice_2", "author": "alice", "state": "APPROVED", "submittedAt": "-58d" },
+        { "id": "RV_octo_self", "author": "octo", "state": "COMMENTED", "submittedAt": "-58d" }
+      ],
+      "crossReferences": [
+        {
+          "title": "Revert \"Add login\"",
+          "url": "https://github.com/octo/app/pull/9",
+          "state": "MERGED",
+          "mergedAt": "-50d",
+          "repo": "octo/app",
+          "at": "-50d"
+        }
+      ]
+    },
+    {
+      "nodeId": "PR_api_10",
+      "repo": "acme/api",
+      "number": 10,
+      "title": "Billing v2",
+      "body": "Billing rewrite.",
+      "author": "octo",
+      "state": "MERGED",
+      "isDraft": false,
+      "createdAt": "-20d",
+      "updatedAt": "-15d",
+      "mergedAt": "-15d",
+      "closedAt": "-15d",
+      "readyForReviewAt": "-18d",
+      "additions": 400,
+      "deletions": 120,
+      "changedFiles": 14,
+      "commits": 7,
+      "reviews": [
+        { "id": "RV_bob_10", "author": "bob", "state": "APPROVED", "submittedAt": "-16d" }
+      ]
+    },
+    {
+      "nodeId": "PR_api_11",
+      "repo": "acme/api",
+      "number": 11,
+      "title": "WIP: rate limits",
+      "body": null,
+      "author": "octo",
+      "state": "OPEN",
+      "isDraft": true,
+      "createdAt": "-5d",
+      "updatedAt": "-2d",
+      "additions": 30,
+      "deletions": 0,
+      "changedFiles": 2
+    },
+    {
+      "nodeId": "PR_lib_4",
+      "repo": "oss/lib",
+      "number": 4,
+      "title": "Fix typo",
+      "body": "Docs.",
+      "author": "octo",
+      "state": "CLOSED",
+      "createdAt": "-200d",
+      "updatedAt": "-199d",
+      "closedAt": "-199d",
+      "additions": 1,
+      "deletions": 1,
+      "changedFiles": 1
+    },
+    {
+      "nodeId": "PR_api_50",
+      "repo": "acme/api",
+      "number": 50,
+      "title": "Alice: queue workers",
+      "body": "Private body that must never be stored for a reviewer.",
+      "author": "alice",
+      "state": "MERGED",
+      "createdAt": "-25d",
+      "updatedAt": "-24d",
+      "mergedAt": "-24d",
+      "closedAt": "-24d",
+      "reviewRequests": [{ "reviewer": "octo", "at": "-25d" }],
+      "reviews": [
+        {
+          "id": "RV_octo_50",
+          "author": "octo",
+          "state": "APPROVED",
+          "submittedAt": "-24d",
+          "body": "",
+          "comments": 0
+        }
+      ]
+    },
+    {
+      "nodeId": "PR_web_7",
+      "repo": "acme/web",
+      "number": 7,
+      "title": "Alice: dark mode",
+      "body": "Body.",
+      "author": "alice",
+      "state": "MERGED",
+      "createdAt": "-90d",
+      "updatedAt": "-88d",
+      "mergedAt": "-88d",
+      "closedAt": "-88d",
+      "reviewRequests": [{ "reviewer": "team:frontend", "at": "-90d" }],
+      "reviews": [
+        {
+          "id": "RV_octo_7a",
+          "author": "octo",
+          "state": "CHANGES_REQUESTED",
+          "submittedAt": "-89d",
+          "body": "Please add tests",
+          "comments": 4
+        },
+        {
+          "id": "RV_octo_7b",
+          "author": "octo",
+          "state": "APPROVED",
+          "submittedAt": "-88d",
+          "body": "",
+          "comments": 0
+        },
+        { "id": "RV_octo_7p", "author": "octo", "state": "PENDING", "submittedAt": "-88d" }
+      ]
+    },
+    {
+      "nodeId": "PR_lib_3",
+      "repo": "oss/lib",
+      "number": 3,
+      "title": "Alice: faster parser",
+      "body": "Body.",
+      "author": "alice",
+      "state": "OPEN",
+      "createdAt": "-3d",
+      "updatedAt": "-1d",
+      "reviews": [
+        {
+          "id": "RV_octo_3",
+          "author": "octo",
+          "state": "COMMENTED",
+          "submittedAt": "-1d",
+          "body": "Nice!",
+          "comments": 2
+        }
+      ]
+    },
+    {
+      "nodeId": "PR_api_60",
+      "repo": "acme/api",
+      "number": 60,
+      "title": "Alice: unreviewed",
+      "body": "Body.",
+      "author": "alice",
+      "state": "OPEN",
+      "createdAt": "-4d",
+      "updatedAt": "-4d"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "a000000000000000000000000000000000000001",
+      "repo": "octo/app",
+      "authorNodeId": "U_octo",
+      "message": "feat: login\n\nAdds the login form.",
+      "authoredAt": "-60d",
+      "additions": 100,
+      "deletions": 5,
+      "changedFiles": 4,
+      "prNumber": 1
+    },
+    {
+      "sha": "a000000000000000000000000000000000000002",
+      "repo": "octo/app",
+      "authorNodeId": "U_octo",
+      "message": "fix: login redirect",
+      "authoredAt": "-59d",
+      "additions": 20,
+      "deletions": 5,
+      "changedFiles": 2
+    },
+    {
+      "sha": "a000000000000000000000000000000000000003",
+      "repo": "octo/app",
+      "authorNodeId": "U_octo",
+      "message": "chore: deps",
+      "authoredAt": "-10d",
+      "additions": 3,
+      "deletions": 3,
+      "changedFiles": 1
+    },
+    {
+      "sha": "b000000000000000000000000000000000000001",
+      "repo": "acme/api",
+      "authorNodeId": "U_octo",
+      "message": "feat: billing",
+      "authoredAt": "-19d",
+      "additions": 300,
+      "deletions": 100,
+      "changedFiles": 10,
+      "prNumber": 10
+    },
+    {
+      "sha": "b000000000000000000000000000000000000002",
+      "repo": "acme/api",
+      "authorNodeId": "U_octo",
+      "message": "Merge branch 'main'",
+      "authoredAt": "-17d",
+      "additions": 0,
+      "deletions": 0,
+      "changedFiles": 0,
+      "parents": 2
+    },
+    {
+      "sha": "c000000000000000000000000000000000000001",
+      "repo": "oss/lib",
+      "authorNodeId": "U_octo",
+      "message": "docs: typo",
+      "authoredAt": "-200d",
+      "additions": 1,
+      "deletions": 1,
+      "changedFiles": 1
+    },
+    {
+      "sha": "d000000000000000000000000000000000000001",
+      "repo": "acme/api",
+      "authorNodeId": "U_alice",
+      "message": "feat: queue workers",
+      "authoredAt": "-25d",
+      "additions": 50,
+      "deletions": 1,
+      "changedFiles": 3
+    }
+  ]
+}
