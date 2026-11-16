@@ -2,6 +2,7 @@ import { Trophy } from 'lucide-react';
 
 import { getServerEnv, isDevLoginEnabled } from '@/env';
 
+import { safeCallback } from './safe-callback';
 import { SignInButtons } from './sign-in-buttons';
 
 export const dynamic = 'force-dynamic';
@@ -36,11 +37,4 @@ export default function SignInPage({
       </div>
     </main>
   );
-}
-
-/** Only same-site relative paths (no open redirect). */
-function safeCallback(value: string | undefined): string {
-  if (!value || !value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\'))
-    return '/dashboard';
-  return value;
 }

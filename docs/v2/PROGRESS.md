@@ -11,7 +11,7 @@ Every phase session updates this file before opening its PR.
 | 02 | Engineering Foundation & Stabilization | ✅ Done | #8 | 2026-11-09 | Green lint/typecheck/tests/build + CI, migrations, seed, worker, Docker |
 | 03 | V2 Blueprint | ✅ Done | (this PR) | 2026-11-09 | All 7 user decisions answered; 14 ADRs; `blueprint/` |
 | 04 | UX/UI Design System & Prototype | ✅ Done | (this PR) | 2026-11-16 | Prototype approved as-is (D-020): [Artifact](https://claude.ai/artifact/7sRsUMg2VuwC1A5J4m9xFB); `design/` |
-| 05 | Backend Platform | ⏳ Not started | | | |
+| 05 | Backend Platform | ✅ Done | (this PR) | 2026-11-16 | Better Auth + JWT/JWKS, encrypted GitHub App connect, D-006 conventions, rate limits, logging |
 | 06 | Sync Engine v2 | ⏳ Not started | | | |
 | 07 | Metrics Engine & Impact Score v2 | ⏳ Not started | | | |
 | 08 | AI Layer v2 | ⏳ Not started | | | |
@@ -356,3 +356,97 @@ A-5 `DocumentSummary.flags` (P08). TRACEABILITY routes updated to IA.md.
 - *Tooling used:* Playwright (pre-installed Chromium) for screenshots/overflow, axe-core 4.10.2 and
   lucide 0.469.0 via `npm pack` into the scratchpad (CDNs other than Google Fonts are blocked by the
   sandbox proxy, so the lucide request was routed to the local copy).
+
+### Phase 05 — Backend Platform: Auth, Security, API Conventions (2026-11-16)
+**Branch / PR:** `claude/beautiful-dirac-fvqvj6` → `main` / PR "Phase 05: Backend Platform: Auth, Security, API Conventions"
+(branched from `main@43997a0` = P02 + P03 + P04 merged).
+
+**Summary:**
+- **Schema (P05-1..3):** Better Auth tables (`sessions`, `accounts`, `verifications`, `jwks`, reconciled with
+  `npx auth@1.7.25 generate` — the replacement for the deprecated `@better-auth/cli`), `users.email_verified/updated_at`,
+  `user_settings` (default row per user), integration security columns + `github_installations`. Data step:
+  v0.1 integrations → `OAUTH_APP` / `NEEDS_REAUTH` / `MIGRATED_FROM_V0`, profile backfilled from `metadata`,
+  plaintext `accessToken`/`refreshToken`/`metadata` dropped. Verified on the seeded DB; `migrate diff` shows no drift.
+- **Auth:** Better Auth in web (GitHub OAuth App `read:user user:email`, Google, `encryptOAuthTokens`,
+  account linking, JWT plugin EdDSA 15 min `aud=devimpact-api`); NestJS global `AuthGuard` with `jose`
+  remote JWKS (alg/iss/aud/exp pinned); `@CurrentUser()` / `@Public()`; all 17 `x-user-id` reads removed;
+  `GET/PATCH /me`, `GET/PATCH /me/settings`, `GET /me/entitlements`, `DELETE /me` (confirm email, revoke,
+  cascade), `/auth/me` deprecated alias. Web: `/sign-in`, middleware route protection, session + in-memory
+  JWT client, sign-out, `POST /api/dev-login` (404 in production builds), NextAuth removed (SEC-15).
+- **Integrations:** GitHub App `connect` (install/authorize), `callback` (HMAC user-bound single-use 10-min
+  state, PKCE in authorize mode, denied consent, org-approval pending, account-in-use 409, legacy row
+  upgraded in place), `reconnect`, `disconnect` (revoke at GitHub, drop tokens, keep or `purgeData`).
+  `TokenCipher` AES-256-GCM `v<n>.iv.ct.tag` with AAD + key list + `prisma/scripts/reencrypt-tokens.ts`.
+- **Conventions:** shared Zod schemas (`packages/shared/src/api/`) on every endpoint, exception filter +
+  envelope interceptor with the API_CONTRACT_V2 §2 codes, cursor pagination, inclusive local end dates
+  (BUG-05), 256 KB JSON limit, helmet, strict CORS (no credentials), Redis-backed throttler with rate
+  classes (`default`, `public`, `ai` 10/min + 60/day, `sync`, `destructive`), nestjs-pino with request ids,
+  user ids and redaction, `/api/health/live`, OpenAPI 3.1 at `/api/docs` (non-production).
+- **Tests:** API unit 66 (+4 skipped, 4 todo) incl. cipher, guard, state, filter, pagination and a static
+  user-scope check; API integration 72 (generated 401 test over every route, forged/expired/wrong-aud
+  tokens, ownership per resource, validation 400s, 413, 429, logging redaction, GitHub connect against a
+  fake GitHub); web Vitest 35; shared 16; Playwright 5 (redirect, 401, prod 404, sign-in → dashboard, Bearer
+  header + sign-out). P01 probes re-run: `audit/API_TEST_RESULTS.md` → "v2 re-run (Phase 05)".
+- **Security review** (`security-review` skill): no exploitable findings; applied its hardening suggestion
+  (sign-in `callbackUrl` rejects control characters/backslashes) and logged SEC-16.
+
+**Acceptance criteria:** all met — `grep -r "x-user-id" apps/` finds only tests asserting the header is
+ignored and comments (no reads); 401 on every non-public route (generated test); per-resource cross-user
+tests; dev-login 404 in a production build with `ENABLE_DEV_LOGIN=true` (Vitest + Playwright against
+`next start` + CI docker job); no plaintext tokens (migration + DB-inspection test) and cipher round-trip/
+tamper/AAD/rotation tests; missing/invalid/expired/reused/foreign state rejected; 400 `VALIDATION_FAILED`
+with field details; AI 429 test; log test proves request ids and no tokens/secrets; `npm run check`,
+`test:int`, `test:e2e` green locally (CI runs on the PR).
+
+**Deviations from the phase file:**
+- **Prisma 7 not adopted** (TRACEABILITY lists DEBT-10 under "P05 (Prisma major with auth migrations)"):
+  Better Auth 1.7.25 supports Prisma 6, and the major (driver adapters, ESM client) is safer together with
+  P06's activity migrations — D-021, DEBT-10 updated.
+- `grep -r "x-user-id" apps/` is not literally empty: the remaining hits are tests proving the header is
+  ignored and explanatory comments. No code reads it.
+- **E2E** runs the signed-in flows against `next dev` (dev login is impossible in production builds by
+  design); a second production server proves the 404 (D-021).
+- `/me/usage` and `/me/export` (F-04/F-07) are not built — they belong to P08/P12 per TRACEABILITY.
+- Transitional v1 endpoints keep v1 data shapes with v2 envelope/status codes (allowed by API_CONTRACT_V2 §20);
+  `/activity/*` and `/documents` switched to cursor pagination (`meta`), so the career page reads ≤ 100 items.
+- `PATCH /me/settings` timezone change does not enqueue a recompute yet (no metrics engine; P07).
+- Health readiness payload now uses the contract vocabulary (`ok`/`degraded`, checks `ok`/`fail`, 503 as
+  `UPSTREAM_UNAVAILABLE`).
+- CI audit gate uses `--omit=optional` (DEBT-11): better-auth's optional vitest peer made npm count the
+  test runner as a production dependency; a vitest ≥ 5.1 upgrade hit an npm arborist bug.
+- Docker Compose was not run locally (sandbox registry/proxy limits, see P01/P02 notes); the CI docker job
+  now also checks JWKS, a 401 from the API and the production dev-login 404.
+
+**Deferred items:** monthly AI quotas → P08 (SEC-07); web CSP → P14 (SEC-08); legacy-user linking policy →
+P09/P14 (SEC-16); `trust proxy` → P15 (SEC-17); per-env queue prefix → P06 (OPS-17); vitest upgrade → P09
+(DEBT-11); Prisma 7 → P06 (DEBT-10); token refresh, webhooks, `SyncRun`, `POST /sync` → P06.
+
+**New issues found:** SEC-16, SEC-17, OPS-17, DEBT-11 (`audit/ISSUES.md`, mapped in TRACEABILITY §2).
+
+**Handoff notes for next phases:**
+- *Sessions in tests/E2E:* API integration tests use `bearer(userId)` (`apps/api/test/utils/auth.ts`);
+  `createTestApp()` starts a local JWKS server and points `AUTH_JWKS_URL` at it. GitHub calls go to
+  `https://github.invalid` / `https://api.github.invalid`, answered by `installFakeGitHub()`
+  (`test/utils/fake-github.ts`). Call `resetRedisState()` in `beforeEach` (rate-limit counters, state nonces).
+  E2E: `page.request.post('/api/dev-login', { data: {} })` (demo user) or the sign-in page button; then
+  navigate with a full page load so the session is read.
+- *Running locally:* the API needs the web app up to verify tokens (JWKS). After changing
+  `BETTER_AUTH_SECRET`, `DELETE FROM jwks;` (keys are encrypted with it).
+- *Error codes:* `packages/shared/src/api/common.ts` (`ERROR_CODES`, `ERROR_STATUS`); throw
+  `AppException(code, safeMessage, details?)`. Unexpected errors become 500 `INTERNAL`.
+- *Adding an endpoint:* schema in `packages/shared/src/api/` → controller with `@ZodBody/@ZodQuery/@ZodParams`
+  + `@ApiDoc` + `@CurrentUser()` (+ `@RateLimit()` class) → every Prisma query scoped by `userId`
+  (`test/unit/user-scope.spec.ts` enforces it; justify exceptions with a `user-scope:` comment) →
+  integration test. Paginated lists: `afterCursor()` + `toPage()` + `withMeta()`.
+- *P06:* integrations carry encrypted `accessTokenEnc`/`refreshTokenEnc` with expiries; decrypt only at call
+  time with `TokenCipher.aad(id, field)`. `GitHubAppClient` (connect-only) lives in `integrations/`; build
+  refresh/installation tokens in the provider. The v0.1 `SyncProcessor` refuses integrations without a
+  usable token (`GITHUB_REAUTH_REQUIRED`). Fill `syncRun` in the callback response and add the `sync` rate
+  class to `POST /sync` per integration. Add `/webhooks/github` with `@Public()` and a raw-body parser
+  (the global JSON parser is in `app.setup.ts`). Queue prefix per environment (OPS-17).
+- *P09:* replace `auth-context.tsx` with the typed client + TanStack Query, keep `getApiToken()`
+  (in-memory JWT, refresh 60 s before expiry, retry once on 401); build the designed `/sign-in` (S1) incl.
+  the `account_not_linked` error (SEC-16); the GitHub callback route exists at
+  `/integrations/github/callback` and accepts only `returnTo` ∈ {`/onboarding`, `/settings/integrations`, `/connect`}
+  (extend `ConnectReturnTo` in shared when the real routes exist). Route protection is `src/middleware.ts`
+  (cookie presence only). Remove `/auth/me` alias callers, then the alias.

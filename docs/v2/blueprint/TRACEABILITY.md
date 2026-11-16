@@ -161,5 +161,9 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | API-06 | ⚪ | ADR-0006 | P05 | `/health`, `/docs` |
 | UX-13 | ⚪ | F-15, F-16 | P10 | |
 | GAP-10 | ⚪ | — | **WF (v2.1)** | GitLab/Jira/Linear out of v2.0 scope (ADR-0014, D-018); integrations page shows "planned" cards without connect buttons |
+| SEC-16 | 🟡 | F-01, ADR-0003 | P09, P14 | added by P05: legacy-user linking policy |
+| SEC-17 | ⚪ | ADR-0006 (rate classes), ADR-0013 | P15 | added by P05: `trust proxy` per host |
+| OPS-17 | 🟡 | ADR-0007 | P06 | added by P05: per-environment queue prefix |
+| DEBT-11 | ⚪ | ADR-0002, ADR-0011 | P09 | added by P05: vitest ≥ 5.1, drop `--omit=optional` |
 
 Every open ISSUES row with a target of P05 or later is mapped above; one (GAP-10) is won't-fix for v2.0.

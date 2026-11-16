@@ -280,3 +280,36 @@ pairs, axe 0 violations on the prototype).
 DESIGN_SYSTEM §11 and builds the custom components in §5.2. Routes in IA.md replace the provisional
 ones (TRACEABILITY updated). Additive API amendments A-1…A-5 (API_CONTRACT_V2 §22) are owned by
 P06–P08. Changing a token value, route or state pattern later needs a new decision entry.
+
+### D-021 · P05 implementation choices (auth, platform) · APPLIED (P05)
+Within D-003/D-005/D-006 and ADR-0003–0006, Phase 05 chose:
+- **Versions:** Better Auth **1.7.25** (exact pin; schema reconciled with `npx auth@1.7.25 generate`,
+  the CLI package that replaced the deprecated `@better-auth/cli`); `jose` 6 for JWKS verification;
+  `@nestjs/throttler` 6, `nestjs-pino` 4, `helmet` 8. **Prisma stays 6.19** (Better Auth supports it;
+  pinned exact): the Prisma 7 major (driver adapters, ESM client) moves to P06 with the activity v2
+  migrations (DEBT-10).
+- **Ids:** Better Auth `advanced.database.generateId: false`, so users/sessions/accounts/jwks get
+  Prisma `cuid()` ids like every other table (`Id` schema = cuid shape, without zod's deprecated `z.cuid()`).
+- **Columns:** new tables and new columns use snake_case `@map`; existing v0.1 camelCase columns
+  (`users."createdAt"`, `integrations."userId"`…) are not renamed in P05.
+- **Throttler storage:** a small Lua-based Redis `ThrottlerStorage` (fixed window, key
+  `devimpact:rl:<window>:<user|ip>`) instead of a third-party storage package; rate-limit classes are
+  route metadata (`@RateLimit('ai')`), keyed per user after the AuthGuard (guard order is explicit in
+  `AppModule`). Headers `RateLimit-*` and `Retry-After`.
+- **OpenAPI:** generated from controller metadata (`@ZodBody/@ZodQuery/@ZodParams/@ApiDoc`) with
+  zod 4's `z.toJSONSchema`; Swagger UI served from `swagger-ui-dist` (no CDN, no inline script).
+- **Dev login:** never creates users; signs in an existing (seeded) user by setting a fresh random
+  password on a `credential` account per call and calling Better Auth's email sign-in server-side
+  (email/password enabled only with dev login, sign-up disabled); same-origin check; the session
+  token is never echoed in the body.
+- **E2E:** dev login is impossible in a production build by design, so signed-in E2E flows run
+  against `next dev` (`NEXT_DIST_DIR=.next-e2e`) while a production server on :3001 proves the 404.
+- **Secrets:** `.env.example` ships labelled dev-only secrets that both apps refuse when
+  `NODE_ENV=production`; Docker Compose uses separate public compose-local defaults (overridable from
+  `.env`) so `docker compose up` works without setup — documented as unsafe for exposed deployments.
+- **Transitional v1 endpoints** (`/sync/trigger`, `/generate/*`, `/activity/summary`) keep v1 data
+  shapes but use the v2 envelope, status codes, validation and rate classes; `POST /integrations/github/callback`
+  returns `syncRun: null` (+ `returnTo`) until `SyncRun` exists (P06); the callback body also accepts
+  `error`/`errorDescription` (denied consent) and omits `code` for `setupAction=request` (additive).
+*Consequences:* later backend phases follow the "adding an endpoint" pattern in the root README; P06
+owns the Prisma major, token refresh and `SyncRun`; P09 replaces the functional sign-in/auth-context.

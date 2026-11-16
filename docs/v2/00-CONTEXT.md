@@ -147,3 +147,19 @@ raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
   specs with all states, and a clickable prototype (Artifact link in PROGRESS.md).
 - Routes in `design/IA.md` are binding (TRACEABILITY updated). API_CONTRACT_V2 §22 adds A-1…A-5
   (metrics trends/evidence, document evidence + flags, `recentWindowCompletedAt`).
+
+### After Phase 05 (2026-11-16)
+- **Real auth:** Better Auth 1.7.25 in `apps/web` (GitHub OAuth App + Google, Prisma adapter, sessions in
+  Postgres, JWT plugin). The browser gets a 15-minute EdDSA JWT from `/api/auth/token`; the API verifies
+  it via `${WEB_URL}/api/auth/jwks` in a global `AuthGuard`. `x-user-id`, the API dev-login and NextAuth
+  are gone. Dev login = web `POST /api/dev-login` (development only, seeded users only).
+- **Schema:** migrations P05-1..3 applied (sessions/accounts/verifications/jwks, `user_settings`,
+  integration security columns + `github_installations`). No plaintext provider tokens remain; v0.1
+  integrations are `NEEDS_REAUTH`. GitHub App connect (signed single-use state, PKCE, encrypted tokens,
+  revoke on disconnect) works; syncing with App tokens is P06.
+- **API conventions live:** D-006 envelope + error codes, Zod pipe with shared schemas, cursor
+  pagination, 256 KB body limit, helmet, strict CORS (no credentials), Redis rate-limit classes,
+  pino logs with request ids and redaction, `/api/health/live`, OpenAPI at `/api/docs` (non-prod).
+- **New env:** `BETTER_AUTH_SECRET`, `ENABLE_DEV_LOGIN`, `GITHUB_SIGNIN_*`, `GOOGLE_*`, `AUTH_JWT_*`,
+  `AUTH_JWKS_URL`, `GITHUB_APP_*`, `GITHUB_WEB_URL`/`GITHUB_API_URL`, `TOKEN_ENCRYPTION_KEYS`,
+  `TOKEN_ENCRYPTION_ACTIVE_KEY`, `OAUTH_STATE_SECRET`, `LOG_LEVEL` (see `.env.example`).
