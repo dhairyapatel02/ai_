@@ -15,7 +15,7 @@ Related: [ADR-0006 API conventions](adr/ADR-0006-api-conventions.md) ·
 11. [Activity](#11-activity) · 12. [Career](#12-career) · 13. [Documents & generation](#13-documents--generation)
 14. [AI utilities](#14-ai-utilities) · 15. [Achievements](#15-achievements) · 16. [Goals](#16-goals)
 17. [Notifications](#17-notifications) · 18. [Webhooks](#18-webhooks) · 19. [Health, docs, admin](#19-health-docs-admin)
-20. [v1 → v2 endpoint disposition](#20-v1--v2-endpoint-disposition) · 21. [PRD coverage check](#21-prd-coverage-check)
+20. [v1 → v2 endpoint disposition](#20-v1--v2-endpoint-disposition) · 21. [PRD coverage check](#21-prd-coverage-check) · 22. [Amendments from Phase 04](#22-amendments-from-phase-04-ux-design-2026-11-09)
 
 ---
 
@@ -488,3 +488,20 @@ provided they use the v2 envelope and status codes.
 | F-63–F-65 | `PATCH /me/settings`, §17 |
 | F-70–F-75 | UI only (no endpoints) |
 | F-76 | `UserSettings.aiRedactPrivateRepos` via `/me/settings`, applied by the AI layer |
+
+## 22. Amendments from Phase 04 (UX design, 2026-11-09)
+
+Additive changes found while mapping every screen in [`../design/SCREENS.md`](../design/SCREENS.md)
+to this contract (allowed without a DECISIONS entry; noted in PROGRESS.md). Owning phase in brackets.
+
+| ID | Change | Why (screen) | Phase |
+|---|---|---|---|
+| A-1 | **New** `GET /metrics/trends?period=&count=1..12&metrics=<MetricKey,...>` (default all scored + informational metrics of the KPI page, count 6) → `{ periodType, points: [{ period: ResolvedPeriod }], series: [{ metric: MetricKey, values: (number\|null)[] }] }` — the same metric values as `/metrics/kpis` for the `count` periods of the same type ending with `period`. Read-only, `default` rate class | KPI rows show a 6-period sparkline per metric; 21 `/metrics/timeseries` calls per page view would be wasteful (S8) | P07 |
+| A-2 | **New** `GET /metrics/evidence?metric=<MetricKey>&period=&cursor=&limit=` → `EvidenceItem[]`, `meta: PageMeta (total)` — resolves the metric's `evidence` ids (KPI §7) to titled, linkable items, newest first | Explain drawer evidence list and Activity filtered by a metric's evidence (S7, S8, FLOWS F9) | P07 |
+| A-3 | `GET /documents/:id` response adds `evidence: EvidenceItem[]` (every ref cited in the version, deduplicated) | Citation popovers and the Evidence panel need titles/URLs, not just refs (S16) | P08 |
+| A-4 | `SyncRunDto` adds optional `recentWindowCompletedAt: Timestamp \| null` — set when the newest-30-days slice of a backfill is persisted and rolled up | Onboarding "Your dashboard is ready — older history still loading" moment and the backfill banner (S5, S6, FLOWS F2) | P06 |
+| A-5 | `DocumentSummary` adds optional `flags: { uncited: number, invalid: number } \| null` (null while not `ready`) | Library shows "N uncited" badges without opening each document (S11) | P08 |
+
+No breaking changes. `GET /metrics/heatmap` also feeds the dashboard activity chart for the selected
+period (per-day `commits`, `prsMerged`, `reviews`; week/month buckets summed client-side), so no
+extra endpoint is needed for F-21.

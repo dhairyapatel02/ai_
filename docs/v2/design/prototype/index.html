@@ -1,0 +1,25 @@
+<title>DevImpact Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Clickable v2.0 UX prototype for DevImpact AI (Phase 04). Synthetic, seeded data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+<!--
+  DevImpact AI v2.0 — clickable prototype (Phase 04).
+  Source: docs/v2/design/prototype/{index.html, styles.css, data.js, app.js}.
+  Published as a private Artifact (link in docs/v2/PROGRESS.md). Open locally with any static server:
+    npx serve docs/v2/design/prototype   (or python3 -m http.server)
+  This file is a fragment: the Artifact host wraps it in <!doctype html><html><head>…<body>.
+  Routing uses plain hash names (#dashboard, #kpis …) because the Artifact host only passes `#name`;
+  the real app uses the paths in docs/v2/design/IA.md (e.g. /settings/integrations).
+-->
+<div id="app" aria-live="off"></div>
+<div id="overlay-root"></div>
+<div id="pop-root"></div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<div id="tooltip" class="tooltip" aria-hidden="true"></div>
+<div class="proto-fab"><button class="btn btn-sm" id="proto-btn" data-action="proto" aria-haspopup="dialog" aria-expanded="false"><i data-lucide="flask-conical" aria-hidden="true"></i>Prototype</button></div>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" data-lucide-src></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
