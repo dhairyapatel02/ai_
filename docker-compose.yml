@@ -3,11 +3,20 @@
 # is cloned into a directory such as `ai_` (OPS-09).
 name: devimpact
 
+# Secrets below default to compose-local values so `docker compose up` works out of the box.
+# They are NOT the .env.example values (those are refused in production builds), but they are
+# public: set real ones in `.env` before exposing this stack anywhere (README → Docker).
 x-api-env: &api-env
   DATABASE_URL: postgresql://devimpact:devimpact_password@postgres:5432/devimpact
   REDIS_URL: redis://redis:6379
-  WEB_URL: http://localhost:3000
+  WEB_URL: ${WEB_URL:-http://localhost:3000}
   RUN_WORKER_IN_API: 'false'
+  # The browser-facing issuer is localhost:3000; inside the network the API reaches the web app as web:3000.
+  AUTH_JWT_ISSUER: ${WEB_URL:-http://localhost:3000}
+  AUTH_JWKS_URL: http://web:3000/api/auth/jwks
+  TOKEN_ENCRYPTION_KEYS: ${TOKEN_ENCRYPTION_KEYS:-1:Y29tcG9zZS1sb2NhbC1vbmx5LXRva2VuLWtleS0hISE=}
+  TOKEN_ENCRYPTION_ACTIVE_KEY: ${TOKEN_ENCRYPTION_ACTIVE_KEY:-1}
+  OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET:-compose-local-only-oauth-state-secret-0123456789}
 
 services:
   postgres:
@@ -94,15 +103,22 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://localhost:4000/api
-        NEXT_PUBLIC_DEV_LOGIN_EMAIL: ${NEXT_PUBLIC_DEV_LOGIN_EMAIL:-}
     image: devimpact-web
     ports:
       - '3000:3000'
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://devimpact:devimpact_password@postgres:5432/devimpact
+      WEB_URL: ${WEB_URL:-http://localhost:3000}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-compose-local-only-better-auth-secret-0123456789}
+      # Production build: dev login is always off here, whatever ENABLE_DEV_LOGIN says.
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3000/dashboard > /dev/null || exit 1']
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3000/api/health > /dev/null || exit 1']
       interval: 10s
       timeout: 5s
       retries: 10

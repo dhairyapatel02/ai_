@@ -19,6 +19,11 @@ env:
   DATABASE_URL_TEST: postgresql://devimpact:devimpact_password@localhost:5432/devimpact_test
   REDIS_URL: redis://localhost:6379
   NEXT_TELEMETRY_DISABLED: 1
+  # Test-only secrets (never real). Integration tests override them with their own fixtures.
+  BETTER_AUTH_SECRET: ci-only-better-auth-secret-not-for-production-0123
+  TOKEN_ENCRYPTION_KEYS: '1:Y2ktb25seS10b2tlbi1rZXktbm90LWZvci1wcm9kISE='
+  TOKEN_ENCRYPTION_ACTIVE_KEY: 1
+  OAUTH_STATE_SECRET: ci-only-oauth-state-secret-not-for-production-0123
 
 jobs:
   quality:
@@ -37,7 +42,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - name: Audit API production dependencies (web is gated after the Next.js upgrade in P09)
-        run: npm audit --omit=dev --workspace=apps/api --audit-level=high
+        # --omit=optional: better-auth (web) declares vitest as an *optional* peer, so npm counts the
+        # dev-only test runner as a production dependency. Tracked as DEBT-11 (vitest >= 5.1).
+        run: npm audit --omit=dev --omit=optional --workspace=apps/api --audit-level=high
 
   integration:
     name: API integration tests
@@ -124,7 +131,14 @@ jobs:
       - name: Health endpoint
         run: curl --fail --silent --show-error http://localhost:4000/api/health
       - name: Web responds
-        run: curl --fail --silent --show-error --output /dev/null http://localhost:3000/dashboard
+        run: |
+          curl --fail --silent --show-error --output /dev/null http://localhost:3000/api/health
+          curl --fail --silent --show-error --output /dev/null http://localhost:3000/sign-in
+      - name: Auth wiring (JWKS served by web; API rejects anonymous calls; dev login off)
+        run: |
+          curl --fail --silent --show-error http://localhost:3000/api/auth/jwks | grep -q '"keys"'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4000/api/me)" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/dev-login)" = 404
       - name: Logs on failure
         if: failure()
         run: docker compose ps && docker compose logs --no-color
