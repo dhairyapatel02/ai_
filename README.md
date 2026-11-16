@@ -264,24 +264,24 @@ message, details?, requestId } }` with real HTTP status codes; the full contract
 rate-limit classes, pagination) is [`docs/v2/blueprint/API_CONTRACT_V2.md`](docs/v2/blueprint/API_CONTRACT_V2.md)
 and the live schema is at `/api/docs` outside production.
 
-| Method | Path                                 | Description                                         |
-| ------ | ------------------------------------ | --------------------------------------------------- |
-| GET    | /api/health · /api/health/live       | Readiness (Postgres + Redis) · liveness (public)    |
-| GET    | /api/me · /api/auth/me (deprecated)  | User, settings, entitlements, integrations          |
-| PATCH  | /api/me · /api/me/settings           | Update name · settings (IANA time zone, …)          |
-| GET    | /api/me/settings · /api/me/entitlements | Settings · plan limits                           |
-| DELETE | /api/me                              | Delete account and all data (`{ confirmEmail }`)    |
-| GET    | /api/integrations · /:id             | Integrations (never tokens)                         |
-| POST   | /api/integrations/github/connect     | GitHub App install/authorize URL with signed state  |
-| POST   | /api/integrations/github/callback    | Verify state, exchange code, store encrypted tokens |
-| POST   | /api/integrations/:id/reconnect      | Authorize again                                     |
-| DELETE | /api/integrations/:id?purgeData=     | Disconnect (revoke token; keep or purge data)       |
-| POST   | /api/sync/trigger · GET /sync/status | Queue a sync · job status (v2 sync arrives in P06)  |
-| GET    | /api/activity/commits · /prs         | Cursor-paginated activity                           |
-| GET    | /api/activity/summary                | Aggregated stats (deprecated → P07 metrics)         |
-| POST   | /api/generate/{resume,appraisal,promotion} | v1 generators (AI rate limit; P08 → /documents) |
-| GET    | /api/generate/impact-score           | Deprecated LLM score (P07 → /impact)                |
-| GET    | /api/documents · /:id, DELETE /:id   | Generated documents                                 |
+| Method | Path                                       | Description                                         |
+| ------ | ------------------------------------------ | --------------------------------------------------- |
+| GET    | /api/health · /api/health/live             | Readiness (Postgres + Redis) · liveness (public)    |
+| GET    | /api/me · /api/auth/me (deprecated)        | User, settings, entitlements, integrations          |
+| PATCH  | /api/me · /api/me/settings                 | Update name · settings (IANA time zone, …)          |
+| GET    | /api/me/settings · /api/me/entitlements    | Settings · plan limits                              |
+| DELETE | /api/me                                    | Delete account and all data (`{ confirmEmail }`)    |
+| GET    | /api/integrations · /:id                   | Integrations (never tokens)                         |
+| POST   | /api/integrations/github/connect           | GitHub App install/authorize URL with signed state  |
+| POST   | /api/integrations/github/callback          | Verify state, exchange code, store encrypted tokens |
+| POST   | /api/integrations/:id/reconnect            | Authorize again                                     |
+| DELETE | /api/integrations/:id?purgeData=           | Disconnect (revoke token; keep or purge data)       |
+| POST   | /api/sync/trigger · GET /sync/status       | Queue a sync · job status (v2 sync arrives in P06)  |
+| GET    | /api/activity/commits · /prs               | Cursor-paginated activity                           |
+| GET    | /api/activity/summary                      | Aggregated stats (deprecated → P07 metrics)         |
+| POST   | /api/generate/{resume,appraisal,promotion} | v1 generators (AI rate limit; P08 → /documents)     |
+| GET    | /api/generate/impact-score                 | Deprecated LLM score (P07 → /impact)                |
+| GET    | /api/documents · /:id, DELETE /:id         | Generated documents                                 |
 
 Web routes: `/api/auth/*` (Better Auth), `POST /api/dev-login` (development only), `GET /api/health`.
 
