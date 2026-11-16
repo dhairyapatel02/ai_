@@ -1,215 +1,55 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { IntegrationStatus } from '@prisma/client';
-import { Job } from 'bullmq';
+import { DelayedError, Job } from 'bullmq';
 
-import { TokenCipher, TokenCipherService } from '../crypto/token-cipher';
-import { GitHubService } from '../github/github.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { SYNC_QUEUE } from './sync.constants';
+import { SyncEngine } from './sync-engine.service';
+import { SyncScheduler } from './sync-scheduler.service';
+import { SyncTargetedService } from './sync-targeted.service';
+import { SYNC_JOB_ATTEMPTS, SYNC_JOBS, SYNC_QUEUE, type SyncJobData } from './sync.constants';
 
-export interface SyncJobData {
-  userId: string;
-  integrationId: string;
-}
+import type { TargetedJobData } from '../webhooks/webhooks.service';
 
-@Processor(SYNC_QUEUE)
+/**
+ * Consumer of the `sync` queue (worker process; also the API when RUN_WORKER_IN_API=true).
+ * Dispatches by job name: backfill/incremental runs, webhook-targeted refreshes, scheduler fan-out.
+ */
+@Processor(SYNC_QUEUE, { concurrency: 5 })
 export class SyncProcessor extends WorkerHost {
   private readonly logger = new Logger(SyncProcessor.name);
 
   constructor(
-    private prisma: PrismaService,
-    private githubService: GitHubService,
-    private cipher: TokenCipherService,
+    private readonly engine: SyncEngine,
+    private readonly targeted: SyncTargetedService,
+    private readonly scheduler: SyncScheduler,
   ) {
     super();
   }
 
-  async process(job: Job<SyncJobData>) {
-    const { userId, integrationId } = job.data;
-    this.logger.log(`Starting sync for user ${userId}`);
-
-    try {
-      const integration = await this.prisma.integration.findUniqueOrThrow({
-        where: { id: integrationId, userId },
-        select: { id: true, status: true, accessTokenEnc: true },
-      });
-      // Tokens are encrypted at rest (ADR-0005) and decrypted only at call time. Migrated v0.1
-      // integrations have none (NEEDS_REAUTH). Token refresh and the v2 sync engine are P06.
-      if (integration.status !== IntegrationStatus.ACTIVE || !integration.accessTokenEnc) {
-        throw new Error('GITHUB_REAUTH_REQUIRED: integration has no usable token');
-      }
-      const accessToken = this.cipher.decrypt(
-        integration.accessTokenEnc,
-        TokenCipher.aad(integration.id, 'accessToken'),
-      );
-
-      const username = await this.githubService.getUsername(accessToken);
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      const since = sixMonthsAgo.toISOString();
-
-      await job.updateProgress(10);
-
-      // Fetch repos
-      const repos = await this.githubService.fetchUserRepos(accessToken);
-      const recentRepos = repos.slice(0, 30); // Limit to 30 most recent
-      await job.updateProgress(20);
-
-      // Fetch commits
-      let totalCommits = 0;
-      for (let i = 0; i < recentRepos.length; i++) {
-        const repoName = recentRepos[i];
-        const commits = await this.githubService.fetchCommits(
-          accessToken,
-          repoName,
-          username,
-          since,
-        );
-
-        for (const commit of commits) {
-          await this.prisma.commit.upsert({
-            where: { userId_sha: { userId, sha: commit.sha } },
-            update: { additions: commit.additions, deletions: commit.deletions },
-            create: {
-              userId,
-              integrationId,
-              sha: commit.sha,
-              message: commit.message,
-              repo: commit.repo,
-              branch: commit.branch,
-              additions: commit.additions,
-              deletions: commit.deletions,
-              timestamp: new Date(commit.timestamp),
-            },
-          });
-          totalCommits++;
+  async process(
+    job: Job<SyncJobData | TargetedJobData | Record<string, never>>,
+    token?: string,
+  ): Promise<unknown> {
+    const attempt = { number: job.attemptsMade + 1, max: job.opts.attempts ?? SYNC_JOB_ATTEMPTS };
+    switch (job.name) {
+      case SYNC_JOBS.backfill:
+      case SYNC_JOBS.incremental: {
+        const data = job.data as SyncJobData;
+        const outcome = await this.engine.run(data.syncRunId, data.userId, attempt);
+        if (outcome.type === 'delayed') {
+          // Rate limit: keep the same job (and its id) and resume after the reset (ADR-0007).
+          await job.moveToDelayed(outcome.until.getTime(), token);
+          throw new DelayedError();
         }
-
-        await job.updateProgress(20 + Math.round((i / recentRepos.length) * 30));
+        return outcome;
       }
-
-      // Fetch PRs
-      let totalPRs = 0;
-      for (let i = 0; i < recentRepos.length; i++) {
-        const repoName = recentRepos[i];
-        const prs = await this.githubService.fetchPullRequests(
-          accessToken,
-          repoName,
-          username,
-          since,
-        );
-
-        for (const pr of prs) {
-          await this.prisma.pullRequest.upsert({
-            where: {
-              userId_repo_number: { userId, repo: pr.repo, number: pr.number },
-            },
-            update: {
-              title: pr.title,
-              body: pr.body,
-              state: pr.state,
-              mergedAt: pr.mergedAt ? new Date(pr.mergedAt) : null,
-            },
-            create: {
-              userId,
-              integrationId,
-              number: pr.number,
-              title: pr.title,
-              body: pr.body,
-              state: pr.state,
-              repo: pr.repo,
-              mergedAt: pr.mergedAt ? new Date(pr.mergedAt) : null,
-              timestamp: new Date(pr.createdAt),
-            },
-          });
-          totalPRs++;
-        }
-
-        await job.updateProgress(50 + Math.round((i / recentRepos.length) * 20));
-      }
-
-      // Fetch reviews
-      let totalReviews = 0;
-      for (let i = 0; i < Math.min(recentRepos.length, 15); i++) {
-        const repoName = recentRepos[i];
-        const reviews = await this.githubService.fetchReviews(
-          accessToken,
-          repoName,
-          username,
-          since,
-        );
-
-        for (const review of reviews) {
-          let dbPR = await this.prisma.pullRequest.findFirst({
-            where: { repo: review.repo, userId, number: review.prNumber },
-          });
-
-          if (!dbPR) {
-            dbPR = await this.prisma.pullRequest.upsert({
-              where: {
-                userId_repo_number: { userId, repo: review.repo, number: review.prNumber },
-              },
-              update: {},
-              create: {
-                userId,
-                integrationId,
-                number: review.prNumber,
-                title: `PR #${review.prNumber}`,
-                state: 'CLOSED',
-                repo: review.repo,
-                timestamp: new Date(review.submittedAt),
-              },
-            });
-          }
-
-          const timestamp = new Date(review.submittedAt);
-          await this.prisma.codeReview.upsert({
-            where: {
-              userId_prId_timestamp: { userId, prId: dbPR.id, timestamp },
-            },
-            update: {
-              comments: review.body ? 1 : 0,
-              approved: review.state === 'APPROVED',
-            },
-            create: {
-              userId,
-              prId: dbPR.id,
-              comments: review.body ? 1 : 0,
-              approved: review.state === 'APPROVED',
-              timestamp,
-            },
-          });
-          totalReviews++;
-        }
-
-        await job.updateProgress(70 + Math.round((i / 15) * 30));
-      }
-
-      // Invalidate cached impact scores for the months covered by the sync
-      const now = new Date();
-      const currentMonth = now.getMonth() + 1;
-      const currentYear = now.getFullYear();
-      await this.prisma.impactScore.deleteMany({
-        where: {
-          userId,
-          OR: [
-            { month: currentMonth, year: currentYear },
-            {
-              month: currentMonth === 1 ? 12 : currentMonth - 1,
-              year: currentMonth === 1 ? currentYear - 1 : currentYear,
-            },
-          ],
-        },
-      });
-
-      this.logger.log(
-        `Sync complete: ${totalCommits} commits, ${totalPRs} PRs, ${totalReviews} reviews`,
-      );
-      return { totalCommits, totalPRs, totalReviews };
-    } catch (error) {
-      this.logger.error(`Sync failed for user ${userId}: ${String(error)}`);
-      throw error;
+      case SYNC_JOBS.targeted:
+        await this.targeted.handle(job.data as TargetedJobData, attempt);
+        return { ok: true };
+      case SYNC_JOBS.fanout:
+        return this.scheduler.fanout(new Date());
+      default:
+        this.logger.warn({ name: job.name }, 'Unknown sync job ignored');
+        return null;
     }
   }
 }

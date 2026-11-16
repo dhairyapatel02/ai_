@@ -1,3 +1,5 @@
+import { nextSlotAfter } from '../sync/sync-run.mapper';
+
 import type { IntegrationDto, IntegrationStatus, IntegrationSummary } from '@devimpact/shared';
 import type { GitHubInstallation, Integration, Prisma } from '@prisma/client';
 
@@ -19,6 +21,7 @@ export const SAFE_INTEGRATION_SELECT = {
   backfillFrom: true,
   lastSyncedAt: true,
   lastSuccessfulSyncAt: true,
+  scheduleSlotMinute: true,
   createdAt: true,
   installations: true,
 } satisfies Prisma.IntegrationSelect;
@@ -38,6 +41,7 @@ export type SafeIntegration = Pick<
   | 'backfillFrom'
   | 'lastSyncedAt'
   | 'lastSuccessfulSyncAt'
+  | 'scheduleSlotMinute'
   | 'createdAt'
 > & { installations: GitHubInstallation[] };
 
@@ -56,7 +60,11 @@ function safeUrl(value: string | null): string | null {
   }
 }
 
-export function toIntegrationDto(row: SafeIntegration, manageUrl: string): IntegrationDto {
+export function toIntegrationDto(
+  row: SafeIntegration,
+  manageUrl: string,
+  now = new Date(),
+): IntegrationDto {
   return {
     id: row.id,
     provider: 'github',
@@ -75,7 +83,9 @@ export function toIntegrationDto(row: SafeIntegration, manageUrl: string): Integ
     manageUrl,
     lastSyncedAt: iso(row.lastSyncedAt),
     lastSuccessfulSyncAt: iso(row.lastSuccessfulSyncAt),
-    nextScheduledSyncAt: null, // scheduler arrives in P06
+    // Daily jittered slot of the hourly fan-out; paused unless ACTIVE (ADR-0007).
+    nextScheduledSyncAt:
+      row.status === 'ACTIVE' ? nextSlotAfter(row.scheduleSlotMinute, now).toISOString() : null,
     backfillFrom: iso(row.backfillFrom),
     createdAt: row.createdAt.toISOString(),
   };

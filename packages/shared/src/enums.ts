@@ -53,10 +53,3 @@ export enum AppraisalPeriod {
   QUARTERLY = 'quarterly',
   YEARLY = 'yearly',
 }
-
-export enum SyncStatus {
-  IDLE = 'IDLE',
-  SYNCING = 'SYNCING',
-  COMPLETE = 'COMPLETE',
-  ERROR = 'ERROR',
-}

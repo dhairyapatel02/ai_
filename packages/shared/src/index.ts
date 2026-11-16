@@ -6,3 +6,7 @@ export * from './api/me';
 export * from './api/integrations';
 export * from './api/activity';
 export * from './time/zoned';
+export * from './api/sync';
+export * from './api/repos';
+export * from './api/webhooks';
+export * from './providers/activity';

@@ -15,15 +15,16 @@ const config: Config = {
       // 151002: ts-jest notice about module "nodenext"; output is CommonJS either way.
       { tsconfig: '<rootDir>/tsconfig.json', diagnostics: { ignoreCodes: [151002] } },
     ],
-    // `jose` ships ESM only; transpile it to CommonJS for Jest (Node runs it natively).
-    '^.+/node_modules/jose/.+\\.js$': [
+    // `jose`, `@octokit/*` and their helpers ship ESM only; transpile them to CommonJS for Jest
+    // (Node runs them natively via require(esm)). Tests intercept `fetch`, never the real GitHub.
+    '^.+/node_modules/(jose|@octokit|before-after-hook|universal-user-agent)/.+\\.js$': [
       'ts-jest',
       { tsconfig: { allowJs: true, module: 'commonjs', target: 'es2022' }, diagnostics: false },
     ],
   },
-  transformIgnorePatterns: ['/node_modules/(?!jose/)'],
-  // `octokit` is ESM-only; tests never talk to GitHub, so map it to a throwing stub.
-  moduleNameMapper: { '^octokit$': '<rootDir>/test/mocks/octokit.ts' },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(jose|@octokit|before-after-hook|universal-user-agent)/)',
+  ],
   globalSetup: '<rootDir>/test/global-setup-int.ts',
   setupFiles: ['<rootDir>/test/setup-int.ts'],
   testTimeout: 30_000,

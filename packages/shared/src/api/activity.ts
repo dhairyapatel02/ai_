@@ -25,6 +25,20 @@ export const ActivityListQuery = PageQuery.extend({
 }).refine(rangeRefinement, { message: '`from` must not be after `to`', path: ['from'] });
 export type ActivityListQuery = z.infer<typeof ActivityListQuery>;
 
+/**
+ * `GET /activity/prs?role=` (F-18): authored PRs (default) or PRs the user reviewed. The two never
+ * mix, so reviewing someone else's PR can't inflate the authored count (DATA-01).
+ */
+export const PullRequestRole = z.enum(['authored', 'reviewed']);
+export type PullRequestRole = z.infer<typeof PullRequestRole>;
+
+export const PullRequestListQuery = PageQuery.extend({
+  from: DateBound.optional(),
+  to: DateBound.optional(),
+  role: PullRequestRole.default('authored'),
+}).refine(rangeRefinement, { message: '`from` must not be after `to`', path: ['from'] });
+export type PullRequestListQuery = z.infer<typeof PullRequestListQuery>;
+
 export const DocumentListQuery = PageQuery;
 export type DocumentListQuery = z.infer<typeof DocumentListQuery>;
 

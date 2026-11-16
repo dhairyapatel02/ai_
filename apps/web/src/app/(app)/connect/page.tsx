@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth-context';
 
+import type { SyncStatusDto } from '@devimpact/shared';
+
 interface Integration {
   id: string;
   provider: string;
@@ -17,10 +19,17 @@ interface Integration {
   createdAt: string;
 }
 
-interface SyncStatus {
-  status: string;
-  jobId?: string;
-  lastSync: string | null;
+/** `GET /sync/status` (API_CONTRACT_V2 §8): read from the database, per integration. */
+type SyncStatus = SyncStatusDto;
+
+const ACTIVE_STATES = new Set(['queued', 'running', 'waiting_rate_limit']);
+
+/** Transitional mapping onto the v1 badge (P10 builds the designed sync states). */
+function badgeFor(status: SyncStatus | null): 'syncing' | 'complete' | 'error' | 'idle' {
+  if (!status) return 'idle';
+  if (ACTIVE_STATES.has(status.state)) return 'syncing';
+  if (status.state === 'failed' || status.state === 'needs_reauth') return 'error';
+  return status.lastRun ? 'complete' : 'idle';
 }
 
 const PROVIDER_CONFIG = [
@@ -120,18 +129,21 @@ export default function ConnectPage() {
 
   const handleSync = async () => {
     setSyncing(true);
-    await apiFetch('/sync/trigger', { method: 'POST' });
-    // Poll sync status
+    // POST /sync replaces the v1 POST /sync/trigger. 409 SYNC_IN_PROGRESS just means "already
+    // running": keep polling the current run.
+    const started = await apiFetch('/sync', { method: 'POST', body: JSON.stringify({}) });
+    if (!started.success && !/already running/i.test(started.error ?? '')) {
+      setSyncing(false);
+      alert(started.error || 'Could not start a sync.');
+      return;
+    }
+    // Polling contract: every 2 s while queued/running (API_CONTRACT_V2 §8).
     const poll = setInterval(() => {
       void (async () => {
         const res = await apiFetch<SyncStatus>('/sync/status');
         if (res.success && res.data) {
           setSyncStatus(res.data);
-          if (
-            res.data.status === 'completed' ||
-            res.data.status === 'failed' ||
-            res.data.status === 'idle'
-          ) {
+          if (!ACTIVE_STATES.has(res.data.state)) {
             clearInterval(poll);
             setSyncing(false);
           }
@@ -185,12 +197,27 @@ export default function ConnectPage() {
                   <div className="flex items-center gap-2">
                     <SyncStatusBadge
                       status={
-                        connected && integration ? (syncing ? 'syncing' : 'complete') : 'idle'
+                        connected && integration
+                          ? syncing
+                            ? 'syncing'
+                            : badgeFor(syncStatus)
+                          : 'idle'
                       }
                     />
-                    {connected && syncStatus?.lastSync && (
+                    {connected && syncStatus?.currentRun && (
                       <span className="text-xs text-muted-foreground">
-                        Last sync: {new Date(syncStatus.lastSync).toLocaleString()}
+                        {syncStatus.currentRun.stage.replace('_', ' ')} ·{' '}
+                        {syncStatus.currentRun.progress}%
+                      </span>
+                    )}
+                    {connected && !syncStatus?.currentRun && syncStatus?.lastSuccessfulAt && (
+                      <span className="text-xs text-muted-foreground">
+                        Last sync: {new Date(syncStatus.lastSuccessfulAt).toLocaleString()}
+                      </span>
+                    )}
+                    {connected && syncStatus?.lastRun?.errorMessage && !syncStatus.currentRun && (
+                      <span className="text-xs text-destructive">
+                        {syncStatus.lastRun.errorMessage}
                       </span>
                     )}
                     {connected && integration?.externalLogin && (

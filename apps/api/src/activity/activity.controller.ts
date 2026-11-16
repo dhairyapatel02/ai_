@@ -1,4 +1,4 @@
-import { ActivityListQuery, DateRangeQuery } from '@devimpact/shared';
+import { ActivityListQuery, DateRangeQuery, PullRequestListQuery } from '@devimpact/shared';
 import { Controller, Get, Header } from '@nestjs/common';
 
 import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
@@ -25,10 +25,13 @@ export class ActivityController {
   }
 
   @Get('prs')
-  @ApiDoc({ summary: 'Pull requests, newest first (cursor pagination)', tags: ['activity'] })
+  @ApiDoc({
+    summary: 'Pull requests by role (authored | reviewed), newest first (cursor pagination)',
+    tags: ['activity'],
+  })
   async getPullRequests(
     @CurrentUser() user: AuthUser,
-    @ZodQuery(ActivityListQuery) query: ActivityListQuery,
+    @ZodQuery(PullRequestListQuery) query: PullRequestListQuery,
   ) {
     const page = await this.activityService.getPullRequests(user.id, query);
     return withMeta(page.items, page.meta);

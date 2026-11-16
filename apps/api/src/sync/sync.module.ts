@@ -1,15 +1,12 @@
-import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 
-import { SYNC_QUEUE } from './sync.constants';
+import { SyncCoreModule } from './sync-core.module';
 import { SyncController } from './sync.controller';
-import { SyncService } from './sync.service';
 
-/** HTTP side of sync: enqueue jobs and report status. Processing lives in SyncWorkerModule. */
+/** HTTP side of sync: enqueue runs and report status/history from the database. */
 @Module({
-  imports: [BullModule.registerQueue({ name: SYNC_QUEUE })],
+  imports: [SyncCoreModule],
   controllers: [SyncController],
-  providers: [SyncService],
-  exports: [SyncService],
+  exports: [SyncCoreModule],
 })
 export class SyncModule {}

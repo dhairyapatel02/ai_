@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { IntegrationMechanism, IntegrationStatus, Provider } from '@prisma/client';
+import { IntegrationMechanism, IntegrationStatus, Provider, SyncTrigger } from '@prisma/client';
 
 import { AppException } from '../common/app-exception';
 import { TokenCipher, TokenCipherService } from '../crypto/token-cipher';
@@ -26,6 +26,7 @@ import type {
   DisconnectResult,
   GitHubCallbackInput,
   IntegrationDto,
+  SyncRunDto,
 } from '@devimpact/shared';
 
 /** Statuses that occupy the user's integration slot (PRD §6). */
@@ -65,14 +66,16 @@ export class IntegrationsService {
     return rows.map((row) => this.dto(row));
   }
 
-  async get(userId: string, id: string): Promise<IntegrationDto & { currentRun: null }> {
+  async get(
+    userId: string,
+    id: string,
+  ): Promise<IntegrationDto & { currentRun: SyncRunDto | null }> {
     const row = await this.prisma.integration.findFirst({
       where: { id, userId },
       select: SAFE_INTEGRATION_SELECT,
     });
     if (!row) throw AppException.notFound('Integration');
-    // SyncRun persistence arrives in P06; until then there is no current run to report.
-    return { ...this.dto(row), currentRun: null };
+    return { ...this.dto(row), currentRun: await this.sync.currentRun(userId, row.id) };
   }
 
   /** `POST /integrations/github/connect` — install (no installation yet) or authorize. */
@@ -139,7 +142,12 @@ export class IntegrationsService {
     userId: string,
     input: GitHubCallbackInput,
   ): Promise<
-    | { kind: 'connected'; integration: IntegrationDto; syncRun: null; returnTo: string | null }
+    | {
+        kind: 'connected';
+        integration: IntegrationDto;
+        syncRun: SyncRunDto;
+        returnTo: string | null;
+      }
     | {
         kind: 'pending';
         integration: IntegrationDto | null;
@@ -179,11 +187,17 @@ export class IntegrationsService {
       this.callbackUrl,
     );
     let integration: SafeIntegration;
+    let wasReconnect = false;
     try {
       const [profile, installations] = await Promise.all([
         this.github.getUser(token.accessToken),
         this.github.listInstallations(token.accessToken),
       ]);
+      const before = await this.prisma.integration.findFirst({
+        where: { userId, provider: Provider.GITHUB, externalAccountId: profile.nodeId },
+        select: { status: true, backfillFrom: true },
+      });
+      wasReconnect = !!payload.i || before?.status === IntegrationStatus.NEEDS_REAUTH;
       integration = await this.upsertFromGitHub(userId, payload.i, token, profile, installations);
     } catch (error) {
       // Don't leave a live token behind if we could not store it.
@@ -191,12 +205,17 @@ export class IntegrationsService {
       throw error;
     }
 
-    await this.sync.enqueueInitial(userId, integration.id);
+    // Backfill on first connect; incremental from the cursors after a reconnect (ARCHITECTURE_V2 §6.2).
+    const syncRun = await this.sync.requestSync(userId, {
+      integrationId: integration.id,
+      trigger: wasReconnect ? SyncTrigger.RECONNECT : SyncTrigger.INITIAL,
+      reuseActive: true,
+    });
     const dto = this.dto(integration);
     if (input.setupAction === 'request') {
       return { kind: 'pending', integration: dto, pendingApproval: true, returnTo };
     }
-    return { kind: 'connected', integration: dto, syncRun: null, returnTo };
+    return { kind: 'connected', integration: dto, syncRun, returnTo };
   }
 
   private async upsertFromGitHub(
@@ -357,10 +376,12 @@ export class IntegrationsService {
         },
       });
       if (purgeData) {
-        // Reviews cascade from pull requests.
+        // Activity only; sync history stays (DATA_MODEL_V2 §6). Never purged implicitly (DATA-07).
+        await tx.pullRequestReview.deleteMany({ where: { userId, integrationId: row.id } });
         await tx.commit.deleteMany({ where: { userId, integrationId: row.id } });
         await tx.pullRequest.deleteMany({ where: { userId, integrationId: row.id } });
         await tx.issue.deleteMany({ where: { userId, integrationId: row.id } });
+        await tx.repository.deleteMany({ where: { userId, integrationId: row.id } });
       }
     });
 
