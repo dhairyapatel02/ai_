@@ -5,8 +5,8 @@ and uses Claude to turn engineering activity into resume bullet points, performa
 KPI dashboards, promotion packets and impact scores.
 
 > **Status:** v0.1 → v2.0 rebuild in progress. The plan, decisions and progress live in
-> [`docs/v2/`](docs/v2/README.md). Authentication is still a development stub (`x-user-id`
-> header + dev-login) until Phase 05 — do not deploy publicly.
+> [`docs/v2/`](docs/v2/README.md). Real authentication (Better Auth, GitHub/Google sign-in, JWTs to
+> the API) landed in Phase 05; the UI is still the functional v0.1 one until Phase 09.
 
 ## Tech stack
 
@@ -62,9 +62,11 @@ cp .env.example .env
 ```
 
 Every variable is documented in [`.env.example`](.env.example). The defaults work with the
-Docker services below. The API, worker, Prisma CLI, seed script and Next.js all read this **root**
-`.env` — you don't need to export it. The API exits at startup with a readable message if a
-required variable (`DATABASE_URL`, `REDIS_URL`) is missing or malformed.
+Docker services below and include **dev-only example secrets** (`BETTER_AUTH_SECRET`,
+`TOKEN_ENCRYPTION_KEYS`, `OAUTH_STATE_SECRET`) so nothing else is needed locally; the API and web
+app refuse to start with those values when `NODE_ENV=production`. The API, worker, Prisma CLI,
+seed script and Next.js all read this **root** `.env` — you don't need to export it. Both apps exit
+at startup with a readable message if a required variable is missing or malformed.
 
 ### 3. Start Postgres and Redis
 
@@ -94,10 +96,15 @@ npm run dev:api
 npm run dev:web
 ```
 
-- Web: http://localhost:3000 — with `NEXT_PUBLIC_DEV_LOGIN_EMAIL=demo@devimpact.dev` (the
-  `.env.example` default) the dev auto-login opens the seeded demo account. If you visited before,
-  clear `localStorage.devimpact_user_id` in the browser.
-- API: http://localhost:4000/api — health check at `GET /api/health`.
+- Web: http://localhost:3000 — you land on `/sign-in`. With `ENABLE_DEV_LOGIN=true` (the
+  `.env.example` default) click **Sign in as demo user (dev only)** to open the seeded demo account
+  without any OAuth app. GitHub/Google buttons appear once their credentials are set
+  ([Authentication setup](#authentication-setup)).
+- API: http://localhost:4000/api — readiness `GET /api/health`, liveness `GET /api/health/live`,
+  OpenAPI docs at http://localhost:4000/api/docs (not served in production).
+
+The API needs the web app running to verify tokens (it fetches the public keys from
+`${WEB_URL}/api/auth/jwks`).
 
 By default the API also processes queue jobs (`RUN_WORKER_IN_API=true`). To run the worker as a
 separate process like production does, set `RUN_WORKER_IN_API=false` and start:
@@ -117,6 +124,64 @@ npm run db:migrate -- --name describe_your_change
 > Databases created with the old `prisma db push` flow can be baselined with
 > `npx prisma migrate resolve --applied 20261109075145_init` (run in `apps/api`).
 
+## Authentication setup
+
+Sign-in and the GitHub data source are **two separate GitHub registrations** (ADR-0003, ADR-0004).
+None of them is needed for local work on seed data (use the dev login).
+
+**How it works.** Better Auth runs in the web app (`/api/auth/*`) with sessions in Postgres. The
+browser gets a 15-minute EdDSA JWT from `GET /api/auth/token` and calls the API with
+`Authorization: Bearer <jwt>`; the API verifies it against `${WEB_URL}/api/auth/jwks`. The API
+has no cookies and ignores any `x-user-id` header.
+
+### Sign in with GitHub (OAuth App)
+
+1. GitHub → Settings → Developer settings → **OAuth Apps** → New OAuth App.
+2. Homepage URL `http://localhost:3000`; **Authorization callback URL
+   `http://localhost:3000/api/auth/callback/github`** (use your public `WEB_URL` in production).
+3. Copy the client ID and generate a secret → `GITHUB_SIGNIN_CLIENT_ID`,
+   `GITHUB_SIGNIN_CLIENT_SECRET`. Scopes requested: `read:user user:email` (identity only).
+
+### Sign in with Google
+
+1. Google Cloud Console → APIs & Services → Credentials → **Create OAuth client ID** (Web
+   application); configure the consent screen (scopes `openid email profile`).
+2. Authorized JavaScript origin `http://localhost:3000`; **authorized redirect URI
+   `http://localhost:3000/api/auth/callback/google`**.
+3. → `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+
+Accounts with the same verified email are linked (GitHub ↔ Google), which also links existing
+v0.1 users on their first sign-in.
+
+### GitHub App (data source)
+
+1. GitHub → Settings → Developer settings → **GitHub Apps** → New GitHub App.
+2. **Callback URL `http://localhost:3000/integrations/github/callback`**; enable **"Request user
+   authorization (OAuth) during installation"** and **"Expire user authorization tokens"**.
+   Setup URL: same as the callback, with "Redirect on update" checked.
+3. Webhook: active, URL `<public API URL>/api/webhooks/github` (endpoint lands in P06; use
+   `smee.io` or `gh webhook forward` locally), secret → `GITHUB_WEBHOOK_SECRET`.
+4. Repository permissions (all **read-only**): Metadata, Contents, Pull requests. No write
+   permissions. Events: Pull request, Pull request review, Push (installation events are implicit).
+5. After creating: App ID → `GITHUB_APP_ID`; the slug from the public URL
+   (`github.com/apps/<slug>`) → `GITHUB_APP_SLUG`; Client ID / a new client secret →
+   `GITHUB_APP_CLIENT_ID` / `GITHUB_APP_CLIENT_SECRET`; generate a private key (PEM) →
+   `GITHUB_APP_PRIVATE_KEY` (used from P06).
+
+Then **Integrations → Connect** installs the app (or asks you to authorize it if it is already
+installed). The connect `state` is HMAC-signed, single-use and expires after 10 minutes; tokens are
+stored AES-256-GCM encrypted.
+
+### Secrets and key rotation
+
+- `BETTER_AUTH_SECRET` — `openssl rand -base64 32`. It also encrypts the JWT signing keys in the
+  `jwks` table: after changing it, delete those rows (`DELETE FROM jwks;`) so a new key pair is
+  generated, and sign in again.
+- `OAUTH_STATE_SECRET` — `openssl rand -base64 48`.
+- `TOKEN_ENCRYPTION_KEYS` / `TOKEN_ENCRYPTION_ACTIVE_KEY` — `openssl rand -base64 32` per key.
+  **Rotation:** add the new key (`1:<old>,2:<new>`), set `TOKEN_ENCRYPTION_ACTIVE_KEY=2`, deploy,
+  run `npx tsx apps/api/prisma/scripts/reencrypt-tokens.ts`, then remove the old key.
+
 ## Full stack with Docker
 
 ```bash
@@ -124,11 +189,13 @@ docker compose up --build
 ```
 
 Starts postgres, redis, api (applies migrations on start), worker and web; every service has a
-healthcheck (`docker compose ps`). `.env` is optional here — compose sets the connection settings.
-Seed the containerised database from your machine with `npm run db:seed` (it uses
-`localhost:5432`). To bake the demo login into the web image, export
-`NEXT_PUBLIC_DEV_LOGIN_EMAIL=demo@devimpact.dev` before building. Behind a registry rate limit, pass
-a mirror: `docker compose build --build-arg NODE_IMAGE=mirror.gcr.io/library/node:22-alpine`.
+healthcheck (`docker compose ps`). `.env` is optional here — compose sets the connection settings
+and **compose-local default secrets** so the stack starts; they are public, so set real
+`BETTER_AUTH_SECRET`, `TOKEN_ENCRYPTION_KEYS` and `OAUTH_STATE_SECRET` in `.env` before exposing
+the stack anywhere. The web image is a production build, so the dev login is off: configure GitHub
+or Google sign-in to log in. Seed the containerised database from your machine with
+`npm run db:seed` (it uses `localhost:5432`). Behind a registry rate limit, pass a mirror:
+`docker compose build --build-arg NODE_IMAGE=mirror.gcr.io/library/node:22-alpine`.
 
 ## Quality checks and tests
 
@@ -153,8 +220,10 @@ docker compose exec postgres createdb -U devimpact devimpact_test
 npm run test:int
 ```
 
-**E2E tests** need built apps and a migrated, seeded database. Playwright starts the API and web
-servers itself (or reuses ones already running locally):
+**E2E tests** need built apps and a migrated, seeded database. Playwright starts the API, the web
+app in development mode on :3000 (`ENABLE_DEV_LOGIN=true`, build dir `.next-e2e`) and the
+production web build on :3001 (to prove the dev login is a 404 there), or reuses servers already
+running locally:
 
 ```bash
 npm run build && npm run db:deploy && npm run db:seed
@@ -170,8 +239,11 @@ npm run test:e2e
 
 Traces are off by default; re-run a failing test with `npx playwright test --trace on` to debug.
 
-Tests never call the real GitHub or Anthropic APIs: `octokit` is stubbed in Jest and AI calls are
-mocked. Known v0.1 bugs are captured as `it.skip` / `it.todo` tests tagged with their issue ID from
+Tests never call the real GitHub or Anthropic APIs: `octokit` is stubbed in Jest, GitHub OAuth/REST
+calls go to unroutable `*.github.invalid` hosts answered by a fake (`test/utils/fake-github.ts`),
+and AI calls are mocked. **Authenticated API tests** use `bearer(userId)` from
+`apps/api/test/utils/auth.ts`: `createTestApp()` starts a local JWKS server with a test key pair,
+so the real JWT verification path runs. E2E tests sign in through `POST /api/dev-login`. Known v0.1 bugs are captured as `it.skip` / `it.todo` tests tagged with their issue ID from
 [`docs/v2/audit/ISSUES.md`](docs/v2/audit/ISSUES.md); the phase that fixes a bug un-skips its test.
 
 ## Continuous integration
@@ -186,30 +258,38 @@ to `main`:
 
 ## API endpoints
 
-All routes are prefixed with `/api`. Until Phase 05 the caller is identified by the `x-user-id`
-header.
+All routes are prefixed with `/api` and require `Authorization: Bearer <jwt>` except health.
+Responses use the envelope `{ success: true, data, meta? }` / `{ success: false, error: { code,
+message, details?, requestId } }` with real HTTP status codes; the full contract (error codes,
+rate-limit classes, pagination) is [`docs/v2/blueprint/API_CONTRACT_V2.md`](docs/v2/blueprint/API_CONTRACT_V2.md)
+and the live schema is at `/api/docs` outside production.
 
-| Method | Path                              | Description                       |
-| ------ | --------------------------------- | --------------------------------- |
-| GET    | /api/health                       | Postgres + Redis health (200/503) |
-| POST   | /api/auth/dev-login               | Development login (stub)          |
-| GET    | /api/auth/me                      | Current user profile              |
-| GET    | /api/integrations                 | List connected integrations       |
-| POST   | /api/integrations/github/connect  | Start GitHub OAuth                |
-| POST   | /api/integrations/github/callback | Exchange the OAuth code           |
-| DELETE | /api/integrations/:id             | Disconnect integration            |
-| POST   | /api/sync/trigger                 | Queue a GitHub sync               |
-| GET    | /api/sync/status                  | Sync job status                   |
-| GET    | /api/activity/commits             | Paginated commits                 |
-| GET    | /api/activity/prs                 | Pull requests                     |
-| GET    | /api/activity/summary             | Aggregated stats                  |
-| POST   | /api/generate/resume              | Generate resume bullets           |
-| POST   | /api/generate/appraisal           | Generate appraisal report         |
-| POST   | /api/generate/promotion           | Generate promotion packet         |
-| GET    | /api/generate/impact-score        | Calculate impact score            |
-| GET    | /api/documents                    | List generated documents          |
-| GET    | /api/documents/:id                | Get document                      |
-| DELETE | /api/documents/:id                | Delete document                   |
+| Method | Path                                 | Description                                         |
+| ------ | ------------------------------------ | --------------------------------------------------- |
+| GET    | /api/health · /api/health/live       | Readiness (Postgres + Redis) · liveness (public)    |
+| GET    | /api/me · /api/auth/me (deprecated)  | User, settings, entitlements, integrations          |
+| PATCH  | /api/me · /api/me/settings           | Update name · settings (IANA time zone, …)          |
+| GET    | /api/me/settings · /api/me/entitlements | Settings · plan limits                           |
+| DELETE | /api/me                              | Delete account and all data (`{ confirmEmail }`)    |
+| GET    | /api/integrations · /:id             | Integrations (never tokens)                         |
+| POST   | /api/integrations/github/connect     | GitHub App install/authorize URL with signed state  |
+| POST   | /api/integrations/github/callback    | Verify state, exchange code, store encrypted tokens |
+| POST   | /api/integrations/:id/reconnect      | Authorize again                                     |
+| DELETE | /api/integrations/:id?purgeData=     | Disconnect (revoke token; keep or purge data)       |
+| POST   | /api/sync/trigger · GET /sync/status | Queue a sync · job status (v2 sync arrives in P06)  |
+| GET    | /api/activity/commits · /prs         | Cursor-paginated activity                           |
+| GET    | /api/activity/summary                | Aggregated stats (deprecated → P07 metrics)         |
+| POST   | /api/generate/{resume,appraisal,promotion} | v1 generators (AI rate limit; P08 → /documents) |
+| GET    | /api/generate/impact-score           | Deprecated LLM score (P07 → /impact)                |
+| GET    | /api/documents · /:id, DELETE /:id   | Generated documents                                 |
+
+Web routes: `/api/auth/*` (Better Auth), `POST /api/dev-login` (development only), `GET /api/health`.
+
+**Adding an endpoint:** define request/response Zod schemas in `packages/shared/src/api/`, use
+them in the controller with `@ZodBody/@ZodQuery/@ZodParams` and `@ApiDoc`, take the user from
+`@CurrentUser()` and scope every query by `userId`, throw `AppException` for expected failures,
+pick a `@RateLimit()` class if not `default`, and add an integration test (the generated auth
+test covers the 401 automatically).
 
 ## License
 

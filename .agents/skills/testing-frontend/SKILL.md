@@ -30,9 +30,12 @@ npm run dev:api      # http://localhost:4000/api  (GET /api/health)
 npm run dev:web      # http://localhost:3000
 ```
 
-`NEXT_PUBLIC_DEV_LOGIN_EMAIL=demo@devimpact.dev` (default in `.env.example`) makes the auto
-dev-login open the seeded account. Reset the browser identity with
-`localStorage.removeItem('devimpact_user_id')`.
+Pages redirect to `/sign-in`. With `ENABLE_DEV_LOGIN=true` (default in `.env.example`, ignored in
+production builds) click **Sign in as demo user (dev only)**, or script it:
+`POST http://localhost:3000/api/dev-login {"email":"demo@devimpact.dev"}` sets the session cookie
+(Playwright: `page.request.post('/api/dev-login', { data: {} })`). The API itself needs
+`Authorization: Bearer <jwt>` — get one with `GET /api/auth/token` using that cookie. Sign out via
+the sidebar button. In tests, `bearer(userId)` from `apps/api/test/utils/auth.ts` mints API tokens.
 
 Optional AI without a key: `node docs/v2/audit/scripts/mock-anthropic.mjs 4010` and set
 `ANTHROPIC_BASE_URL=http://localhost:4010` in `.env`.

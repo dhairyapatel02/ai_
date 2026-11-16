@@ -216,3 +216,111 @@ a fake GitHub is in [`ARCHITECTURE_CURRENT.md §5`](ARCHITECTURE_CURRENT.md#5-sy
 | DEST-1 | `DELETE /documents/cmw8wea8x00ix149odzuzr5b3`<br>delete bob's document impersonating bob | cmw8wea8900h01 | 200 | 4 | `{"success":true,"data":{"message":"Document deleted"}}` | ❌ SEC-01 — Bob's document deleted by setting a header |
 | DEST-2 | `DELETE /integrations/cmw8wea8a00h2149ofj90qa1n`<br>disconnect bob's integration impersonating bob (cascade-deletes activity) | cmw8wea8900h01 | 200 | 5 | `{"success":true,"data":{"message":"Integration disconnected"}}` | ❌ SEC-01, DATA-07 — Bob's integration deleted; cascade wipes his activity |
 | DEST-3 | `GET /activity/summary`<br>bob's commits after disconnect | cmw8wea8900h01 | 200 | 20 | `{"success":true,"data":{"totalCommits":0,"totalPRs":0,"totalReviews":0,"totalIssues":0,"topRepos":[],"impactScore":66}}` | ❌ DATA-07 — Bob now has 0 commits / 0 PRs |
+
+## v2 re-run (Phase 05, 2026-11-16)
+
+Same 87 probes (+3) re-run against the P05 API with `PROBE_AUTH=v2` (`probe-api.sh` maps *none* → no credentials, *Alice* → her JWT, *impersonating Bob* → Alice's JWT plus `x-user-id: <bob>`, *forged id* → a JWT signed by an untrusted key; JWKS served by `v2-auth-helper.mjs`; Anthropic mocked). Raw logs: `logs/api-probes-p05.jsonl` (single pass, AI probes after the 10th hit the new rate limit) and `logs/api-probes-p05-ai-fresh.jsonl` (AI probes again with fresh counters).
+
+| v2 status | Count |
+|---|---|
+| 200 | 17 |
+| 201 | 3 |
+| 202 | 2 |
+| 204 | 1 |
+| 400 | 20 |
+| 401 | 20 |
+| 404 | 17 |
+| 429 | 6 |
+| 503 | 1 |
+
+No error is returned with a 2xx status any more (API-01); no request without a valid JWT succeeds on a protected route (SEC-01); no foreign id is readable or deletable (SEC-01, BUG-12); invalid input is a 400 with field details instead of a 200/500 (API-02, BUG-04, BUG-07, SEC-06).
+
+| Probe | Request | As | v1 | v2 | v2 verdict |
+|---|---|---|---|---|---|
+| AUTH-1 | `POST /auth/dev-login` | none | 201 | 404 | ✅ removed (dev login is web-only, stubs gone) |
+| AUTH-2 | `POST /auth/dev-login` | none | 201 | 404 | ✅ removed (dev login is web-only, stubs gone) |
+| AUTH-3 | `POST /auth/dev-login` | none | 201 | 404 | ✅ removed (dev login is web-only, stubs gone) |
+| AUTH-4 | `POST /auth/dev-login` | none | 201 | 404 | ✅ removed (dev login is web-only, stubs gone) |
+| AUTH-5 | `GET /auth/me` | none | 200 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| AUTH-6 | `GET /auth/me` | cmwizv… | 200 | 200 | ✅ 200 |
+| AUTH-7 | `GET /auth/me` | forged JWT | 200 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| AUTH-8 | `GET /auth/me` | cmwizv… | 200 | 200 | ✅ 200: x-user-id ignored — caller's own data |
+| AUTH-9 | `POST /auth/github` | none | 201 | 404 | ✅ removed (dev login is web-only, stubs gone) |
+| AUTH-10 | `POST /auth/github` | none | 201 | 404 | ✅ removed (dev login is web-only, stubs gone) |
+| AUTH-11 | `POST /auth/google` | none | 201 | 404 | ✅ removed (dev login is web-only, stubs gone) |
+| AUTH-12 | `POST /auth/google` | none | 201 | 404 | ✅ removed (dev login is web-only, stubs gone) |
+| AUTH-13 | `POST /auth/google` | forged JWT | 201 | 404 | ✅ removed (dev login is web-only, stubs gone) |
+| AUTH-14 | `POST /auth/github` | forged JWT | 201 | 404 | ✅ removed (dev login is web-only, stubs gone) |
+| INT-1 | `GET /integrations` | cmwizv… | 200 | 200 | ✅ 200 |
+| INT-2 | `GET /integrations` | none | 200 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| INT-3 | `GET /integrations` | cmwizv… | 200 | 200 | ✅ 200: x-user-id ignored — caller's own data |
+| INT-4 | `POST /integrations/github/connect` | cmwizv… | 201 | 503 | ✅ 503 GitHub App not configured in this run (clear error, no 200) |
+| INT-5 | `POST /integrations/github/connect` | none | 201 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| INT-6 | `POST /integrations/github/connect` | forged JWT | 201 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| INT-7 | `POST /integrations/github/callback` | cmwizv… | 201 | 400 | ✅ 400 VALIDATION_FAILED |
+| INT-8 | `POST /integrations/github/callback` | cmwizv… | 201 | 400 | ✅ 400 VALIDATION_FAILED |
+| INT-9 | `POST /integrations/github/callback` | none | 201 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| INT-10 | `POST /integrations/github/callback` | cmwizv… | 201 | 400 | ✅ 400 VALIDATION_FAILED |
+| INT-11 | `DELETE /integrations/cmwizv5yz00f17dbhakh7j9c8` | cmwizv… | 200 | 404 | ✅ other user's id → 404 (ownership) |
+| INT-12 | `DELETE /integrations/nope` | cmwizv… | 200 | 400 | ✅ 400 VALIDATION_FAILED |
+| INT-13 | `DELETE /integrations/cmwizv5yz00f17dbhakh7j9c8` | none | 200 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| SYNC-1 | `POST /sync/trigger` | cmwizv… | 201 | 202 | ✅ 202 |
+| SYNC-2 | `POST /sync/trigger` | cmwizv… | 201 | 202 | ✅ 202 |
+| SYNC-3 | `POST /sync/trigger` | none | 201 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| SYNC-4 | `POST /sync/trigger` | forged JWT | 201 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| SYNC-5 | `GET /sync/status` | cmwizv… | 200 | 200 | ✅ 200 |
+| SYNC-6 | `GET /sync/status` | none | 200 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| SYNC-7 | `GET /sync/status` | forged JWT | 200 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| SYNC-8 | `GET /sync/status` | cmwizv… | 200 | 200 | ✅ 200: x-user-id ignored — caller's own data |
+| ACT-1 | `GET /activity/commits` | cmwizv… | 200 | 200 | ✅ 200 |
+| ACT-2 | `GET /activity/commits?limit=100000` | cmwizv… | 200 | 400 | ✅ 400 VALIDATION_FAILED |
+| ACT-3 | `GET /activity/commits?limit=abc` | cmwizv… | 200 | 400 | ✅ 400 VALIDATION_FAILED |
+| ACT-4 | `GET /activity/commits?page=0` | cmwizv… | 500 | 400 | ✅ 400 VALIDATION_FAILED |
+| ACT-5 | `GET /activity/commits?limit=-5` | cmwizv… | 200 | 400 | ✅ 400 VALIDATION_FAILED |
+| ACT-6 | `GET /activity/commits?from=garbage` | cmwizv… | 500 | 400 | ✅ 400 VALIDATION_FAILED |
+| ACT-7 | `GET /activity/commits` | none | 200 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| ACT-8 | `GET /activity/commits?limit=2` | cmwizv… | 200 | 200 | ✅ 200: x-user-id ignored — caller's own data |
+| ACT-9 | `GET /activity/commits?from=2026-11-16&to=2026-11-16&limit=1` | cmwizv… | 200 | 200 | ✅ 200 |
+| ACT-10 | `GET /activity/prs?limit=5` | cmwizv… | 200 | 200 | ✅ 200 |
+| ACT-11 | `GET /activity/prs?limit=100000` | cmwizv… | 200 | 400 | ✅ 400 VALIDATION_FAILED |
+| ACT-12 | `GET /activity/prs?from=garbage` | cmwizv… | 500 | 400 | ✅ 400 VALIDATION_FAILED |
+| ACT-13 | `GET /activity/prs` | none | 200 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| ACT-14 | `GET /activity/summary?from=2026-05-16&to=2026-11-16` | cmwizv… | 200 | 200 | ✅ 200 |
+| ACT-15 | `GET /activity/summary?from=garbage` | cmwizv… | 500 | 400 | ✅ 400 VALIDATION_FAILED |
+| ACT-16 | `GET /activity/summary` | none | 200 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| ACT-17 | `GET /activity/summary` | cmwizv… | 200 | 200 | ✅ 200: x-user-id ignored — caller's own data |
+| DOC-1 | `GET /documents` | cmwizv… | 200 | 200 | ✅ 200 |
+| DOC-2 | `GET /documents?limit=100000` | cmwizv… | 200 | 400 | ✅ 400 VALIDATION_FAILED |
+| DOC-3 | `GET /documents` | none | 200 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| DOC-4 | `GET /documents/cmwizv5yu00ey7dbh7d51ylw7` | cmwizv… | 200 | 200 | ✅ 200 |
+| DOC-5 | `GET /documents/cmwizv60i00h27dbhveq4mab1` | cmwizv… | 200 | 404 | ✅ other user's id → 404 (ownership) |
+| DOC-6 | `GET /documents/cmwizv60i00h27dbhveq4mab1` | cmwizv… | 200 | 404 | ✅ other user's id → 404 (ownership) |
+| DOC-7 | `DELETE /documents/cmwizv60i00h27dbhveq4mab1` | cmwizv… | 200 | 404 | ✅ other user's id → 404 (ownership) |
+| DOC-8 | `DELETE /documents/nope` | cmwizv… | 200 | 400 | ✅ 400 VALIDATION_FAILED |
+| DOC-9 | `DELETE /documents/cmwizv60i00h27dbhveq4mab1` | none | 200 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| DOC-10 | `GET /documents?page=abc` | cmwizv… | 200 | 400 | ✅ 400 VALIDATION_FAILED |
+| GEN-1 | `GET /generate/impact-score?month=11&year=2026` | cmwizv… | 200 | 200 | ✅ 200 |
+| GEN-2 | `GET /generate/impact-score?month=abc&year=2026` | cmwizv… | 200 | 400 | ✅ 400 VALIDATION_FAILED |
+| GEN-3 | `GET /generate/impact-score` | cmwizv… | 200 | 400 | ✅ 400 VALIDATION_FAILED |
+| GEN-4 | `GET /generate/impact-score?month=1&year=2026` | none | 200 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| GEN-5 | `POST /generate/resume` | none | 201 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| GEN-6 | `POST /generate/appraisal` | none | 201 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| GEN-7 | `POST /generate/promotion` | none | 201 | 401 | ✅ 401 UNAUTHENTICATED (no/forged credential) |
+| GEN-8 | `POST /generate/resume` | cmwizv… | 201 | 400 | ✅ 400 VALIDATION_FAILED |
+| MISC-1 | `GET /does-not-exist` | none | 404 | 404 | 404 NOT_FOUND |
+| MISC-2 | `OPTIONS /activity/commits` | none | 204 | 204 | ✅ 204 |
+| GEN-R1 | `POST /generate/resume` | cmwizv… | 201 | 201 | ✅ 201 |
+| GEN-R2 | `POST /generate/appraisal` | cmwizv… | 201 | 201 | ✅ 201 |
+| GEN-R3 | `POST /generate/promotion` | cmwizv… | 201 | 201 | ✅ 201 |
+| GEN-R4 | `GET /generate/impact-score?month=1&year=2020` | cmwizv… | 200 | 200 | ✅ 200 |
+| GEN-R5 | `POST /generate/appraisal` | cmwizv… | 201 | 400 | ✅ 400 VALIDATION_FAILED |
+| GEN-R6 | `POST /generate/promotion` | cmwizv… | 201 | 400 | ✅ 400 VALIDATION_FAILED |
+| GEN-R7 | `POST /generate/resume` | cmwizv… | 201 | 400 | ✅ 400 VALIDATION_FAILED (fresh counters; single pass: 429) |
+| GEN-R8 | `POST /generate/resume` | cmwizv… | 201 | 400 | ✅ 400 VALIDATION_FAILED (fresh counters; single pass: 429) |
+| GEN-R9 | `POST /generate/promotion` | cmwizv… | 201 | 201 | ✅ 201 (fresh counters; single pass: 429) |
+| GEN-R10 | `POST /generate/resume` | cmwizv… | 201 | 400 | ✅ 400 VALIDATION_FAILED (fresh counters; single pass: 429) |
+| GEN-R11 | `POST /generate/resume` | cmwizv… | 201 | 429 | ✅ 429 RATE_LIMITED (ai class 10/min) (fresh counters; single pass: 429) |
+| GEN-R12 | `GET /generate/impact-score?month=2&year=2020` | cmwizv… | 200 | 429 | ✅ 429 RATE_LIMITED (ai class 10/min) (fresh counters; single pass: 429) |
+| DEST-1 | `DELETE /documents/cmwizv60i00h27dbhveq4mab1` | cmwizv… | 200 | 404 | ✅ other user's id → 404 (ownership) |
+| DEST-2 | `DELETE /integrations/cmwizv5yz00f17dbhakh7j9c8` | cmwizv… | 200 | 404 | ✅ other user's id → 404 (ownership) |
+| DEST-3 | `GET /activity/summary` | cmwizv… | 200 | 200 | ✅ 200: x-user-id ignored — caller's own data |
