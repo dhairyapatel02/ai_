@@ -9,6 +9,9 @@ dotenv.config({ path: path.join(__dirname, '../../.env'), quiet: true });
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // E2E runs `next dev` next to a production build (`next start`); separate build dirs keep the
+  // dev server from overwriting the production output.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   transpilePackages: ['@devimpact/shared'],
   // Self-contained server bundle for the Docker image (OPS-05). Only enabled there, because
   // `next start` (local, CI) doesn't support standalone output.

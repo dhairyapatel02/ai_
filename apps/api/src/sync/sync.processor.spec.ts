@@ -1,3 +1,4 @@
+import { TokenCipher } from '../crypto/token-cipher';
 import { SyncProcessor, type SyncJobData } from './sync.processor';
 
 import type { GitHubService } from '../github/github.service';
@@ -6,10 +7,16 @@ import type { Job } from 'bullmq';
 
 const NOW = new Date('2026-11-09T12:00:00Z');
 
+const cipher = new TokenCipher(new Map([[1, Buffer.alloc(32, 7)]]), 1);
+
 function createMocks() {
   const prisma = {
     integration: {
-      findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'int1', accessToken: 'gh-token' }),
+      findUniqueOrThrow: jest.fn().mockResolvedValue({
+        id: 'int1',
+        status: 'ACTIVE',
+        accessTokenEnc: cipher.encrypt('gh-token', TokenCipher.aad('int1', 'accessToken')),
+      }),
     },
     commit: { upsert: jest.fn().mockResolvedValue({}) },
     pullRequest: {
@@ -57,6 +64,7 @@ function createMocks() {
   const processor = new SyncProcessor(
     prisma as unknown as PrismaService,
     github as unknown as GitHubService,
+    cipher,
   );
   const run = () => processor.process(job as unknown as Job<SyncJobData>);
   return { prisma, github, job, run };
@@ -145,6 +153,18 @@ describe('SyncProcessor.process (characterization, Octokit + Prisma mocked)', ()
     github.getUsername.mockRejectedValue(new Error('Bad credentials'));
 
     await expect(run()).rejects.toThrow('Bad credentials');
+  });
+
+  it('refuses to run without a usable token (migrated v0.1 integrations need reconnection)', async () => {
+    const { prisma, github, run } = createMocks();
+    prisma.integration.findUniqueOrThrow.mockResolvedValue({
+      id: 'int1',
+      status: 'NEEDS_REAUTH',
+      accessTokenEnc: null,
+    });
+
+    await expect(run()).rejects.toThrow('GITHUB_REAUTH_REQUIRED');
+    expect(github.getUsername).not.toHaveBeenCalled();
   });
 
   it.skip('DATA-01: a PR the user only reviewed is not stored as a PR authored by the user', async () => {

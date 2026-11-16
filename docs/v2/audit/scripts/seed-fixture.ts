@@ -84,9 +84,11 @@ async function seedUser(email: string, name: string, months: number, density: nu
     data: {
       userId: user.id,
       provider: 'GITHUB',
-      // Plaintext on purpose: mirrors how v0.1.0 stores real tokens (SEC finding).
-      accessToken: `gho_AUDITFAKETOKEN_${hex(20)}`,
-      metadata: { username: name.toLowerCase().split(' ')[0], name, avatar: null },
+      // P05: plaintext token columns no longer exist (ADR-0005). The fixture integration is
+      // display-only (no token), like a seeded GitHub App connection.
+      externalAccountId: `audit-node-${hex(8)}`,
+      externalLogin: name.toLowerCase().split(' ')[0],
+      displayName: name,
     },
   });
 

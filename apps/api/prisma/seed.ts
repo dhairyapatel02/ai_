@@ -6,7 +6,8 @@
  * see DATA-01). A fixed RNG seed makes every run produce the same pattern relative to the run
  * date. Re-running replaces the demo data; nothing else in the database is touched.
  *
- * No GitHub or Anthropic access is needed. The GitHub token is a placeholder.
+ * No GitHub or Anthropic access is needed. Seeded integrations carry no tokens. Sign in as the demo
+ * user with the web dev login (`ENABLE_DEV_LOGIN=true`, development only).
  */
 import {
   DocumentType,
@@ -169,27 +170,43 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
   await prisma.user.deleteMany({ where: { email: { in: [DEMO_EMAIL, TEAMMATE_EMAIL] } } });
 
   const demo = await prisma.user.create({
-    data: { email: DEMO_EMAIL, name: 'Dana Demo', plan: Plan.PRO },
+    data: {
+      email: DEMO_EMAIL,
+      emailVerified: true,
+      name: 'Dana Demo',
+      plan: Plan.PRO,
+      settings: { create: { timezone: 'UTC', onboardingCompletedAt: anchor } },
+    },
   });
   const teammate = await prisma.user.create({
-    data: { email: TEAMMATE_EMAIL, name: 'Taylor Teammate', plan: Plan.FREE },
+    data: {
+      email: TEAMMATE_EMAIL,
+      emailVerified: true,
+      name: 'Taylor Teammate',
+      plan: Plan.FREE,
+      settings: { create: { timezone: 'UTC' } },
+    },
   });
 
   const demoGh = await prisma.integration.create({
     data: {
       userId: demo.id,
       provider: Provider.GITHUB,
-      // Placeholder only — sync with it fails. Tokens get encrypted at rest in P05 (D-005).
-      accessToken: 'demo-placeholder-token-not-a-real-secret',
-      metadata: { username: 'dana-demo', name: 'Dana Demo', avatar: null, seeded: true },
+      // No token: the seeded integration is display-only (sync needs a real GitHub App connect).
+      externalAccountId: 'seed:dana-demo',
+      externalLogin: 'dana-demo',
+      displayName: 'Dana Demo',
+      lastSyncedAt: anchor,
+      lastSuccessfulSyncAt: anchor,
     },
   });
   const teammateGh = await prisma.integration.create({
     data: {
       userId: teammate.id,
       provider: Provider.GITHUB,
-      accessToken: 'teammate-placeholder-token-not-a-real-secret',
-      metadata: { username: 'taylor-teammate', seeded: true },
+      externalAccountId: 'seed:taylor-teammate',
+      externalLogin: 'taylor-teammate',
+      displayName: 'Taylor Teammate',
     },
   });
 

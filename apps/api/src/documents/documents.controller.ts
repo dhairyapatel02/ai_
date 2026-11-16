@@ -1,7 +1,10 @@
-import { Controller, Get, Delete, Param, Query, Req } from '@nestjs/common';
-import { Request } from 'express';
+import { DocumentListQuery, IdParams } from '@devimpact/shared';
+import { Controller, Delete, Get } from '@nestjs/common';
+import { z } from 'zod';
 
-import { successResponse, errorResponse } from '../common/api-response';
+import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
+import { withMeta } from '../common/envelope.interceptor';
+import { ApiDoc, ZodParams, ZodQuery } from '../common/zod-validation';
 import { DocumentsService } from './documents.service';
 
 @Controller('documents')
@@ -9,39 +12,28 @@ export class DocumentsController {
   constructor(private documentsService: DocumentsService) {}
 
   @Get()
-  async list(@Req() req: Request, @Query('page') page?: string, @Query('limit') limit?: string) {
-    const userId = req.headers['x-user-id'] as string;
-    if (!userId) return errorResponse('Not authenticated');
-
-    const parsedPage = page ? parseInt(page, 10) : 1;
-    const parsedLimit = limit ? parseInt(limit, 10) : 20;
-    if (isNaN(parsedPage) || isNaN(parsedLimit)) return errorResponse('Invalid page or limit');
-
-    const result = await this.documentsService.listDocuments(userId, parsedPage, parsedLimit);
-    return successResponse(result);
+  @ApiDoc({
+    summary: 'Generated documents, newest first (cursor pagination, total)',
+    tags: ['documents'],
+  })
+  async list(@CurrentUser() user: AuthUser, @ZodQuery(DocumentListQuery) query: DocumentListQuery) {
+    const page = await this.documentsService.listDocuments(user.id, query);
+    return withMeta(page.items, page.meta);
   }
 
   @Get(':id')
-  async get(@Req() req: Request, @Param('id') id: string) {
-    const userId = req.headers['x-user-id'] as string;
-    if (!userId) return errorResponse('Not authenticated');
-
-    const doc = await this.documentsService.getDocument(userId, id);
-    if (!doc) return errorResponse('Document not found');
-
-    return successResponse(doc);
+  @ApiDoc({ summary: 'One document (v1 shape until P08)', tags: ['documents'] })
+  get(@CurrentUser() user: AuthUser, @ZodParams(IdParams) params: { id: string }) {
+    return this.documentsService.getDocument(user.id, params.id);
   }
 
   @Delete(':id')
-  async delete(@Req() req: Request, @Param('id') id: string) {
-    const userId = req.headers['x-user-id'] as string;
-    if (!userId) return errorResponse('Not authenticated');
-
-    try {
-      await this.documentsService.deleteDocument(userId, id);
-      return successResponse({ message: 'Document deleted' });
-    } catch {
-      return errorResponse('Document not found');
-    }
+  @ApiDoc({
+    summary: 'Delete a document',
+    tags: ['documents'],
+    response: z.object({ deleted: z.literal(true) }),
+  })
+  delete(@CurrentUser() user: AuthUser, @ZodParams(IdParams) params: { id: string }) {
+    return this.documentsService.deleteDocument(user.id, params.id);
   }
 }

@@ -15,10 +15,22 @@ A=$1; B=$2; INT_B=$3; DOC_A=$4; DOC_B=$5
 OUT=${6:-docs/v2/audit/logs/api-probes.jsonl}
 PHASE=${7:-all}   # all | gen-real | gen-mock | destructive | auth-extra
 FORGED=forged-user-id-does-not-exist
+# P05 (v2 auth): set PROBE_AUTH=v2 with TOKEN_A (a valid JWT for Alice) and TOKEN_FORGED (a JWT
+# signed by an untrusted key). Mapping: none → no credentials; Alice → her token; "impersonating
+# Bob" → Alice's token + `x-user-id: <bob>` (the header must be ignored); forged → forged token.
+PROBE_AUTH=${PROBE_AUTH:-v1}
 
 probe() { # id desc method path as(user id or "none") [body] [content-type]
   local id=$1 desc=$2 method=$3 path=$4 as=$5 body=${6:-} ctype=${7:-application/json}
   local hdr=() ; [ "$as" != "none" ] && hdr=(-H "x-user-id: $as")
+  if [ "$PROBE_AUTH" = "v2" ]; then
+    case $as in
+      none) hdr=() ;;
+      "$A") hdr=(-H "authorization: Bearer $TOKEN_A") ;;
+      "$FORGED") hdr=(-H "authorization: Bearer $TOKEN_FORGED" -H "x-user-id: $as") ;;
+      *) hdr=(-H "authorization: Bearer $TOKEN_A" -H "x-user-id: $as") ;;
+    esac
+  fi
   local data=() ; [ -n "$body" ] && data=(--data-binary "$body" -H "content-type: $ctype")
   local tmp; tmp=$(mktemp)
   local meta; meta=$(curl -s -o "$tmp" -w '%{http_code} %{time_total}' -X "$method" "${hdr[@]}" "${data[@]}" "$API$path")

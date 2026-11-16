@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { parsePublicEnv } from './env';
+import { EXAMPLE_AUTH_SECRET, isDevLoginEnabled, parsePublicEnv, parseServerEnv } from './env';
 
 describe('parsePublicEnv', () => {
   it('defaults the API URL for local development', () => {
@@ -17,12 +17,65 @@ describe('parsePublicEnv', () => {
   });
 });
 
-describe('NEXT_PUBLIC_DEV_LOGIN_EMAIL', () => {
-  it('is optional and validated as an email', () => {
-    expect(parsePublicEnv({}).NEXT_PUBLIC_DEV_LOGIN_EMAIL).toBeUndefined();
-    expect(parsePublicEnv({ NEXT_PUBLIC_DEV_LOGIN_EMAIL: 'demo@devimpact.dev' })).toMatchObject({
-      NEXT_PUBLIC_DEV_LOGIN_EMAIL: 'demo@devimpact.dev',
+const server = {
+  DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
+  BETTER_AUTH_SECRET: 'x'.repeat(40),
+};
+
+describe('parseServerEnv', () => {
+  it('derives auth URLs from WEB_URL and enables only configured providers', () => {
+    const env = parseServerEnv({
+      ...server,
+      WEB_URL: 'https://app.example.com/,https://preview.example.com',
+      GITHUB_SIGNIN_CLIENT_ID: 'id',
+      GITHUB_SIGNIN_CLIENT_SECRET: 'secret',
     });
-    expect(() => parsePublicEnv({ NEXT_PUBLIC_DEV_LOGIN_EMAIL: 'nope' })).toThrow();
+    expect(env).toMatchObject({
+      WEB_URL: 'https://app.example.com',
+      WEB_ORIGINS: ['https://app.example.com', 'https://preview.example.com'],
+      BETTER_AUTH_URL: 'https://app.example.com',
+      AUTH_JWT_ISSUER: 'https://app.example.com',
+      AUTH_JWT_AUDIENCE: 'devimpact-api',
+      github: { clientId: 'id', clientSecret: 'secret' },
+      google: undefined,
+    });
+  });
+
+  it('requires DATABASE_URL and a 32+ character BETTER_AUTH_SECRET', () => {
+    expect(() => parseServerEnv({ BETTER_AUTH_SECRET: 'short' })).toThrow(
+      /DATABASE_URL.*BETTER_AUTH_SECRET/,
+    );
+  });
+
+  it('refuses the example secret in production', () => {
+    expect(() =>
+      parseServerEnv({
+        ...server,
+        BETTER_AUTH_SECRET: EXAMPLE_AUTH_SECRET,
+        NODE_ENV: 'production',
+      }),
+    ).toThrow(/must not be the .env.example value/);
+    expect(() =>
+      parseServerEnv({ ...server, BETTER_AUTH_SECRET: EXAMPLE_AUTH_SECRET }),
+    ).not.toThrow();
+  });
+});
+
+describe('isDevLoginEnabled (ADR-0003)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('requires ENABLE_DEV_LOGIN=true outside production', () => {
+    expect(isDevLoginEnabled({ NODE_ENV: 'development', ENABLE_DEV_LOGIN: 'true' })).toBe(true);
+    expect(isDevLoginEnabled({ NODE_ENV: 'test', ENABLE_DEV_LOGIN: 'true' })).toBe(true);
+    expect(isDevLoginEnabled({ NODE_ENV: 'development' })).toBe(false);
+    expect(isDevLoginEnabled({ NODE_ENV: 'development', ENABLE_DEV_LOGIN: '1' })).toBe(false);
+  });
+
+  it('is impossible to enable in production, whatever ENABLE_DEV_LOGIN says', () => {
+    expect(isDevLoginEnabled({ NODE_ENV: 'production', ENABLE_DEV_LOGIN: 'true' })).toBe(false);
+    vi.stubEnv('NODE_ENV', 'production');
+    expect(isDevLoginEnabled({ NODE_ENV: 'development', ENABLE_DEV_LOGIN: 'true' })).toBe(false);
   });
 });

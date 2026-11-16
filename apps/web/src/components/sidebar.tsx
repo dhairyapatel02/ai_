@@ -10,10 +10,12 @@ import {
   Clock,
   BarChart3,
   Settings,
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { useAuth } from '@/lib/auth-context';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -29,6 +31,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
 
   return (
     <aside className="hidden border-r bg-card lg:flex lg:w-64 lg:flex-col">
@@ -56,7 +59,22 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="border-t px-4 py-3">
+      <div className="space-y-2 border-t px-4 py-3">
+        {user ? (
+          <>
+            <p className="truncate text-xs text-muted-foreground" title={user.email}>
+              {user.email}
+            </p>
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" aria-hidden />
+              Sign out
+            </button>
+          </>
+        ) : null}
         <p className="text-xs text-muted-foreground">DevImpact AI v0.1.0</p>
       </div>
     </aside>

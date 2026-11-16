@@ -2,7 +2,8 @@ import request from 'supertest';
 
 import { AIService } from '../../src/ai/ai.service';
 import { createTestApp, type TestApp } from '../utils/app';
-import { resetDatabase } from '../utils/db';
+import { bearer } from '../utils/auth';
+import { resetDatabase, resetRedisState } from '../utils/db';
 import { buildFactories, type Factories } from '../utils/factories';
 
 const aiMock = {
@@ -23,6 +24,7 @@ describe('Generate + Sync API (integration, AI mocked)', () => {
 
   beforeEach(async () => {
     await resetDatabase(t.prisma);
+    await resetRedisState();
     jest.resetAllMocks();
   });
 
@@ -42,7 +44,7 @@ describe('Generate + Sync API (integration, AI mocked)', () => {
 
     const res = await request(t.app.getHttpServer())
       .post('/api/generate/resume')
-      .set('x-user-id', user.id)
+      .set('authorization', bearer(user.id))
       .send({ dateRange: { from: '2026-10-01', to: '2026-10-31' }, role: 'backend' })
       .expect(201);
 
@@ -58,40 +60,52 @@ describe('Generate + Sync API (integration, AI mocked)', () => {
     expect(role).toBe('backend');
   });
 
-  it('POST /api/generate/resume reports an error (and saves nothing) when the model output is malformed', async () => {
+  it('POST /api/generate/resume → 502 UPSTREAM_ERROR (and saves nothing) when the model output is malformed', async () => {
     const user = await f.user();
     aiMock.generateResumeBullets.mockResolvedValue({ unexpected: true });
 
     const res = await request(t.app.getHttpServer())
       .post('/api/generate/resume')
-      .set('x-user-id', user.id)
+      .set('authorization', bearer(user.id))
       .send({ dateRange: { from: '2026-10-01', to: '2026-10-31' }, role: 'backend' })
-      .expect(201);
+      .expect(502);
 
-    expect(res.body.success).toBe(false);
+    expect(res.body.error.code).toBe('UPSTREAM_ERROR');
     expect(await t.prisma.generatedDocument.count()).toBe(0);
   });
 
-  it('POST /api/sync/trigger requires a GitHub integration, then enqueues a job', async () => {
+  it('POST /api/sync/trigger: 404 without an integration, 409 when it needs reauth, else 202 queued', async () => {
     const user = await f.user();
     const server = t.app.getHttpServer();
+    const as = bearer(user.id);
 
     const missing = await request(server)
       .post('/api/sync/trigger')
-      .set('x-user-id', user.id)
-      .expect(201);
-    expect(missing.body).toEqual({ success: false, error: 'GitHub integration not connected' });
+      .set('authorization', as)
+      .expect(404);
+    expect(missing.body.error.code).toBe('NOT_FOUND');
 
-    await f.integration(user.id);
+    const legacy = await f.integration(user.id, { status: 'NEEDS_REAUTH', mechanism: 'OAUTH_APP' });
+    const reauth = await request(server)
+      .post('/api/sync/trigger')
+      .set('authorization', as)
+      .expect(409);
+    expect(reauth.body.error).toMatchObject({
+      code: 'INTEGRATION_NEEDS_REAUTH',
+      details: { integrationId: legacy.id },
+    });
+
+    await t.prisma.integration.update({ where: { id: legacy.id }, data: { status: 'ACTIVE' } });
     const queued = await request(server)
       .post('/api/sync/trigger')
-      .set('x-user-id', user.id)
-      .expect(201);
-    expect(queued.body.success).toBe(true);
+      .set('authorization', as)
+      .expect(202);
     expect(queued.body.data.status).toBe('queued');
 
-    const status = await request(server).get('/api/sync/status').set('x-user-id', user.id);
-    expect(status.body.success).toBe(true);
+    const status = await request(server)
+      .get('/api/sync/status')
+      .set('authorization', as)
+      .expect(200);
     expect(status.body.data.jobId).toBe(queued.body.data.jobId);
   });
 });
