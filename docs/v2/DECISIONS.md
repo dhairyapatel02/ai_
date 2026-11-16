@@ -352,7 +352,10 @@ Within D-004/D-005/D-008 and ADR-0004/0007, Phase 06 chose:
 - **Webhooks:** the API parses the event into a normalised `ProviderWebhookEvent` (job payload, no raw
   body); unhandled events are stored as `IGNORED` without a job; targeted work is recorded as `TARGETED`
   sync runs (visible in `/sync/runs`, excluded from `/sync/status` current/last run). Installation
-  events refresh repo access with an **installation token** (App JWT, `GITHUB_APP_PRIVATE_KEY[_FILE]`).
+  events use an **installation token** (App JWT, `GITHUB_APP_PRIVATE_KEY[_FILE]`) only to refresh
+  repositories a user already has, then queue a sync that lists new repositories with that user's own
+  token — an installation's full repo list is not filtered by what each linked user may see (security
+  review).
 - **Token lifecycle:** refresh 10 minutes before expiry or after a 401, under `SELECT … FOR UPDATE` on
   the integration row; on refusal (or `github_app_authorization.revoked`) the integration becomes
   `NEEDS_REAUTH` with tokens dropped and data kept.

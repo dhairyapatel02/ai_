@@ -3,7 +3,7 @@ import { SyncTrigger } from '@prisma/client';
 import Redis from 'ioredis';
 import request from 'supertest';
 
-import { METRICS_QUEUE, SYNC_QUEUE } from '../../src/sync/sync.constants';
+import { METRICS_QUEUE, SYNC_QUEUE, syncJobId } from '../../src/sync/sync.constants';
 import { SyncService } from '../../src/sync/sync.service';
 import { createTestApp, type TestApp } from '../utils/app';
 import { bearer } from '../utils/auth';
@@ -528,8 +528,9 @@ describe('Sync engine v2 (integration, fake GitHub)', () => {
       .requestSync(user.id, { integrationId: integration.id, trigger: SyncTrigger.MANUAL });
     const redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379');
     try {
-      expect(await redis.keys('devimpact-test:sync:*')).not.toHaveLength(0);
-      expect(await redis.keys('devimpact:sync:*')).toHaveLength(0);
+      // The job lives under the test prefix only (a dev worker may own other `devimpact:*` keys).
+      expect(await redis.exists(`devimpact-test:sync:${syncJobId(integration.id)}`)).toBe(1);
+      expect(await redis.exists(`devimpact:sync:${syncJobId(integration.id)}`)).toBe(0);
     } finally {
       redis.disconnect();
     }

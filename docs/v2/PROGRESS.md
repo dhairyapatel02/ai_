@@ -487,12 +487,19 @@ P09/P14 (SEC-16); `trust proxy` → P15 (SEC-17); per-env queue prefix → P06 (
   `currentRun`; `nextScheduledSyncAt`; `/activity/prs?role=authored|reviewed`; disconnect purge
   covers reviews and repositories. Web `/connect` uses `POST /sync` and the new status shape.
 - **Tests:** API unit 82 (+2 skipped/3 todo, all P07/P08) incl. mappers, webhook HMAC/parsing,
-  slices/progress, processor delay, App JWT; API integration 102 (+31) incl. sync engine (11),
-  sync API/scheduler (8), webhooks (9), budget (2), migration on the P01 fixture (1); web Vitest 35,
+  slices/progress, processor delay, App JWT; API integration 103 (+32) incl. sync engine (11),
+  sync API/scheduler (8), webhooks (10), budget (2), migration on the P01 fixture (1); web Vitest 35,
   shared 16, Playwright 5 — all green locally. Fixtures: `apps/api/test/fixtures/github/` (dataset
   JSON with relative times, recorded-shape webhook payloads, 50×300 load generator).
 - **Seed** rewritten for the v2 model (repositories, authored vs reviewed PRs, reviews, a finished
   backfill `SyncRun`, schedule slots).
+- **Security review** (`security-review` skill): one confirmed MEDIUM finding, fixed — installation
+  webhooks wrote the installation's full repository list (App installation token / payload, not
+  filtered by user access) into every linked integration, so an org member linked through one
+  repository could see the names of private repositories they cannot access. Those lists now only
+  update rows the user already has; a per-user sync (user token, GitHub-filtered) discovers new
+  repositories. Regression test in `webhooks.int-spec.ts`. No other exploitable findings (HMAC, App
+  JWT, raw SQL, tenancy, token handling reviewed).
 
 **Acceptance criteria:** all met —
 - Reviewing someone else's PR never increases the authored count: `sync-engine.int-spec.ts` (DATA-01

@@ -222,6 +222,54 @@ describe('POST /api/webhooks/github (integration)', () => {
     expect(web).toMatchObject({ accessible: false, installationId: null });
   });
 
+  it('security: installation webhooks never add repositories the user cannot see; a user-token sync is queued instead', async () => {
+    const { user } = await syncedUser();
+    // An org admin adds a private repo the connected member has no access to.
+    gh.dataset.repos.push({
+      nodeId: 'R_acme_secret',
+      fullName: 'acme/secret',
+      installationId: 102,
+      private: true,
+    });
+    const web = await t.prisma.repository.findFirstOrThrow({
+      where: { userId: user.id, fullName: 'acme/web' },
+    });
+    await t.prisma.repository.update({
+      where: { id: web.id },
+      data: { installationId: null, accessible: false },
+    });
+    const payload = {
+      action: 'added',
+      installation: {
+        id: 102,
+        account: { login: 'acme', type: 'Organization' },
+        repository_selection: 'selected',
+      },
+      repositories_added: [
+        { node_id: 'R_acme_secret', full_name: 'acme/secret', name: 'secret', private: true },
+        { node_id: 'R_acme_web', full_name: 'acme/web', name: 'web', private: true },
+      ],
+      repositories_removed: [],
+      sender: { login: 'acme-admin', node_id: 'U_admin' },
+    };
+    const { req, id } = send('installation_repositories', payload);
+    await req.expect(202);
+    await process(id);
+
+    expect(
+      await t.prisma.repository.count({ where: { userId: user.id, fullName: 'acme/secret' } }),
+    ).toBe(0);
+    expect(await t.prisma.repository.findUniqueOrThrow({ where: { id: web.id } })).toMatchObject({
+      accessible: true,
+      installationId: 102n,
+    });
+    expect(
+      await t.prisma.syncRun.findFirst({
+        where: { userId: user.id, trigger: 'WEBHOOK', kind: 'INCREMENTAL' },
+      }),
+    ).toMatchObject({ status: 'QUEUED' });
+  });
+
   it('github_app_authorization.revoked → integration needs_reauth (tokens dropped, data kept)', async () => {
     const { user, integration } = await syncedUser();
     const prs = await t.prisma.pullRequest.count({ where: { userId: user.id } });

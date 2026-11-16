@@ -17,6 +17,7 @@ import { IntegrationTokensService } from './integration-tokens.service';
 import { SyncEngine } from './sync-engine.service';
 import { SyncWriter, type WriteScope } from './sync-writer';
 import { CURSOR_OVERLAP_MS } from './sync.constants';
+import { SyncService } from './sync.service';
 
 import type { TargetedJobData } from '../webhooks/webhooks.service';
 import type {
@@ -71,6 +72,7 @@ export class SyncTargetedService {
     private readonly engine: SyncEngine,
     private readonly tokens: IntegrationTokensService,
     private readonly metrics: MetricsQueueService,
+    private readonly sync: SyncService,
     @Inject(ACTIVITY_PROVIDER) private readonly provider: ActivityProvider,
   ) {}
 
@@ -323,8 +325,26 @@ export class SyncTargetedService {
           ...(event.senderExternalId ? [{ externalAccountId: event.senderExternalId }] : []),
         ],
       },
-      select: TARGET_SELECT,
+      select: { ...TARGET_SELECT, status: true },
     });
+
+    // Repositories the installation grants, fetched with the App installation token (ADR-0004).
+    // This list is NOT filtered by what each linked user may see on GitHub (an org member can be
+    // linked to an "all repositories" installation through one repo), so it is only used to
+    // refresh rows a user already has; new repositories arrive through a per-user sync that lists
+    // them with the user's own token (security review, P06).
+    let granted = event.repositoriesAdded;
+    if (['created', 'new_permissions_accepted', 'unsuspend'].includes(event.action)) {
+      try {
+        granted = await this.provider.installationRepositories(event.installationId);
+      } catch (error) {
+        this.logger.warn(
+          { installationId: event.installationId, err: error },
+          'Installation repositories unavailable; using payload',
+        );
+      }
+    }
+    const grantsAccess = event.action !== 'deleted' && event.action !== 'suspend';
 
     for (const target of linked) {
       const scope = { userId: target.userId, integrationId: target.id };
@@ -372,24 +392,18 @@ export class SyncTargetedService {
           update: data,
         });
       }
-      let added = event.repositoriesAdded;
-      if (['created', 'new_permissions_accepted', 'unsuspend'].includes(event.action)) {
-        // Installation metadata via the App installation token (ADR-0004).
-        try {
-          added = await this.provider.installationRepositories(event.installationId);
-        } catch (error) {
-          this.logger.warn(
-            { installationId: event.installationId, err: error },
-            'Installation repositories unavailable; using payload',
-          );
-        }
-      }
       await this.writer.transaction(async (tx) => {
-        if (added.length)
-          await this.writer.upsertRepositories(tx, scope, added, {
-            withActivity: false,
-            markInstallation: true,
+        if (grantsAccess && granted.length) {
+          // Existing rows only — never create a repository from an unfiltered list.
+          await tx.repository.updateMany({
+            where: {
+              userId: scope.userId,
+              integrationId: scope.integrationId,
+              externalId: { in: granted.map((r) => r.externalId) },
+            },
+            data: { installationId, accessible: true },
           });
+        }
         const removed = event.repositoriesRemoved.map((r) => r.externalId);
         if (removed.length) {
           await tx.repository.updateMany({
@@ -423,6 +437,18 @@ export class SyncTargetedService {
           });
         }
       });
+      if (grantsAccess && target.status === IntegrationStatus.ACTIVE) {
+        // Newly granted repositories are discovered with the user's token (GitHub filters them).
+        try {
+          await this.sync.requestSync(target.userId, {
+            integrationId: target.id,
+            trigger: SyncTrigger.WEBHOOK,
+            reuseActive: true,
+          });
+        } catch (error) {
+          this.logger.warn({ integrationId: target.id, err: error }, 'Repository sync not queued');
+        }
+      }
     }
   }
 }

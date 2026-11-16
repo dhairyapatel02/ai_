@@ -222,7 +222,8 @@ Implementation: `apps/api/src/sync/` (orchestrator, queues, scheduler, webhooks 
 - **Webhooks** (`POST /api/webhooks/github`, public, raw body ≤ 25 MB): HMAC-SHA256 over the raw
   bytes (timing-safe, 401 otherwise), idempotent per `X-GitHub-Delivery` (`webhook_deliveries`),
   202 within milliseconds; the worker refetches only the affected PR (`pull_request`,
-  `pull_request_review`), commits (`push` to the default branch) or repo access (`installation*`).
+  `pull_request_review`), commits (`push` to the default branch) or repo access (`installation*`: existing rows only, then a
+  user-token sync discovers newly granted repos).
 - **Not captured (v2.0):** commits that never reach the default branch, issues (Jira/Linear are
   v2.1), other people's review comments (aggregates only), PR bodies of reviewed PRs.
 
