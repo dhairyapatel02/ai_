@@ -12,7 +12,7 @@ Every phase session updates this file before opening its PR.
 | 03 | V2 Blueprint | ✅ Done | (this PR) | 2026-11-09 | All 7 user decisions answered; 14 ADRs; `blueprint/` |
 | 04 | UX/UI Design System & Prototype | ✅ Done | (this PR) | 2026-11-16 | Prototype approved as-is (D-020): [Artifact](https://claude.ai/artifact/7sRsUMg2VuwC1A5J4m9xFB); `design/` |
 | 05 | Backend Platform | ✅ Done | (this PR) | 2026-11-16 | Better Auth + JWT/JWKS, encrypted GitHub App connect, D-006 conventions, rate limits, logging |
-| 06 | Sync Engine v2 | ⏳ Not started | | | |
+| 06 | Sync Engine v2 | ✅ Done | (this PR) | 2026-11-16 | GitHub App sync (GraphQL), SyncRun, webhooks, scheduler, Prisma 7; budget 119/250 requests |
 | 07 | Metrics Engine & Impact Score v2 | ⏳ Not started | | | |
 | 08 | AI Layer v2 | ⏳ Not started | | | |
 | 09 | Frontend Foundation & App Shell | ⏳ Not started | | | |
@@ -451,3 +451,131 @@ P09/P14 (SEC-16); `trust proxy` → P15 (SEC-17); per-env queue prefix → P06 (
   `/integrations/github/callback` and accepts only `returnTo` ∈ {`/onboarding`, `/settings/integrations`, `/connect`}
   (extend `ConnectReturnTo` in shared when the real routes exist). Route protection is `src/middleware.ts`
   (cookie presence only). Remove `/auth/me` alias callers, then the alias.
+
+### Phase 06 — Data Ingestion & Sync Engine v2 (2026-11-16)
+**Branch / PR:** `claude/friendly-goldberg-9y654u` → `main` / PR "Phase 06: Data Ingestion & Sync Engine v2"
+(branched from `main@cc6859f` = P05 merged).
+
+**Summary:**
+- **Schema (P06-1, P06-2) + Prisma 7.10.1 (DEBT-10):** `repositories`, PR v2 columns
+  (`is_authored_by_user`, size, timestamps, received-review aggregates, revert fields, `legacy_stub`),
+  commits v2 (`repository_id`, headline/body, `authored_at`, stats, parents, associated PR),
+  `pull_request_reviews` (decoupled from authorship), `sync_runs` (+ `checkpoint`,
+  `recent_window_completed_at` for A-4), `webhook_deliveries`; `code_reviews`, `repo`, `timestamp`,
+  `reviewCount` dropped. Data steps: legacy repos (`legacy:<fullName>`), stub detection, v0.1 reviews
+  → `pull_request_reviews` (reviewer-owned PR copies for cross-user reviews). `migrate diff` shows no
+  drift. Prisma 7 runs on the `pg` driver adapter (URL in `prisma.config.ts`), api + web.
+- **Provider abstraction:** `ActivityProvider` / `ProviderSession` + normalised DTOs in
+  `packages/shared/src/providers/activity.ts`; `GitHubProvider` (`apps/api/src/providers/github/`):
+  Octokit core + throttling + retry, per-request token injection, rate-limit accounting from REST
+  headers and GraphQL `rateLimit`, GraphQL search for authored/reviewed PRs with window splitting
+  above 1,000 results, `contributionsCollection`, default-branch history batched 10 repos/request,
+  single-PR refetch, App JWT + installation tokens, token refresh/revoke, webhook HMAC + parsing.
+- **Orchestrator** (`src/sync/`): `SyncEngine` (stages prepare → repositories → authored → reviewed →
+  commits → persist → rollups; backfill newest 30 days first, then monthly slices; incremental from
+  cursors − 1 h; idempotent batched writes; checkpoints; rate-limit pause → `WAITING_RATE_LIMIT` +
+  delayed job; 401/refresh failure → `NEEDS_REAUTH`; per-repo errors → `PARTIAL`; first backfill
+  purges legacy stubs, P06-3), `IntegrationTokensService` (refresh under row lock),
+  `SyncService` (DB-backed status/runs, one active run per integration, orphan reaping),
+  `SyncScheduler` (hourly `sync.fanout` job scheduler → each active integration once per 24 h at its
+  jittered slot), `SyncTargetedService` (webhook jobs), `metrics` queue + no-op consumer for P07.
+  Per-environment BullMQ prefix `QUEUE_PREFIX` (OPS-17).
+- **API:** `POST /sync` (202; 409 `SYNC_IN_PROGRESS` / `INTEGRATION_NEEDS_REAUTH`; 6/hour per
+  integration) replaces `/sync/trigger`; `GET /sync/status`, `/sync/runs`, `/sync/runs/:id`;
+  `GET/PATCH /repos`, `PATCH /repos/:id`, `POST /repos/:id/purge`; `POST /webhooks/github` (public,
+  raw body ≤ 25 MB, HMAC, idempotent, 202); callback returns `syncRun`; `GET /integrations/:id`
+  `currentRun`; `nextScheduledSyncAt`; `/activity/prs?role=authored|reviewed`; disconnect purge
+  covers reviews and repositories. Web `/connect` uses `POST /sync` and the new status shape.
+- **Tests:** API unit 82 (+2 skipped/3 todo, all P07/P08) incl. mappers, webhook HMAC/parsing,
+  slices/progress, processor delay, App JWT; API integration 102 (+31) incl. sync engine (11),
+  sync API/scheduler (8), webhooks (9), budget (2), migration on the P01 fixture (1); web Vitest 35,
+  shared 16, Playwright 5 — all green locally. Fixtures: `apps/api/test/fixtures/github/` (dataset
+  JSON with relative times, recorded-shape webhook payloads, 50×300 load generator).
+- **Seed** rewritten for the v2 model (repositories, authored vs reviewed PRs, reviews, a finished
+  backfill `SyncRun`, schedule slots).
+
+**Acceptance criteria:** all met —
+- Reviewing someone else's PR never increases the authored count: `sync-engine.int-spec.ts` (DATA-01
+  API test) + webhook review test.
+- Re-running the same sync produces zero new rows (backfill and incremental re-runs, `created: 0`).
+- Incremental requests only data newer than the cursors (search `updated:` lower bound and history
+  `since` ≥ cursor − 1 h, asserted on the fake request log; 6 requests for a daily run).
+- Budget: reference fixture **119 requests / 676 GraphQL points** (≤ 250 / 2,500).
+- Rate-limit exhaustion → `WAITING_RATE_LIMIT` + `resumeAt`, checkpoint kept, resume completes with
+  the same data; processor moves the same job to delayed (no silent loss); per-repo errors on the run.
+- Webhooks: bad/missing signature → 401; replay → `duplicate: true`, one job; valid `pull_request`
+  event updates the PR.
+- Scheduler: `sync-fanout` job scheduler registered (test + worker boot +
+  `prisma/scripts/inspect-sync-schedule.ts`); 24 simulated hours queue each active integration once,
+  none for `needs_reauth`/`disconnected`.
+- `GET /sync/status` reads stage + progress from the DB and works after `FLUSHDB`.
+- Revoked token → `needs_reauth`, tokens dropped, `nextScheduledAt: null`, `POST /sync` 409.
+- `npm run check`, `test:int`, `test:e2e` green locally (CI runs on the PR).
+
+**P06 legacy-data migration test:** `test/integration/migration-p06.int-spec.ts` builds a scratch DB
+at the v0.1 schema, loads the P01 fixture (`test/fixtures/legacy/p01-fixture.ts`, same PRNG and rules
+as `docs/v2/audit/scripts/seed-fixture.ts`) and runs every later migration. The fixture is relative to
+"now"; pinned to 2026-11-09T12:00Z Alice has **95 PRs shown by v0.1 → 35 authored (60 stubs)** — the
+same invariant as the P01 run's 106 → 41 (65 stubs), which cannot be reproduced exactly from the
+script. No commit is lost and all reviews are preserved on their owner's PR rows.
+
+**Deviations from the phase file:**
+- Prisma **7.10.1**, not the npm `latest` 8.0.0-rc (pre-release; outside Better Auth 1.7.25's peer
+  range) — D-022.
+- Commit history batched across repositories (aliases) instead of one request per repository —
+  fewer calls than the ADR formula (D-022).
+- Tests use the in-process fake GitHub (fetch interception, P05 pattern) rather than MSW/nock.
+- Stub detection drops `body IS NULL` (P01 fixture marker bodies) for a stricter title/number/merged
+  rule; reviewer-owned copies for cross-user v0.1 reviews (D-022).
+- PRs of excluded repositories are stored but filtered on read (search cannot filter by repo);
+  commits of excluded repos are never fetched.
+- `GET /sync/stream` (Should) not built — polling contract only (GAP-11 → P10).
+- `/activity/prs` `role` is optional (default `authored`); P07 finalises the activity shapes.
+- Job ids use `-` instead of `:` (BullMQ restriction).
+- Docker images were not built locally (sandbox registry limits as in P02/P05); Dockerfiles updated
+  for Prisma 7 (no query-engine binary) — the CI docker job verifies them.
+
+**Deferred items:** retention jobs → P14 (OPS-18); automatic `ERROR`/`SUSPENDED` status → P14
+(DATA-11); SSE `/sync/stream` → P10 (GAP-11); production requirement for webhook secret → P15
+(SEC-18); ESM Prisma generator → P09/P14 (DEBT-12); `metrics.recompute` consumer → P07.
+
+**New issues found:** SEC-18, OPS-18, DATA-11, GAP-11, DEBT-12 (`audit/ISSUES.md`, TRACEABILITY §2).
+
+**Handoff notes for next phases:**
+- *Job types / queues:* `sync` (`sync.backfill`, `sync.incremental` — job id `sync-<integrationId>`;
+  `sync.targeted` — `sync-t-<deliveryId>`; `sync.fanout` — scheduler `sync-fanout`, `0 * * * *` UTC)
+  and `metrics` (`metrics.recompute`), prefix `QUEUE_PREFIX`. Jobs carry ids only.
+- *Cursor semantics:* `Integration.syncCursor = { authoredPrsUpdatedAt, reviewedPrsUpdatedAt }` = the
+  window end of the last finished run; `Repository.commitCursor` likewise (not advanced for failed or
+  excluded repos); queries start at cursor − 1 h. `Integration.backfillFrom` = start of the completed
+  backfill; a null value makes the next run a backfill.
+- *API-call budget:* reference fixture 119 requests / 676 points (≤ 250 / 2,500); a daily incremental
+  for the basic fixture is 6 requests. GraphQL calls are paced 1/s per integration in production.
+- *Replay a webhook locally:* README → "Local webhook forwarding" (smee, `gh webhook forward`, signing
+  a fixture payload with `openssl`); redeliveries keep their delivery id → acknowledged as duplicates.
+- *GitHub fields not captured:* commits not on the default branch, issues (v2.1), other reviewers'
+  comments (aggregates only), bodies/sizes of reviewed PRs, PR file lists, CI status.
+- *P07:* consume `metrics.recompute { userId, from, to, reason: 'sync'|'webhook'|'repository_inclusion' }`
+  (debounced 30 s per user+reason). Count authored PRs with `isAuthoredByUser = true AND legacyStub =
+  false`, reviews from `pull_request_reviews`, and always join `repository.included = true`. Fields for
+  KPI_METHODOLOGY: `readyForReviewAt` (null = never draft), `firstReviewAt`/`approvalsCount`/
+  `changesRequestedCount`/`reviewersCount` (bots + author excluded), `revertedAt`/`revertedByUrl`,
+  `reviewRequestedAt` (user or team request), commit `parentsCount` (merge commits). The v1
+  `ActivityService` still serves `/activity/*` with v1 keys (`repo`, `timestamp`, `message`).
+- *P10:* sync states for the UI — `GET /sync/status.state` ∈ idle/queued/running/waiting_rate_limit/
+  needs_reauth/failed with `currentRun` (stage, progress, `recentWindowCompletedAt` for the "dashboard
+  ready" moment), `lastRun` (`errors[]` with repo + code for PARTIAL), `nextScheduledAt`; integrations
+  carry `nextScheduledSyncAt` and per-installation `suspended`; org approval pending is the callback's
+  `pendingApproval: true`. `POST /sync` 409 details carry the current run (`SYNC_IN_PROGRESS`) or
+  `reconnectUrl` (`INTEGRATION_NEEDS_REAUTH`); 429 has `Retry-After`. Repository selection: `GET /repos`
+  (`included`, `inclusionSource`, `accessible`, `viaInstallation`, `total`), `PATCH /repos` (bulk) and
+  `PATCH /repos/:id`. Replace the transitional `/connect` page.
+- *Tests:* `installFakeGitHub()` now serves REST + GraphQL from `state.dataset`
+  (`loadDataset('basic-dataset')`, `buildLoadFixture()`), logs requests (`state.log`), simulates rate
+  limits (`state.rateLimit`), revoked tokens (`invalidTokens`), refresh grants and faults. Helpers in
+  `test/utils/github-fixtures.ts`: `connectGitHub`, `runSync` (queue + run in-process), `resumeSync`,
+  `sign` (webhook HMAC). Tests set `GITHUB_THROTTLING=false` and `QUEUE_PREFIX` defaults to
+  `devimpact-test`; `resetRedisState()` clears test queues.
+- *Running locally:* `RUN_WORKER_IN_API=true` (default) runs the processors and registers the
+  scheduler in the API; a real sync needs the GitHub App env (README → GitHub App, webhooks).
+

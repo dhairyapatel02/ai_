@@ -61,6 +61,17 @@ match it — don't run `playwright install` there. Traces are off by default (`-
 | /connect    | GitHub shown as connected (placeholder token — Sync will fail)             |
 | /resume etc | Generation fails without `ANTHROPIC_API_KEY` (or use the mock server)      |
 
+## Sync engine (P06)
+
+- Integration tests never call GitHub: `installFakeGitHub()` (`apps/api/test/utils/fake-github.ts`)
+  answers OAuth, REST and the GraphQL documents from a dataset (`loadDataset('basic-dataset')`,
+  `buildLoadFixture()`); `state.log` records every request. `connectGitHub()` + `runSync()` in
+  `test/utils/github-fixtures.ts` queue a run and execute it in-process (no worker in tests).
+- Tests use the BullMQ prefix `devimpact-test` (OPS-17), so a running dev worker never picks up
+  their jobs. Inspect the live schedule with `npx tsx apps/api/prisma/scripts/inspect-sync-schedule.ts`.
+- A real sync needs the GitHub App env vars (README → GitHub App); seeded integrations have no tokens,
+  so "Sync" on `/connect` fails with `needs_reauth`/upstream errors locally — expected.
+
 ## Gotchas
 
 - Known v0.1 behaviour bugs are tracked in `docs/v2/audit/ISSUES.md` (e.g. no real auth until P05).
