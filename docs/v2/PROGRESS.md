@@ -10,7 +10,7 @@ Every phase session updates this file before opening its PR.
 | 01 | Audit & Discovery | ✅ Done | (this PR) | 2026-11-09 | 106 issues (🔴10 🟠34 🟡50 ⚪12); see `audit/` |
 | 02 | Engineering Foundation & Stabilization | ✅ Done | #8 | 2026-11-09 | Green lint/typecheck/tests/build + CI, migrations, seed, worker, Docker |
 | 03 | V2 Blueprint | ✅ Done | (this PR) | 2026-11-09 | All 7 user decisions answered; 14 ADRs; `blueprint/` |
-| 04 | UX/UI Design System & Prototype | ⏳ Not started | | | |
+| 04 | UX/UI Design System & Prototype | ✅ Done | (this PR) | 2026-11-16 | Prototype approved as-is (D-020): [Artifact](https://claude.ai/artifact/7sRsUMg2VuwC1A5J4m9xFB); `design/` |
 | 05 | Backend Platform | ⏳ Not started | | | |
 | 06 | Sync Engine v2 | ⏳ Not started | | | |
 | 07 | Metrics Engine & Impact Score v2 | ⏳ Not started | | | |
@@ -287,3 +287,72 @@ integrations, share links, in-app notification centre (Could), issue metrics.
   env-only so changing them later is configuration.
 - Mermaid validation helper used here: mermaid 11 + jsdom, `mermaid.parse()` per block (semicolons
   inside sequence-diagram messages break parsing).
+
+### Phase 04 — UX/UI Design System & Prototype (2026-11-16)
+**Branch / PR:** `claude/charming-euler-9r1iky` → `main` / PR "Phase 04: UX/UI Design System & Prototype"
+(branched from `main@26d47f6` = P02 + P03 merged; `main` unchanged at PR time).
+
+**Prototype (private Artifact):** https://claude.ai/artifact/7sRsUMg2VuwC1A5J4m9xFB — source in `design/prototype/`
+(`index.html` fragment + `styles.css`, `data.js`, `app.js`). The Artifact is private to the owner;
+share it from its Share menu if other reviewers need it.
+
+**Summary:**
+- `design/IA.md`: sitemap and confirmed routes (onboarding steps get paths; `/documents/new`,
+  `/career/print`, `/integrations/github/callback`, `/unsubscribe` added), grouped sidebar + mobile
+  bottom bar/drawer, global period control in the URL, ⌘K palette and shortcuts, URL/state conventions.
+- `design/FLOWS.md`: 10 flows (sign-in, onboarding incl. org-approval pending and recent-first sync,
+  reconnect, manual sync, generate → stream → edit → export, regenerate, achievements, goals,
+  explain a metric, export/delete/disconnect); all 10 Mermaid blocks parse with mermaid 11.4.
+- `design/DESIGN_SYSTEM.md` + `design/tokens.css`: principles, 3-tier tokens (light + dark, Tailwind v4
+  `@theme inline` bridge), **39/39 contrast pairs pass AA in both themes** (`scripts/check-contrast.mjs`),
+  chart palettes validated with the dataviz validator (categorical all-pairs, ordinal heat ramp),
+  type/space/shape/motion scales, component inventory → shadcn/ui + 27 custom components, data-viz
+  rules, number formatting, iconography, voice & tone, state patterns, accessibility spec.
+- `design/SCREENS.md`: 25 screens + 2 overlays, each with layout, components, endpoints, the five
+  states (with no-integration / syncing / no-data-in-range empty variants) and desktop/mobile notes;
+  "next best action" rules defined (F-24).
+- Clickable prototype covering onboarding → dashboard → generate document (simulated streaming,
+  stop/fail paths) → export, KPIs + explain drawers, impact detail, career, activity, achievements,
+  goals and all settings pages; light/dark/system, desktop/mobile; 9 switchable scenarios. Its
+  `data.js` ports `metrics@2.0.0`/`impact@2.0.0` and reproduces golden test G-1 (78.2050 → 78).
+- `design/HEURISTIC_REVIEW.md`: Nielsen + WCAG 2.2 AA self-review; 15 findings fixed (axe-core 4.10:
+  72 runs → 0 violations; 0 px horizontal overflow on 25 routes at 1440/390; 0 console errors).
+- Owner approved the prototype as-is → D-020.
+
+**API contract amendments (additive, API_CONTRACT_V2 §22):** A-1 `GET /metrics/trends` (KPI
+sparklines, P07) · A-2 `GET /metrics/evidence` (explain drawer evidence, P07) · A-3 `evidence:
+EvidenceItem[]` on `GET /documents/:id` (P08) · A-4 `SyncRunDto.recentWindowCompletedAt` (P06) ·
+A-5 `DocumentSummary.flags` (P08). TRACEABILITY routes updated to IA.md.
+
+**Deviations from the phase file:**
+- Prototype routes are plain hashes (`#dashboard`, `#account-integrations`…) because the Artifact host
+  only passes `#name` and reserves names starting with `settings`; IA §8 maps them to the real routes.
+- Downloads, printing, OAuth redirects and emails are simulated with toasts (blocked in the Artifact
+  sandbox). The prototype computes in UTC; the app uses the user's time zone.
+- The PRD's 390 px minimum is kept; designs were also checked to survive 360 px.
+- Besides the listed deliverables, added `design/README.md`, `design/HEURISTIC_REVIEW.md` and
+  `design/scripts/check-contrast.mjs`. Only files under `docs/v2/` changed (`docs/` is excluded from
+  lint/format, so `npm run check` is unaffected).
+
+**Deferred items:** none.
+
+**New issues found:** none (UX-11 annotated: tokens designed, wiring in P09).
+
+**Handoff notes for next phases:**
+- *P09:* copy `docs/v2/design/tokens.css` to `apps/web/src/styles/tokens.css`, import after
+  `@import "tailwindcss";`, add `@custom-variant dark (&:where(.dark, .dark *));`; next-themes with
+  `attribute="class"`. Fonts: Instrument Sans + JetBrains Mono via `next/font/google`. shadcn install
+  list and custom components: DESIGN_SYSTEM §11/§5.2. Keep the contrast checker in CI (update its path).
+  Build the shell to IA §3 (sidebar ≥ 1024, drawer 768–1023, bottom bar < 768) and the period picker
+  to IA §4. Never use Tailwind palette colours in components (UX-11).
+- *P10:* SCREENS S6–S10 and S19 specify every state; Next step rules in S6; dashboard activity chart
+  uses `/metrics/heatmap` for the period's per-day series. Deltas are neutral (no red/green).
+- *P11:* SCREENS S11–S16 + FLOWS F5/F6. Live region must announce once per completed section, not per
+  token (DESIGN_SYSTEM §10). Citation chips show short refs with the full ref in `aria-label`.
+- *P06/P07/P08:* implement A-4, A-1/A-2, A-3/A-5 respectively.
+- *P12:* S17, S18, S20–S24; the Plan page shows `upgrade@devimpact.dev` as selectable text (no billing).
+- *Prototype as reference:* `design/prototype/app.js` holds the exact copy for every state;
+  `npx serve docs/v2/design/prototype` runs it locally (needs Google Fonts + unpkg for lucide).
+- *Tooling used:* Playwright (pre-installed Chromium) for screenshots/overflow, axe-core 4.10.2 and
+  lucide 0.469.0 via `npm pack` into the scratchpad (CDNs other than Google Fonts are blocked by the
+  sandbox proxy, so the lucide request was routed to the local copy).

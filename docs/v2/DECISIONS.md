@@ -264,3 +264,19 @@ param) is the standard in `packages/shared`.
   tagged with issue IDs.
 - Processes: `src/main.ts` (HTTP) and `src/worker.ts` (queues). `RUN_WORKER_IN_API` (default true)
   controls whether the API also runs processors; compose runs a dedicated worker.
+
+### D-020 · v2.0 UX, design system and prototype approved · CONFIRMED · P04 · **USER DECISION**
+**User answer:** "Approve as-is (Recommended)" (2026-11-16, after reviewing the clickable prototype,
+version 2: https://claude.ai/artifact/7sRsUMg2VuwC1A5J4m9xFB).
+**Summary:** `design/IA.md`, `FLOWS.md`, `DESIGN_SYSTEM.md`, `tokens.css` and `SCREENS.md` are binding
+for P09–P12. Key choices: grouped sidebar (Overview / Create / Settings) with a mobile bottom bar +
+drawer; global period in the URL (`?period=`); calm Linear-like tokens (cool slate neutrals, one
+indigo accent `#4351c8` / `#8d97f2`, Instrument Sans + JetBrains Mono for evidence refs); deltas are
+descriptive (neutral ink + arrow) and semantic colour is reserved for system state; validated
+3-series chart palette and indigo heat ramp; evidence chips on every AI claim; designed loading /
+empty / partial / error / success states for every screen; WCAG 2.2 AA spec (39/39 token contrast
+pairs, axe 0 violations on the prototype).
+**Consequences:** P09 imports `design/tokens.css`, installs the shadcn components listed in
+DESIGN_SYSTEM §11 and builds the custom components in §5.2. Routes in IA.md replace the provisional
+ones (TRACEABILITY updated). Additive API amendments A-1…A-5 (API_CONTRACT_V2 §22) are owned by
+P06–P08. Changing a token value, route or state pattern later needs a new decision entry.

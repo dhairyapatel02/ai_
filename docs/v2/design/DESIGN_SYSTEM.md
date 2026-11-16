@@ -1,6 +1,6 @@
 # Design System — DevImpact AI v2.0
 
-*Phase 04 · 2026-11-09 · Status: **binding** for P09–P12 after owner approval (D-020).
+*Phase 04 · 2026-11-09 · Status: **binding** for P09–P12 — approved by the owner on 2026-11-16 (D-020).
 Tokens: [`tokens.css`](tokens.css). Contrast checker: [`scripts/check-contrast.mjs`](scripts/check-contrast.mjs).
 Living reference: the [prototype](prototype/) (Artifact link in [`../PROGRESS.md`](../PROGRESS.md)).*
 

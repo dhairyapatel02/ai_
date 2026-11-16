@@ -1,6 +1,6 @@
 # Screen Specifications — DevImpact AI v2.0
 
-*Phase 04 · 2026-11-09 · Status: **binding** for P09–P12 after owner approval (D-020).*
+*Phase 04 · 2026-11-09 · Status: **binding** for P09–P12 — approved by the owner on 2026-11-16 (D-020).*
 Every screen below lists purpose, primary action, layout, components ([DESIGN_SYSTEM §5](DESIGN_SYSTEM.md#5-component-inventory--shadcnui)),
 data (endpoints from [API_CONTRACT_V2](../blueprint/API_CONTRACT_V2.md); `A-n` = P04 amendment in its
 §22), and **five states**: Loading · Empty (no integration / syncing / no data in range) · Partial ·

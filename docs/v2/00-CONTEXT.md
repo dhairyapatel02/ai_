@@ -140,3 +140,10 @@ raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
   deterministic impact score (overall + 4 dimensions); individual-only scope without billing;
   GitLab/Jira/Linear and Phase 13 moved to v2.1; hosting decided in P15; brand "calm, professional,
   Linear-like". See [`DECISIONS.md`](./DECISIONS.md) → Confirmed decisions.
+
+### After Phase 04 (2026-11-16)
+- The v2 UX is designed and **approved** (D-020): [`design/`](./design/) — IA (routes, navigation,
+  period-in-URL, ⌘K), flows, design system + `tokens.css` (light/dark, WCAG AA verified), per-screen
+  specs with all states, and a clickable prototype (Artifact link in PROGRESS.md).
+- Routes in `design/IA.md` are binding (TRACEABILITY updated). API_CONTRACT_V2 §22 adds A-1…A-5
+  (metrics trends/evidence, document evidence + flags, `recentWindowCompletedAt`).

@@ -1,6 +1,6 @@
 # Information Architecture — DevImpact AI v2.0
 
-*Phase 04 · 2026-11-09 · Status: **binding** for P09–P12 once the owner approves the prototype
+*Phase 04 · 2026-11-09 · Status: **binding** for P09–P12, approved by the owner on 2026-11-16
 (see [`../DECISIONS.md`](../DECISIONS.md) D-020). Routes here supersede the provisional ones in
 [`../blueprint/TRACEABILITY.md`](../blueprint/TRACEABILITY.md) (updated in the same PR).*
 
