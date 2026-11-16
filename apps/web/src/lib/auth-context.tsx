@@ -54,7 +54,7 @@ interface Envelope<T> {
 
 /**
  * Session from Better Auth (cookie on the web origin) + a short-lived Bearer JWT for the API.
- * Replaces the v0.1 localStorage user id and `x-user-id` header (SEC-01/02). P09 replaces this
+ * Replaces the v0.1 localStorage user id and user-id header (SEC-01/02). P09 replaces this
  * with the typed client + TanStack Query (ADR-0010).
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {

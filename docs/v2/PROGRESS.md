@@ -390,8 +390,9 @@ A-5 `DocumentSummary.flags` (P08). TRACEABILITY routes updated to IA.md.
 - **Security review** (`security-review` skill): no exploitable findings; applied its hardening suggestion
   (sign-in `callbackUrl` rejects control characters/backslashes) and logged SEC-16.
 
-**Acceptance criteria:** all met — `grep -r "x-user-id" apps/` finds only tests asserting the header is
-ignored and comments (no reads); 401 on every non-public route (generated test); per-resource cross-user
+**Acceptance criteria:** all met — `grep -r "x-user-id" apps/*/src` (excluding `node_modules`) matches
+only `auth.guard.spec.ts`, plus `test/integration/auth.int-spec.ts`; both assert the header is ignored.
+No code reads it. 401 on every non-public route (generated test); per-resource cross-user
 tests; dev-login 404 in a production build with `ENABLE_DEV_LOGIN=true` (Vitest + Playwright against
 `next start` + CI docker job); no plaintext tokens (migration + DB-inspection test) and cipher round-trip/
 tamper/AAD/rotation tests; missing/invalid/expired/reused/foreign state rejected; 400 `VALIDATION_FAILED`
@@ -402,8 +403,8 @@ with field details; AI 429 test; log test proves request ids and no tokens/secre
 - **Prisma 7 not adopted** (TRACEABILITY lists DEBT-10 under "P05 (Prisma major with auth migrations)"):
   Better Auth 1.7.25 supports Prisma 6, and the major (driver adapters, ESM client) is safer together with
   P06's activity migrations — D-021, DEBT-10 updated.
-- `grep -r "x-user-id" apps/` is not literally empty: the remaining hits are tests proving the header is
-  ignored and explanatory comments. No code reads it.
+- `grep -r "x-user-id" apps/` is not literally empty: the only hits are the two security tests above
+  (they send the header to prove it is ignored).
 - **E2E** runs the signed-in flows against `next dev` (dev login is impossible in production builds by
   design); a second production server proves the 404 (D-021).
 - `/me/usage` and `/me/export` (F-04/F-07) are not built — they belong to P08/P12 per TRACEABILITY.

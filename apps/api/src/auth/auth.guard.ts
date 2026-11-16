@@ -7,7 +7,7 @@ import { JwtVerifierService } from './jwt-verifier.service';
 
 /**
  * Global guard: every route requires `Authorization: Bearer <JWT>` unless marked `@Public()`.
- * The user id comes only from the verified token's `sub` (SEC-01: no `x-user-id`).
+ * The user id comes only from the verified token's `sub` (SEC-01: no client-supplied user-id header).
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
