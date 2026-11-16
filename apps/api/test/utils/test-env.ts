@@ -36,5 +36,9 @@ export function useTestDatabase(): string {
   // Unroutable hosts: a missing mock can never reach the real GitHub.
   process.env.GITHUB_WEB_URL = 'https://github.invalid';
   process.env.GITHUB_API_URL = 'https://api.github.invalid';
+  process.env.GITHUB_WEBHOOK_SECRET = 'test-webhook-secret-0123456789';
+  process.env.GITHUB_REQUEST_RETRIES = '0';
+  process.env.GITHUB_THROTTLING = 'false'; // no 1 s pacing between fake GraphQL calls
+  delete process.env.QUEUE_PREFIX; // NODE_ENV=test → "devimpact-test" (OPS-17)
   return testUrl;
 }

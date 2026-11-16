@@ -34,8 +34,8 @@ describe('Activity API (integration)', () => {
     await f.commit(alice.id, aliceGh.id, { repo: 'acme/web' });
     // Outside the requested range:
     await f.commit(alice.id, aliceGh.id, { timestamp: new Date('2025-01-01T00:00:00Z') });
-    const pr = await f.pullRequest(alice.id, aliceGh.id);
-    await f.codeReview(alice.id, pr.id);
+    await f.pullRequest(alice.id, aliceGh.id);
+    await f.review(alice.id, aliceGh.id);
     // Another user's data must never leak in:
     await f.commit(bob.id, bobGh.id);
 

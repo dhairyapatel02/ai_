@@ -1,0 +1,4 @@
+{
+  "action": "revoked",
+  "sender": { "login": "octo", "id": 1, "node_id": "U_octo", "type": "User" }
+}

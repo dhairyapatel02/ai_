@@ -63,10 +63,11 @@ describe('Authentication on every route (integration, generated from the router)
       ]),
     );
     expect(routes.length).toBeGreaterThan(20);
-    // Only health is public in P05 (webhooks/unsubscribe arrive later).
+    // Public: health and the signature-gated GitHub webhook (P06). Unsubscribe arrives in P12.
     expect(routes.filter((r) => r.isPublic).map((r) => r.path)).toEqual([
       '/api/health',
       '/api/health/live',
+      '/api/webhooks/github',
     ]);
   });
 

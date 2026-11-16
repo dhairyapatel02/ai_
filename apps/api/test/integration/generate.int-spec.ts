@@ -13,7 +13,7 @@ const aiMock = {
   calculateImpactScore: jest.fn(),
 };
 
-describe('Generate + Sync API (integration, AI mocked)', () => {
+describe('Generate API (integration, AI mocked)', () => {
   let t: TestApp;
   let f: Factories;
 
@@ -72,40 +72,5 @@ describe('Generate + Sync API (integration, AI mocked)', () => {
 
     expect(res.body.error.code).toBe('UPSTREAM_ERROR');
     expect(await t.prisma.generatedDocument.count()).toBe(0);
-  });
-
-  it('POST /api/sync/trigger: 404 without an integration, 409 when it needs reauth, else 202 queued', async () => {
-    const user = await f.user();
-    const server = t.app.getHttpServer();
-    const as = bearer(user.id);
-
-    const missing = await request(server)
-      .post('/api/sync/trigger')
-      .set('authorization', as)
-      .expect(404);
-    expect(missing.body.error.code).toBe('NOT_FOUND');
-
-    const legacy = await f.integration(user.id, { status: 'NEEDS_REAUTH', mechanism: 'OAUTH_APP' });
-    const reauth = await request(server)
-      .post('/api/sync/trigger')
-      .set('authorization', as)
-      .expect(409);
-    expect(reauth.body.error).toMatchObject({
-      code: 'INTEGRATION_NEEDS_REAUTH',
-      details: { integrationId: legacy.id },
-    });
-
-    await t.prisma.integration.update({ where: { id: legacy.id }, data: { status: 'ACTIVE' } });
-    const queued = await request(server)
-      .post('/api/sync/trigger')
-      .set('authorization', as)
-      .expect(202);
-    expect(queued.body.data.status).toBe('queued');
-
-    const status = await request(server)
-      .get('/api/sync/status')
-      .set('authorization', as)
-      .expect(200);
-    expect(status.body.data.jobId).toBe(queued.body.data.jobId);
   });
 });

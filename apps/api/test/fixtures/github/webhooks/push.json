@@ -1,0 +1,26 @@
+{
+  "ref": "refs/heads/main",
+  "before": "a000000000000000000000000000000000000003",
+  "after": "a000000000000000000000000000000000000004",
+  "repository": {
+    "id": 201,
+    "node_id": "R_octo_app",
+    "name": "app",
+    "full_name": "octo/app",
+    "private": false,
+    "owner": { "name": "octo", "login": "octo", "id": 1, "node_id": "U_octo", "type": "User" },
+    "html_url": "https://github.com/octo/app",
+    "default_branch": "main",
+    "master_branch": "main"
+  },
+  "commits": [
+    {
+      "id": "a000000000000000000000000000000000000004",
+      "message": "feat: profile page",
+      "timestamp": "2026-11-15T09:00:00Z",
+      "author": { "name": "Octo", "email": "octo@example.test", "username": "octo" }
+    }
+  ],
+  "installation": { "id": 101 },
+  "sender": { "login": "octo", "id": 1, "node_id": "U_octo", "type": "User" }
+}

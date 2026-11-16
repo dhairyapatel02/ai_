@@ -105,7 +105,7 @@ describe('GitHub App connect / callback / disconnect (integration)', () => {
         externalLogin: 'octocat',
         installations: expect.any(Array),
       },
-      syncRun: null,
+      syncRun: { status: 'queued', kind: 'backfill', trigger: 'initial', progress: 0 },
       returnTo: '/onboarding',
     });
     expect(res.body.data.integration.installations).toHaveLength(2);

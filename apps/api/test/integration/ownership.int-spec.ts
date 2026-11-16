@@ -53,7 +53,7 @@ describe('Cross-user isolation (integration)', () => {
     const bobDoc = await f.document(bob.id);
     const bobCommit = await f.commit(bob.id, bobGh.id, { message: 'bob secret commit' });
     const bobPr = await f.pullRequest(bob.id, bobGh.id, { title: 'bob secret PR' });
-    await f.codeReview(bob.id, bobPr.id);
+    await f.review(bob.id, bobGh.id);
     return {
       alice,
       bob,
@@ -145,19 +145,49 @@ describe('Cross-user isolation (integration)', () => {
     expect(activity.prs).toEqual([]);
   });
 
-  it('sync: triggering uses only the caller’s integration; status only shows own jobs', async () => {
-    const { server, as } = await twoTenants();
-    // Alice has no integration — Bob's must not be used.
-    const res = await request(server)
-      .post('/api/sync/trigger')
+  it('sync and repos: only the caller’s integration, runs and repositories', async () => {
+    const { server, as, bobGh, bob } = await twoTenants();
+    const bobRun = await t.prisma.syncRun.create({
+      data: { userId: bob.id, integrationId: bobGh.id, trigger: 'MANUAL', kind: 'INCREMENTAL' },
+    });
+    const bobRepo = await f.repository(bob.id, bobGh.id, 'acme/api');
+    // Alice has no integration — Bob's must not be used, even when named explicitly.
+    for (const body of [{}, { integrationId: bobGh.id }]) {
+      const res = await request(server)
+        .post('/api/sync')
+        .set('authorization', as)
+        .send(body)
+        .expect(404);
+      expect(res.body.error.code).toBe('NOT_FOUND');
+    }
+    await request(server).get('/api/sync/status').set('authorization', as).expect(404);
+    await request(server)
+      .get(`/api/sync/status?integrationId=${bobGh.id}`)
       .set('authorization', as)
       .expect(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
-    const status = await request(server)
-      .get('/api/sync/status')
+    await request(server).get(`/api/sync/runs/${bobRun.id}`).set('authorization', as).expect(404);
+    const runs = await request(server).get('/api/sync/runs').set('authorization', as).expect(200);
+    expect(runs.body.data).toEqual([]);
+    const repos = await request(server).get('/api/repos').set('authorization', as).expect(200);
+    expect(repos.body.data).toEqual([]);
+    await request(server)
+      .patch(`/api/repos/${bobRepo.id}`)
       .set('authorization', as)
+      .send({ included: false })
+      .expect(404);
+    await request(server)
+      .post(`/api/repos/${bobRepo.id}/purge`)
+      .set('authorization', as)
+      .expect(404);
+    const bulk = await request(server)
+      .patch('/api/repos')
+      .set('authorization', as)
+      .send({ ids: [bobRepo.id], included: false })
       .expect(200);
-    expect(status.body.data.jobId).toBeNull();
+    expect(bulk.body.data).toEqual({ updated: 0 });
+    expect(
+      (await t.prisma.repository.findUniqueOrThrow({ where: { id: bobRepo.id } })).included,
+    ).toBe(true);
   });
 
   it('me: profile, settings and account deletion only ever touch the caller', async () => {

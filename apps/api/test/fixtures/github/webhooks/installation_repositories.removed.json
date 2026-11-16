@@ -1,0 +1,15 @@
+{
+  "action": "removed",
+  "installation": {
+    "id": 102,
+    "account": { "login": "acme", "id": 9, "node_id": "O_acme", "type": "Organization" },
+    "repository_selection": "selected",
+    "suspended_at": null
+  },
+  "repository_selection": "selected",
+  "repositories_added": [],
+  "repositories_removed": [
+    { "id": 203, "node_id": "R_acme_web", "name": "web", "full_name": "acme/web", "private": true }
+  ],
+  "sender": { "login": "acme-admin", "id": 7, "node_id": "U_admin", "type": "User" }
+}
