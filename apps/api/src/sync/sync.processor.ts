@@ -1,7 +1,9 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
+import { IntegrationStatus } from '@prisma/client';
 import { Job } from 'bullmq';
 
+import { TokenCipher, TokenCipherService } from '../crypto/token-cipher';
 import { GitHubService } from '../github/github.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SYNC_QUEUE } from './sync.constants';
@@ -18,6 +20,7 @@ export class SyncProcessor extends WorkerHost {
   constructor(
     private prisma: PrismaService,
     private githubService: GitHubService,
+    private cipher: TokenCipherService,
   ) {
     super();
   }
@@ -29,8 +32,17 @@ export class SyncProcessor extends WorkerHost {
     try {
       const integration = await this.prisma.integration.findUniqueOrThrow({
         where: { id: integrationId, userId },
+        select: { id: true, status: true, accessTokenEnc: true },
       });
-      const accessToken = integration.accessToken;
+      // Tokens are encrypted at rest (ADR-0005) and decrypted only at call time. Migrated v0.1
+      // integrations have none (NEEDS_REAUTH). Token refresh and the v2 sync engine are P06.
+      if (integration.status !== IntegrationStatus.ACTIVE || !integration.accessTokenEnc) {
+        throw new Error('GITHUB_REAUTH_REQUIRED: integration has no usable token');
+      }
+      const accessToken = this.cipher.decrypt(
+        integration.accessTokenEnc,
+        TokenCipher.aad(integration.id, 'accessToken'),
+      );
 
       const username = await this.githubService.getUsername(accessToken);
       const sixMonthsAgo = new Date();

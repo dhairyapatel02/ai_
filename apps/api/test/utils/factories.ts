@@ -21,8 +21,7 @@ export function buildFactories(prisma: PrismaClient) {
         data: {
           userId,
           provider: Provider.GITHUB,
-          accessToken: 'test-token',
-          metadata: { username: 'octocat' },
+          externalLogin: 'octocat',
           ...overrides,
         },
       });

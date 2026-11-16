@@ -1,7 +1,8 @@
 import request from 'supertest';
 
 import { createTestApp, type TestApp } from '../utils/app';
-import { resetDatabase } from '../utils/db';
+import { bearer } from '../utils/auth';
+import { resetDatabase, resetRedisState } from '../utils/db';
 import { buildFactories, type Factories } from '../utils/factories';
 
 describe('Activity API (integration)', () => {
@@ -15,6 +16,7 @@ describe('Activity API (integration)', () => {
 
   beforeEach(async () => {
     await resetDatabase(t.prisma);
+    await resetRedisState();
   });
 
   afterAll(async () => {
@@ -39,8 +41,8 @@ describe('Activity API (integration)', () => {
 
     const res = await request(t.app.getHttpServer())
       .get('/api/activity/summary')
-      .query({ from: '2026-10-01T00:00:00Z', to: '2026-10-31T23:59:59Z' })
-      .set('x-user-id', alice.id)
+      .query({ from: '2026-10-01', to: '2026-10-31' })
+      .set('authorization', bearer(alice.id))
       .expect(200);
 
     expect(res.body).toEqual({
@@ -59,7 +61,7 @@ describe('Activity API (integration)', () => {
     });
   });
 
-  it('GET /api/activity/commits paginates newest first', async () => {
+  it('GET /api/activity/commits paginates newest first with a cursor', async () => {
     const user = await f.user();
     const gh = await f.integration(user.id);
     for (let day = 1; day <= 3; day++) {
@@ -71,19 +73,39 @@ describe('Activity API (integration)', () => {
 
     const res = await request(t.app.getHttpServer())
       .get('/api/activity/commits')
-      .query({ page: 1, limit: 2 })
-      .set('x-user-id', user.id)
+      .query({ limit: 2 })
+      .set('authorization', bearer(user.id))
       .expect(200);
 
-    expect(res.body.data.total).toBe(3);
-    expect(res.body.data.data.map((c: { message: string }) => c.message)).toEqual([
-      'day 3',
-      'day 2',
-    ]);
+    expect(res.body.meta.hasMore).toBe(true);
+    expect(res.body.data.map((c: { message: string }) => c.message)).toEqual(['day 3', 'day 2']);
   });
 
-  it('characterization (SEC-01, fixed in P05): requests without x-user-id get a 200 error body', async () => {
-    const res = await request(t.app.getHttpServer()).get('/api/activity/summary').expect(200);
-    expect(res.body).toEqual({ success: false, error: 'Not authenticated' });
+  it('respects the user’s time zone for date-only bounds (D-019)', async () => {
+    const user = await f.user();
+    await t.prisma.userSettings.create({ data: { userId: user.id, timezone: 'Asia/Tokyo' } });
+    const gh = await f.integration(user.id);
+    // 2026-10-01 local in Tokyo is [2026-09-30T15:00Z, 2026-10-01T15:00Z).
+    await f.commit(user.id, gh.id, { timestamp: new Date('2026-09-30T16:00:00Z') });
+    await f.commit(user.id, gh.id, { timestamp: new Date('2026-10-01T16:00:00Z') });
+
+    const res = await request(t.app.getHttpServer())
+      .get('/api/activity/summary')
+      .query({ from: '2026-10-01', to: '2026-10-01' })
+      .set('authorization', bearer(user.id))
+      .expect(200);
+    expect(res.body.data.totalCommits).toBe(1);
+  });
+
+  it('SEC-01 fixed: requests without a token get 401 with the error envelope', async () => {
+    const res = await request(t.app.getHttpServer()).get('/api/activity/summary').expect(401);
+    expect(res.body).toEqual({
+      success: false,
+      error: {
+        code: 'UNAUTHENTICATED',
+        message: 'Authentication required',
+        requestId: expect.any(String),
+      },
+    });
   });
 });

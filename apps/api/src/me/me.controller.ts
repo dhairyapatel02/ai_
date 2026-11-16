@@ -1,0 +1,96 @@
+import {
+  DeleteMeInput,
+  Entitlements,
+  MeDto,
+  SettingsDto,
+  UpdateMeInput,
+  UpdateSettingsInput,
+  UserDto,
+} from '@devimpact/shared';
+import { Controller, Delete, Get, Header, HttpCode, Patch } from '@nestjs/common';
+import { z } from 'zod';
+
+import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
+import { ApiDoc, ZodBody } from '../common/zod-validation';
+import { RateLimit } from '../throttle/rate-limit';
+import { MeService } from './me.service';
+
+@Controller('me')
+export class MeController {
+  constructor(private readonly me: MeService) {}
+
+  @Get()
+  @ApiDoc({
+    summary: 'Current user, settings, entitlements, integrations, onboarding',
+    tags: ['me'],
+    response: MeDto,
+  })
+  get(@CurrentUser() user: AuthUser) {
+    return this.me.me(user.id);
+  }
+
+  @Patch()
+  @ApiDoc({ summary: 'Update profile', tags: ['me'], response: z.object({ user: UserDto }) })
+  update(@CurrentUser() user: AuthUser, @ZodBody(UpdateMeInput) body: UpdateMeInput) {
+    return this.me.updateMe(user.id, body.name);
+  }
+
+  @Get('settings')
+  @ApiDoc({ summary: 'User settings', tags: ['me'], response: SettingsDto })
+  settings(@CurrentUser() user: AuthUser) {
+    return this.me.settings(user.id);
+  }
+
+  @Patch('settings')
+  @ApiDoc({
+    summary: 'Update user settings (timezone validated against IANA names)',
+    tags: ['me'],
+    response: SettingsDto,
+  })
+  updateSettings(
+    @CurrentUser() user: AuthUser,
+    @ZodBody(UpdateSettingsInput) body: UpdateSettingsInput,
+  ) {
+    return this.me.updateSettings(user.id, body);
+  }
+
+  @Get('entitlements')
+  @ApiDoc({ summary: 'Plan limits and usage', tags: ['me'], response: Entitlements })
+  entitlements(@CurrentUser() user: AuthUser) {
+    return this.me.entitlements(user.id);
+  }
+
+  @Delete()
+  @HttpCode(202)
+  @RateLimit('destructive')
+  @ApiDoc({
+    summary: 'Delete the account and all its data (confirm with the account email)',
+    tags: ['me'],
+    status: 202,
+    rateLimit: 'destructive',
+    response: z.object({ deleted: z.literal(true) }),
+  })
+  remove(@CurrentUser() user: AuthUser, @ZodBody(DeleteMeInput) body: DeleteMeInput) {
+    return this.me.deleteAccount(user.id, body.confirmEmail);
+  }
+}
+
+/** `GET /auth/me` — deprecated alias of `GET /me`, kept until P09 removes the old web code. */
+@Controller('auth')
+export class AuthMeAliasController {
+  constructor(private readonly me: MeService) {}
+
+  @Get('me')
+  @Header('Deprecation', 'true')
+  @Header('Sunset', 'Thu, 31 Dec 2026 23:59:59 GMT')
+  @Header('Link', '</api/me>; rel="successor-version"')
+  @ApiDoc({
+    summary: 'Deprecated alias of GET /me',
+    tags: ['me'],
+    response: MeDto,
+    deprecated: true,
+  })
+  get(@CurrentUser() user: AuthUser) {
+    return this.me.me(user.id);
+  }
+}

@@ -4,6 +4,7 @@ import { DocumentType, Prisma } from '@prisma/client';
 
 import { ActivityService } from '../activity/activity.service';
 import { AIService } from '../ai/ai.service';
+import { AppException } from '../common/app-exception';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -26,7 +27,11 @@ export class GenerateService {
     // the client never receives a nested object it can't render.
     const parsed = resumeBulletsResultSchema.safeParse(result);
     if (!parsed.success) {
-      throw new Error('AI response did not contain valid resume bullets. Please try again.');
+      throw new AppException(
+        'UPSTREAM_ERROR',
+        'AI response did not contain valid resume bullets. Please try again.',
+        { provider: 'anthropic' },
+      );
     }
 
     const doc = await this.prisma.generatedDocument.create({

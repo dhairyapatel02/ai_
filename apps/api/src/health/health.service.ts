@@ -7,10 +7,10 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import type { Env } from '../config/env';
 
-export type DependencyStatus = 'up' | 'down';
+export type DependencyStatus = 'ok' | 'fail';
 
 export interface HealthReport {
-  status: 'ok' | 'error';
+  status: 'ok' | 'degraded';
   checks: { database: DependencyStatus; redis: DependencyStatus };
 }
 
@@ -49,7 +49,7 @@ export class HealthService implements OnModuleDestroy {
   async check(): Promise<HealthReport> {
     const [database, redis] = await Promise.all([this.checkDatabase(), this.checkRedis()]);
     return {
-      status: database === 'up' && redis === 'up' ? 'ok' : 'error',
+      status: database === 'ok' && redis === 'ok' ? 'ok' : 'degraded',
       checks: { database, redis },
     };
   }
@@ -57,9 +57,9 @@ export class HealthService implements OnModuleDestroy {
   private async checkDatabase(): Promise<DependencyStatus> {
     try {
       await withTimeout(this.prisma.$queryRaw`SELECT 1`, CHECK_TIMEOUT_MS);
-      return 'up';
+      return 'ok';
     } catch {
-      return 'down';
+      return 'fail';
     }
   }
 
@@ -69,9 +69,9 @@ export class HealthService implements OnModuleDestroy {
         await withTimeout(this.redis.connect(), CHECK_TIMEOUT_MS);
       }
       const pong = await withTimeout(this.redis.ping(), CHECK_TIMEOUT_MS);
-      return pong === 'PONG' ? 'up' : 'down';
+      return pong === 'PONG' ? 'ok' : 'fail';
     } catch {
-      return 'down';
+      return 'fail';
     }
   }
 

@@ -1,63 +1,47 @@
-import { Controller, Get, Query, Req } from '@nestjs/common';
-import { Request } from 'express';
+import { ActivityListQuery, DateRangeQuery } from '@devimpact/shared';
+import { Controller, Get, Header } from '@nestjs/common';
 
-import { successResponse, errorResponse } from '../common/api-response';
+import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
+import { withMeta } from '../common/envelope.interceptor';
+import { ApiDoc, ZodQuery } from '../common/zod-validation';
 import { ActivityService } from './activity.service';
 
+/**
+ * v1 activity endpoints on v2 conventions: validated queries, cursor pagination, inclusive local
+ * end dates (BUG-05). Item shapes stay v1 until P07 (API_CONTRACT_V2 §20).
+ */
 @Controller('activity')
 export class ActivityController {
   constructor(private activityService: ActivityService) {}
 
   @Get('commits')
+  @ApiDoc({ summary: 'Commits, newest first (cursor pagination)', tags: ['activity'] })
   async getCommits(
-    @Req() req: Request,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @CurrentUser() user: AuthUser,
+    @ZodQuery(ActivityListQuery) query: ActivityListQuery,
   ) {
-    const userId = req.headers['x-user-id'] as string;
-    if (!userId) return errorResponse('Not authenticated');
-
-    const parsedPage = page ? parseInt(page, 10) : 1;
-    const parsedLimit = limit ? parseInt(limit, 10) : 20;
-    if (isNaN(parsedPage) || isNaN(parsedLimit)) return errorResponse('Invalid page or limit');
-
-    const result = await this.activityService.getCommits(userId, from, to, parsedPage, parsedLimit);
-    return successResponse(result);
+    const page = await this.activityService.getCommits(user.id, query);
+    return withMeta(page.items, page.meta);
   }
 
   @Get('prs')
+  @ApiDoc({ summary: 'Pull requests, newest first (cursor pagination)', tags: ['activity'] })
   async getPullRequests(
-    @Req() req: Request,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @CurrentUser() user: AuthUser,
+    @ZodQuery(ActivityListQuery) query: ActivityListQuery,
   ) {
-    const userId = req.headers['x-user-id'] as string;
-    if (!userId) return errorResponse('Not authenticated');
-
-    const parsedPage = page ? parseInt(page, 10) : 1;
-    const parsedLimit = limit ? parseInt(limit, 10) : 20;
-    if (isNaN(parsedPage) || isNaN(parsedLimit)) return errorResponse('Invalid page or limit');
-
-    const result = await this.activityService.getPullRequests(
-      userId,
-      from,
-      to,
-      parsedPage,
-      parsedLimit,
-    );
-    return successResponse(result);
+    const page = await this.activityService.getPullRequests(user.id, query);
+    return withMeta(page.items, page.meta);
   }
 
   @Get('summary')
-  async getSummary(@Req() req: Request, @Query('from') from?: string, @Query('to') to?: string) {
-    const userId = req.headers['x-user-id'] as string;
-    if (!userId) return errorResponse('Not authenticated');
-
-    const summary = await this.activityService.getSummary(userId, from, to);
-    return successResponse(summary);
+  @Header('Deprecation', 'true')
+  @ApiDoc({
+    summary: 'Deprecated v1 summary (replaced by /metrics/* in P07)',
+    tags: ['activity'],
+    deprecated: true,
+  })
+  getSummary(@CurrentUser() user: AuthUser, @ZodQuery(DateRangeQuery) query: DateRangeQuery) {
+    return this.activityService.getSummary(user.id, query);
   }
 }

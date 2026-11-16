@@ -1,92 +1,111 @@
-import { Controller, Get, Post, Body, Query, Req } from '@nestjs/common';
-import { Request } from 'express';
+import {
+  ImpactScoreQuery,
+  generateAppraisalSchema,
+  generatePromotionSchema,
+  generateResumeSchema,
+} from '@devimpact/shared';
+import { Controller, Get, Header, Logger, Post } from '@nestjs/common';
 
-import { successResponse, errorResponse } from '../common/api-response';
+import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
+import { AppException } from '../common/app-exception';
+import { ApiDoc, ZodBody, ZodQuery } from '../common/zod-validation';
+import { RateLimit } from '../throttle/rate-limit';
 import { GenerateService } from './generate.service';
 
+import type { z } from 'zod';
+
+type GenerateResumeInput = z.output<typeof generateResumeSchema>;
+type GenerateAppraisalInput = z.output<typeof generateAppraisalSchema>;
+type GeneratePromotionInput = z.output<typeof generatePromotionSchema>;
+
+/**
+ * v1 generation endpoints, kept until P08 (`POST /documents`) with validated inputs (BUG-07),
+ * the `ai` rate-limit class (SEC-07) and safe upstream errors (SEC-12).
+ */
 @Controller('generate')
+@RateLimit('ai')
 export class GenerateController {
+  private readonly logger = new Logger(GenerateController.name);
+
   constructor(private generateService: GenerateService) {}
 
-  @Post('resume')
-  async generateResume(
-    @Req() req: Request,
-    @Body() body: { dateRange: { from: string; to: string }; role: string },
-  ) {
-    const userId = req.headers['x-user-id'] as string;
-    if (!userId) return errorResponse('Not authenticated');
-
+  private async upstream<T>(work: () => Promise<T>): Promise<T> {
     try {
-      const result = await this.generateService.generateResume(userId, body.dateRange, body.role);
-      return successResponse(result);
+      return await work();
     } catch (error) {
-      return errorResponse(error instanceof Error ? error.message : 'Generation failed');
+      if (error instanceof AppException) throw error;
+      // Provider payloads and request ids stay in the logs only.
+      this.logger.error({ err: error }, 'AI generation failed');
+      throw new AppException(
+        'UPSTREAM_ERROR',
+        'The AI provider returned an error. Please try again.',
+        {
+          provider: 'anthropic',
+        },
+      );
     }
+  }
+
+  @Post('resume')
+  @ApiDoc({
+    summary: 'Generate resume bullets (transitional; P08: POST /documents)',
+    tags: ['generate'],
+    rateLimit: 'ai',
+  })
+  generateResume(
+    @CurrentUser() user: AuthUser,
+    @ZodBody(generateResumeSchema) body: GenerateResumeInput,
+  ) {
+    return this.upstream(() =>
+      this.generateService.generateResume(user.id, body.dateRange, body.role),
+    );
   }
 
   @Post('appraisal')
-  async generateAppraisal(
-    @Req() req: Request,
-    @Body() body: { period: string; month: number; year: number },
+  @ApiDoc({
+    summary: 'Generate an appraisal report (transitional)',
+    tags: ['generate'],
+    rateLimit: 'ai',
+  })
+  generateAppraisal(
+    @CurrentUser() user: AuthUser,
+    @ZodBody(generateAppraisalSchema) body: GenerateAppraisalInput,
   ) {
-    const userId = req.headers['x-user-id'] as string;
-    if (!userId) return errorResponse('Not authenticated');
-
-    try {
-      const result = await this.generateService.generateAppraisal(
-        userId,
-        body.period,
-        body.month,
-        body.year,
-      );
-      return successResponse(result);
-    } catch (error) {
-      return errorResponse(error instanceof Error ? error.message : 'Generation failed');
-    }
+    return this.upstream(() =>
+      this.generateService.generateAppraisal(user.id, body.period, body.month, body.year),
+    );
   }
 
   @Post('promotion')
-  async generatePromotion(
-    @Req() req: Request,
-    @Body() body: { currentRole: string; targetRole: string },
+  @ApiDoc({
+    summary: 'Generate a promotion packet (transitional)',
+    tags: ['generate'],
+    rateLimit: 'ai',
+  })
+  generatePromotion(
+    @CurrentUser() user: AuthUser,
+    @ZodBody(generatePromotionSchema) body: GeneratePromotionInput,
   ) {
-    const userId = req.headers['x-user-id'] as string;
-    if (!userId) return errorResponse('Not authenticated');
-
-    try {
-      const result = await this.generateService.generatePromotion(
-        userId,
-        body.currentRole,
-        body.targetRole,
-      );
-      return successResponse(result);
-    } catch (error) {
-      return errorResponse(error instanceof Error ? error.message : 'Generation failed');
-    }
+    return this.upstream(() =>
+      this.generateService.generatePromotion(user.id, body.currentRole, body.targetRole),
+    );
   }
 
+  /** API-04: side-effecting GET, replaced by read-only `GET /impact` in P07. AI-rate-limited meanwhile. */
   @Get('impact-score')
-  async getImpactScore(
-    @Req() req: Request,
-    @Query('month') month: string,
-    @Query('year') year: string,
-    @Query('force') force: string,
+  @Header('Deprecation', 'true')
+  @ApiDoc({
+    summary: 'Deprecated LLM impact score (P07: GET /impact)',
+    tags: ['generate'],
+    deprecated: true,
+    rateLimit: 'ai',
+  })
+  getImpactScore(
+    @CurrentUser() user: AuthUser,
+    @ZodQuery(ImpactScoreQuery) query: ImpactScoreQuery,
   ) {
-    const userId = req.headers['x-user-id'] as string;
-    if (!userId) return errorResponse('Not authenticated');
-
-    if (!month || !year) return errorResponse('month and year are required');
-
-    try {
-      const result = await this.generateService.getImpactScore(
-        userId,
-        parseInt(month, 10),
-        parseInt(year, 10),
-        force === 'true',
-      );
-      return successResponse(result);
-    } catch (error) {
-      return errorResponse(error instanceof Error ? error.message : 'Score calculation failed');
-    }
+    return this.upstream(() =>
+      this.generateService.getImpactScore(user.id, query.month, query.year, query.force),
+    );
   }
 }

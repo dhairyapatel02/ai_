@@ -1,59 +1,52 @@
+import { toUtcRange } from '@devimpact/shared';
 import { Injectable } from '@nestjs/common';
 
+import { afterCursor, decodeCursor, toPage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
+
+import type { ActivityListQuery, DateRangeQuery } from '@devimpact/shared';
 
 @Injectable()
 export class ActivityService {
   constructor(private prisma: PrismaService) {}
 
-  async getCommits(userId: string, from?: string, to?: string, page = 1, limit = 20) {
-    const where: Record<string, unknown> = { userId };
-    if (from || to) {
-      where.timestamp = {};
-      if (from) (where.timestamp as Record<string, unknown>).gte = new Date(from);
-      if (to) (where.timestamp as Record<string, unknown>).lte = new Date(to);
-    }
-
-    const [data, total] = await Promise.all([
-      this.prisma.commit.findMany({
-        where,
-        orderBy: { timestamp: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      this.prisma.commit.count({ where }),
-    ]);
-
-    return { data, total, page, limit };
+  /** The user's IANA time zone (D-019); date-only bounds are local days in it. */
+  async timezoneOf(userId: string): Promise<string> {
+    const settings = await this.prisma.userSettings.findUnique({
+      where: { userId },
+      select: { timezone: true },
+    });
+    return settings?.timezone ?? 'UTC';
   }
 
-  async getPullRequests(userId: string, from?: string, to?: string, page = 1, limit = 20) {
-    const where: Record<string, unknown> = { userId };
-    if (from || to) {
-      where.timestamp = {};
-      if (from) (where.timestamp as Record<string, unknown>).gte = new Date(from);
-      if (to) (where.timestamp as Record<string, unknown>).lte = new Date(to);
-    }
-
-    const [data, total] = await Promise.all([
-      this.prisma.pullRequest.findMany({
-        where,
-        orderBy: { timestamp: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      this.prisma.pullRequest.count({ where }),
-    ]);
-
-    return { data, total, page, limit };
+  private async timestampFilter(userId: string, bounds: { from?: string; to?: string }) {
+    if (bounds.from === undefined && bounds.to === undefined) return {};
+    const range = toUtcRange(bounds, await this.timezoneOf(userId));
+    return { timestamp: range };
   }
 
-  async getSummary(userId: string, from?: string, to?: string) {
-    const dateFilter: Record<string, unknown> = {};
-    if (from) dateFilter.gte = new Date(from);
-    if (to) dateFilter.lte = new Date(to);
+  async getCommits(userId: string, query: ActivityListQuery) {
+    const range = await this.timestampFilter(userId, query);
+    const rows = await this.prisma.commit.findMany({
+      where: { userId, ...range, ...afterCursor('timestamp', decodeCursor(query.cursor)) },
+      orderBy: [{ timestamp: 'desc' }, { id: 'desc' }],
+      take: query.limit + 1,
+    });
+    return toPage(rows, query.limit, (row) => row.timestamp);
+  }
 
-    const timestampWhere = Object.keys(dateFilter).length > 0 ? { timestamp: dateFilter } : {};
+  async getPullRequests(userId: string, query: ActivityListQuery) {
+    const range = await this.timestampFilter(userId, query);
+    const rows = await this.prisma.pullRequest.findMany({
+      where: { userId, ...range, ...afterCursor('timestamp', decodeCursor(query.cursor)) },
+      orderBy: [{ timestamp: 'desc' }, { id: 'desc' }],
+      take: query.limit + 1,
+    });
+    return toPage(rows, query.limit, (row) => row.timestamp);
+  }
+
+  async getSummary(userId: string, query: DateRangeQuery) {
+    const timestampWhere = await this.timestampFilter(userId, query);
 
     const [totalCommits, totalPRs, totalReviews, totalIssues, impactScore] = await Promise.all([
       this.prisma.commit.count({ where: { userId, ...timestampWhere } }),
@@ -86,10 +79,9 @@ export class ActivityService {
     };
   }
 
+  /** Inputs for the v1 generators; `from`/`to` are validated bounds (dates or timestamps). */
   async getActivityDataForAI(userId: string, from: string, to: string) {
-    const dateFilter = {
-      timestamp: { gte: new Date(from), lte: new Date(to) },
-    };
+    const dateFilter = await this.timestampFilter(userId, { from, to });
 
     const [commits, prs, reviews] = await Promise.all([
       this.prisma.commit.findMany({
