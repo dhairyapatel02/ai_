@@ -75,18 +75,6 @@ export interface GeneratedDocument {
   createdAt: Date;
 }
 
-export interface ImpactScore {
-  id: string;
-  userId: string;
-  month: number;
-  year: number;
-  overall: number;
-  featureDelivery: number;
-  codeQuality: number;
-  collaboration: number;
-  leadership: number;
-}
-
 export interface EnhancedCommitResult {
   enhanced: string;
   category: CommitCategory;
@@ -114,15 +102,6 @@ export interface PromotionPacket {
   businessValue: string[];
   mentorship: string[];
   supportingData: Record<string, unknown>;
-}
-
-export interface ImpactScoreResult {
-  overall: number;
-  featureDelivery: number;
-  codeQuality: number;
-  collaboration: number;
-  leadership: number;
-  highlights: string[];
 }
 
 export interface ApiResponse<T = unknown> {

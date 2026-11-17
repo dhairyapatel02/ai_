@@ -10,3 +10,6 @@ export * from './api/sync';
 export * from './api/repos';
 export * from './api/webhooks';
 export * from './providers/activity';
+export * from './periods';
+export * from './metrics/catalogue';
+export * from './api/metrics';

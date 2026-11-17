@@ -1,6 +1,6 @@
 /**
- * Minimal time-zone helpers (D-019) built on `Intl`, no dependencies. The full period grammar
- * (`parsePeriod`) arrives with P07 in `packages/shared/src/periods/`.
+ * Minimal time-zone helpers (D-019) built on `Intl`, no dependencies. The period grammar
+ * (`parsePeriod`, `resolvePeriod`, `businessHours`) lives in `packages/shared/src/periods/`.
  */
 
 const formatterCache = new Map<string, Intl.DateTimeFormat>();

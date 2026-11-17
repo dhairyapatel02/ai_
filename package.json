@@ -25,6 +25,9 @@
     "db:migrate": "npm run db:migrate --workspace=apps/api",
     "db:deploy": "npm run db:deploy --workspace=apps/api",
     "db:seed": "npm run db:seed --workspace=apps/api",
+    "db:seed:heavy": "npm run db:seed:heavy --workspace=apps/api",
+    "metrics:recompute": "npm run metrics:recompute --workspace=apps/api --",
+    "perf:metrics": "npm run perf:metrics --workspace=apps/api",
     "db:reset": "npm run db:reset --workspace=apps/api"
   },
   "devDependencies": {
