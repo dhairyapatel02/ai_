@@ -113,6 +113,7 @@ export class DocumentGenerationService {
 
       let content: unknown = result.content;
       if (job.section && doc.currentVersion > 0) {
+        // user-scope: versions of the document loaded for this job (scoped by doc.userId).
         const previous = await this.prisma.documentVersion.findUnique({
           where: { documentId_version: { documentId: doc.id, version: doc.currentVersion } },
         });
@@ -144,6 +145,7 @@ export class DocumentGenerationService {
           },
         });
         if (updated.count === 0) return false; // cancelled meanwhile
+        // user-scope: versions of the document loaded for this job (scoped by doc.userId).
         await tx.documentVersion.create({
           data: {
             documentId: doc.id,
@@ -152,6 +154,7 @@ export class DocumentGenerationService {
             source: VersionSource.AI,
           },
         });
+        // user-scope: versions of the document loaded for this job (scoped by doc.userId).
         await tx.documentVersion.deleteMany({
           where: { documentId: doc.id, version: { lte: job.version - MAX_VERSIONS } },
         });

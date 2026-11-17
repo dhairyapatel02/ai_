@@ -1,0 +1,10 @@
+{
+  "persona": "frontend-design-system",
+  "generator": "digest_summary",
+  "promptId": "digest-summary",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"summary\":{\"text\":\"A focused week in Oct 19 – Oct 25, 2026.\",\"citations\":[\"PR-acme/web#106\"]},\"highlights\":[{\"text\":\"Improved performance with the change to lazy-load dashboard charts to speed up first paint in acme/web.\",\"citations\":[\"PR-acme/web#106\"]},{\"text\":\"Resolved a defect: add visual regression tests for buttons in acme/ui-kit.\",\"citations\":[\"PR-acme/ui-kit#115\"]},{\"text\":\"Improved performance with the change to reduce bundle size by removing moment.js in acme/ui-kit.\",\"citations\":[\"PR-acme/ui-kit#121\"]}]}"
+}

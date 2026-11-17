@@ -1,0 +1,10 @@
+{
+  "persona": "backend-payments",
+  "generator": "achievement_statement",
+  "promptId": "achievement-statement",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"title\":\"Fix double charge on webhook retry\",\"statement\":\"Resolved a defect: fix double charge on webhook retry in acme/ledger.\",\"category\":\"quality\",\"citations\":[\"PR-acme/ledger#109\"]}"
+}

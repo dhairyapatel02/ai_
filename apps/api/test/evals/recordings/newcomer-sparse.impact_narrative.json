@@ -1,0 +1,10 @@
+{
+  "persona": "newcomer-sparse",
+  "generator": "impact_narrative",
+  "promptId": "impact-narrative",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"summary\":{\"text\":\"Work in October 2026 centred on \\\"Add loading state to profile page\\\".\",\"citations\":[\"PR-acme/api#103\"]},\"highlights\":[{\"text\":\"Delivered the change to add loading state to profile page in acme/api.\",\"citations\":[\"PR-acme/api#103\"],\"title\":\"Add loading state to profile page\"},{\"text\":\"Resolved a defect: fix typo in signup email copy in acme/api.\",\"citations\":[\"PR-acme/api#100\"],\"title\":\"Fix typo in signup email copy\"},{\"text\":\"Reviewed the change \\\"Profile avatar upload\\\" in acme/api, giving the author detailed feedback.\",\"citations\":[\"REV-acme/api#500\"],\"title\":\"Profile avatar upload\"}],\"focusAreas\":[{\"text\":\"Spread reviews across more repositories.\"}]}"
+}

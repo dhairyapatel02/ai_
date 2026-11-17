@@ -1,0 +1,10 @@
+{
+  "persona": "frontend-design-system",
+  "generator": "appraisal",
+  "promptId": "appraisal",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"executiveSummary\":{\"text\":\"Engineer who merged 8 pull requests across 2 repositories in October 2026.\",\"citations\":[\"PR-acme/web#106\"]},\"keyContributions\":[{\"text\":\"Improved performance with the change to lazy-load dashboard charts to speed up first paint in acme/web.\",\"citations\":[\"PR-acme/web#106\"],\"title\":\"Lazy-load dashboard charts to speed up first paint\"},{\"text\":\"Resolved a defect: add visual regression tests for buttons in acme/ui-kit.\",\"citations\":[\"PR-acme/ui-kit#115\"],\"title\":\"Add visual regression tests for buttons\"},{\"text\":\"Improved performance with the change to reduce bundle size by removing moment.js in acme/ui-kit.\",\"citations\":[\"PR-acme/ui-kit#121\"],\"title\":\"Reduce bundle size by removing moment.js\"},{\"text\":\"Delivered the change to migrate settings pages to the new form primitives in acme/web.\",\"citations\":[\"PR-acme/web#112\"],\"title\":\"Migrate settings pages to the new form primitives\"}],\"areasOfImpact\":[{\"text\":\"Sustained improvements to acme/web.\",\"citations\":[\"PR-acme/web#106\"]},{\"text\":\"Sustained improvements to acme/ui-kit.\",\"citations\":[\"PR-acme/ui-kit#115\"]}],\"growth\":[{\"text\":\"Took on more code review, e.g. \\\"Add date picker\\\".\",\"citations\":[\"REV-acme/web#501\"]}],\"nextGoals\":[{\"text\":\"Share the design behind the main changes with the team.\"},{\"text\":\"Keep pull requests small and well-tested.\"}]}"
+}

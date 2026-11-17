@@ -1,11 +1,16 @@
 import type { Config } from 'jest';
 
-/** Unit tests: fast, no database/Redis. Co-located `src/**\/*.spec.ts` + `test/unit`. */
+/** Unit tests: fast, no database/Redis. Co-located `src/**\/*.spec.ts` + `test/unit` + `test/evals`. */
 const config: Config = {
   rootDir: '.',
   testEnvironment: 'node',
   moduleFileExtensions: ['ts', 'js', 'json'],
-  testMatch: ['<rootDir>/src/**/*.spec.ts', '<rootDir>/test/unit/**/*.spec.ts'],
+  testMatch: [
+    '<rootDir>/src/**/*.spec.ts',
+    '<rootDir>/test/unit/**/*.spec.ts',
+    // Mocked AI evals (recorded responses) run with the unit tests in CI (P08).
+    '<rootDir>/test/evals/**/*.spec.ts',
+  ],
   transform: {
     '^.+\\.ts$': [
       'ts-jest',

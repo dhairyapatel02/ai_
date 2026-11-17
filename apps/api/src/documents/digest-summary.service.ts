@@ -64,6 +64,7 @@ export class DigestSummaryService {
     });
     const result = await this.generation.run({ documentId: doc.id, version: 1 }, { stream: false });
     if (!result.ok) return null;
+    // user-scope: document created for this user just above.
     const version = await this.prisma.documentVersion.findUnique({
       where: { documentId_version: { documentId: doc.id, version: 1 } },
     });

@@ -1,0 +1,10 @@
+{
+  "persona": "staff-reviewer",
+  "generator": "appraisal",
+  "promptId": "appraisal",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"executiveSummary\":{\"text\":\"Engineer who merged 3 pull requests across 4 repositories in October 2026.\",\"citations\":[\"PR-acme/mobile#106\"]},\"keyContributions\":[{\"text\":\"Improved performance with the change to fix N+1 query in activity feed in acme/mobile.\",\"citations\":[\"PR-acme/mobile#106\"],\"title\":\"Fix N+1 query in activity feed\"},{\"text\":\"Delivered the change to introduce API versioning guidelines in acme/web.\",\"citations\":[\"PR-acme/web#103\"],\"title\":\"Introduce API versioning guidelines\"},{\"text\":\"Delivered the change to write RFC template and review process docs in acme/api.\",\"citations\":[\"PR-acme/api#100\"],\"title\":\"Write RFC template and review process docs\"}],\"areasOfImpact\":[{\"text\":\"Sustained improvements to acme/mobile.\",\"citations\":[\"PR-acme/mobile#106\"]},{\"text\":\"Sustained improvements to acme/web.\",\"citations\":[\"PR-acme/web#103\"]},{\"text\":\"Sustained improvements to acme/api.\",\"citations\":[\"PR-acme/api#100\"]}],\"growth\":[{\"text\":\"Took on more code review, e.g. \\\"Auth token refresh\\\".\",\"citations\":[\"REV-acme/api#503\"]}],\"nextGoals\":[{\"text\":\"Share the design behind the main changes with the team.\"},{\"text\":\"Keep pull requests small and well-tested.\"}]}"
+}

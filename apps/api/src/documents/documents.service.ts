@@ -96,8 +96,10 @@ export class DocumentsService {
       type: query.type ? toTypeEnum(query.type) : { in: [...LIBRARY_TYPES] },
       ...(query.q ? { title: { contains: query.q, mode: 'insensitive' } } : {}),
     };
+    // user-scope: `where` / the document was scoped by userId above.
     const total = await this.prisma.generatedDocument.count({ where });
     if (query.sort === '-createdAt') {
+      // user-scope: `where` / the document was scoped by userId above.
       const rows = await this.prisma.generatedDocument.findMany({
         where: { ...where, ...afterCursor('createdAt', decodeCursor(query.cursor)) },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -107,6 +109,7 @@ export class DocumentsService {
       return { items: page.items.map(toSummary), meta: page.meta };
     }
     const offset = decodeOffsetCursor(query.cursor);
+    // user-scope: `where` / the document was scoped by userId above.
     const rows = await this.prisma.generatedDocument.findMany({
       where,
       orderBy:
@@ -139,6 +142,7 @@ export class DocumentsService {
     // user-scope: `doc` was loaded by { id, userId } just above.
     const version =
       number > 0
+        // user-scope: `where` / the document was scoped by userId above.
         ? await this.prisma.documentVersion.findUnique({
             where: { documentId_version: { documentId: doc.id, version: number } },
           })
@@ -175,6 +179,7 @@ export class DocumentsService {
         take: query.limit + 1,
         select: { version: true, source: true, createdAt: true },
       }),
+      // user-scope: `where` / the document was scoped by userId above.
       this.prisma.documentVersion.count({ where: { documentId: doc.id } }),
     ]);
     const hasMore = rows.length > query.limit;
@@ -386,6 +391,7 @@ export class DocumentsService {
           data: { content },
         });
       } else {
+        // user-scope: `where` / the document was scoped by userId above.
         await tx.documentVersion.create({
           data: { documentId: doc.id, version: next, content, source: VersionSource.USER_EDIT },
         });
@@ -405,6 +411,7 @@ export class DocumentsService {
           currentVersion: doc.currentVersion,
         });
       }
+      // user-scope: `where` / the document was scoped by userId above.
       await tx.documentVersion.deleteMany({
         where: { documentId: doc.id, version: { lte: next - MAX_VERSIONS } },
       });
@@ -445,6 +452,7 @@ export class DocumentsService {
           currentVersion: doc.currentVersion,
         });
       }
+      // user-scope: `where` / the document was scoped by userId above.
       await tx.documentVersion.create({
         data: {
           documentId: doc.id,
@@ -453,6 +461,7 @@ export class DocumentsService {
           source: VersionSource.RESTORE,
         },
       });
+      // user-scope: `where` / the document was scoped by userId above.
       await tx.documentVersion.deleteMany({
         where: { documentId: doc.id, version: { lte: next - MAX_VERSIONS } },
       });

@@ -54,17 +54,19 @@ export function toAiError(error: unknown): AiError {
       cause: error,
       ...(Number.isFinite(retryAfter) && retryAfter > 0 ? { retryAfterSeconds: retryAfter } : {}),
     };
-    // Mid-stream `error` events carry no HTTP status; classify by error type.
-    const type = (error.error as { error?: { type?: string } } | undefined)?.error?.type;
-    if (status === 429 || type === 'rate_limit_error') {
-      return new AiError('rate_limited', 'Anthropic rate limit', opts);
+    if (status === undefined) {
+      // Mid-stream `error` events carry no HTTP status; classify by error type.
+      const type = (error.error as { error?: { type?: string } } | undefined)?.error?.type;
+      if (type === 'rate_limit_error') return new AiError('rate_limited', 'Anthropic rate limit', opts);
+      if (type === 'overloaded_error') return new AiError('overloaded', 'Anthropic is overloaded', opts);
+      if (type === 'invalid_request_error' || type === 'authentication_error' || type === 'permission_error') {
+        return new AiError('bad_request', `Anthropic rejected the stream (${type})`, opts);
+      }
+      return new AiError('unavailable', 'Anthropic stream error', opts);
     }
-    if (status === 529 || type === 'overloaded_error') {
-      return new AiError('overloaded', 'Anthropic is overloaded', opts);
-    }
-    if ((status !== undefined && status >= 500) || type === 'api_error' || status === undefined) {
-      return new AiError('unavailable', 'Anthropic server error', opts);
-    }
+    if (status === 429) return new AiError('rate_limited', 'Anthropic rate limit', opts);
+    if (status === 529) return new AiError('overloaded', 'Anthropic is overloaded', opts);
+    if (status >= 500) return new AiError('unavailable', 'Anthropic server error', opts);
     // 408/409 are retryable per the SDK defaults.
     if (status === 408 || status === 409) {
       return new AiError('unavailable', 'Anthropic request conflict/timeout', opts);

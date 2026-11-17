@@ -1,0 +1,10 @@
+{
+  "persona": "frontend-design-system",
+  "generator": "achievement_statement",
+  "promptId": "achievement-statement",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"title\":\"Lazy-load dashboard charts to speed up first paint\",\"statement\":\"Improved performance with the change to lazy-load dashboard charts to speed up first paint in acme/web.\",\"category\":\"delivery\",\"citations\":[\"PR-acme/web#106\"]}"
+}

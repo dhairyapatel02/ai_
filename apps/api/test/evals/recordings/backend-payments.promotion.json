@@ -1,0 +1,10 @@
+{
+  "persona": "backend-payments",
+  "generator": "promotion",
+  "promptId": "promotion",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"whyReady\":{\"text\":\"Engineer who merged 12 pull requests across 2 repositories in October 2026.\",\"citations\":[\"PR-acme/ledger#109\"]},\"leadershipEvidence\":[{\"text\":\"Reviewed the change \\\"Payment method vaulting\\\" in acme/payments, giving the author detailed feedback.\",\"citations\":[\"REV-acme/payments#505\"]},{\"text\":\"Reviewed the change \\\"Invoice PDF templating\\\" in acme/ledger, giving the author detailed feedback.\",\"citations\":[\"REV-acme/ledger#504\"]}],\"technicalImpact\":[{\"text\":\"Resolved a defect: fix double charge on webhook retry in acme/ledger.\",\"citations\":[\"PR-acme/ledger#109\"]},{\"text\":\"Delivered the change to make payment intent creation idempotent in acme/payments.\",\"citations\":[\"PR-acme/payments#100\"]},{\"text\":\"Improved performance with the change to add composite index for invoice lookups in acme/payments.\",\"citations\":[\"PR-acme/payments#112\"]}],\"businessValue\":[{\"text\":\"Improved performance with the change to add composite index for invoice lookups in acme/payments.\",\"citations\":[\"PR-acme/payments#112\"]},{\"text\":\"Delivered the change to expose settlement report CSV export in acme/payments.\",\"citations\":[\"PR-acme/payments#124\"]}],\"mentorship\":[{\"text\":\"Reviewed the change \\\"Fraud score threshold config\\\" in acme/payments, giving the author detailed feedback.\",\"citations\":[\"REV-acme/payments#503\"]},{\"text\":\"Reviewed the change \\\"Add Stripe Connect onboarding\\\" in acme/ledger, giving the author detailed feedback.\",\"citations\":[\"REV-acme/ledger#500\"]}]}"
+}

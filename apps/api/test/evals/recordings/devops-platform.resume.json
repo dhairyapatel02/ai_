@@ -1,0 +1,10 @@
+{
+  "persona": "devops-platform",
+  "generator": "resume",
+  "promptId": "resume",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"summary\":{\"text\":\"Engineer who merged 6 pull requests across 2 repositories in October 2026.\",\"citations\":[\"PR-acme/infra#106\"]},\"bullets\":[{\"text\":\"Improved performance with the change to cut deploy time by caching Docker layers in acme/infra.\",\"citations\":[\"PR-acme/infra#106\"],\"theme\":\"Performance\"},{\"text\":\"Resolved a defect: fix flaky integration test runner timeouts in acme/ci.\",\"citations\":[\"PR-acme/ci#115\"],\"theme\":\"Reliability\"},{\"text\":\"Strengthened security: rotate database credentials automatically in acme/infra.\",\"citations\":[\"PR-acme/infra#112\"],\"theme\":\"Security\"},{\"text\":\"Delivered the change to add Terraform module for Postgres replicas in acme/ci.\",\"citations\":[\"PR-acme/ci#103\"],\"theme\":\"Feature\"},{\"text\":\"Delivered the change to add SLO burn-rate alerts for the API in acme/ci.\",\"citations\":[\"PR-acme/ci#109\"],\"theme\":\"Feature\"},{\"text\":\"Delivered the change to move CI to ephemeral runners in acme/infra.\",\"citations\":[\"PR-acme/infra#100\"],\"theme\":\"Infra\"}]}"
+}

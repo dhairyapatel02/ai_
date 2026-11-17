@@ -1,0 +1,10 @@
+{
+  "persona": "backend-payments",
+  "generator": "resume",
+  "promptId": "resume",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"summary\":{\"text\":\"Engineer who merged 12 pull requests across 2 repositories in October 2026.\",\"citations\":[\"PR-acme/ledger#109\"]},\"bullets\":[{\"text\":\"Resolved a defect: fix double charge on webhook retry in acme/ledger.\",\"citations\":[\"PR-acme/ledger#109\"],\"theme\":\"Incident\"},{\"text\":\"Delivered the change to make payment intent creation idempotent in acme/payments.\",\"citations\":[\"PR-acme/payments#100\"],\"theme\":\"Reliability\"},{\"text\":\"Improved performance with the change to add composite index for invoice lookups in acme/payments.\",\"citations\":[\"PR-acme/payments#112\"],\"theme\":\"Performance\"},{\"text\":\"Improved performance with the change to batch ledger writes to cut lock contention in acme/ledger.\",\"citations\":[\"PR-acme/ledger#103\"],\"theme\":\"Performance\"},{\"text\":\"Delivered the change to expose settlement report CSV export in acme/payments.\",\"citations\":[\"PR-acme/payments#124\"],\"theme\":\"Feature\"},{\"text\":\"Delivered the change to retry transient card network errors with backoff in acme/payments.\",\"citations\":[\"PR-acme/payments#118\"],\"theme\":\"Reliability\"}]}"
+}

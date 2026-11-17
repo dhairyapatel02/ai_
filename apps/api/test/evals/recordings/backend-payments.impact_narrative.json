@@ -1,0 +1,10 @@
+{
+  "persona": "backend-payments",
+  "generator": "impact_narrative",
+  "promptId": "impact-narrative",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"summary\":{\"text\":\"Work in October 2026 centred on \\\"Fix double charge on webhook retry\\\".\",\"citations\":[\"PR-acme/ledger#109\"]},\"highlights\":[{\"text\":\"Resolved a defect: fix double charge on webhook retry in acme/ledger.\",\"citations\":[\"PR-acme/ledger#109\"],\"title\":\"Fix double charge on webhook retry\"},{\"text\":\"Delivered the change to make payment intent creation idempotent in acme/payments.\",\"citations\":[\"PR-acme/payments#100\"],\"title\":\"Make payment intent creation idempotent\"},{\"text\":\"Improved performance with the change to add composite index for invoice lookups in acme/payments.\",\"citations\":[\"PR-acme/payments#112\"],\"title\":\"Add composite index for invoice lookups\"}],\"focusAreas\":[{\"text\":\"Spread reviews across more repositories.\"}]}"
+}

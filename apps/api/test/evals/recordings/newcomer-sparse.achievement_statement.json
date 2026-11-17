@@ -1,0 +1,10 @@
+{
+  "persona": "newcomer-sparse",
+  "generator": "achievement_statement",
+  "promptId": "achievement-statement",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"title\":\"Add loading state to profile page\",\"statement\":\"Delivered the change to add loading state to profile page in acme/api.\",\"category\":\"delivery\",\"citations\":[\"PR-acme/api#103\"]}"
+}

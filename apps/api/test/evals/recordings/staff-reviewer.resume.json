@@ -1,0 +1,10 @@
+{
+  "persona": "staff-reviewer",
+  "generator": "resume",
+  "promptId": "resume",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"summary\":{\"text\":\"Engineer who merged 3 pull requests across 4 repositories in October 2026.\",\"citations\":[\"PR-acme/mobile#106\"]},\"bullets\":[{\"text\":\"Improved performance with the change to fix N+1 query in activity feed in acme/mobile.\",\"citations\":[\"PR-acme/mobile#106\"],\"theme\":\"Performance\"},{\"text\":\"Delivered the change to introduce API versioning guidelines in acme/web.\",\"citations\":[\"PR-acme/web#103\"],\"theme\":\"Docs\"},{\"text\":\"Delivered the change to write RFC template and review process docs in acme/api.\",\"citations\":[\"PR-acme/api#100\"],\"theme\":\"Docs\"},{\"text\":\"Reviewed the change \\\"Auth token refresh\\\" in acme/api, giving the author detailed feedback.\",\"citations\":[\"REV-acme/api#503\"],\"theme\":\"Security\"},{\"text\":\"Reviewed the change \\\"Billing page redesign\\\" in acme/api, giving the author detailed feedback.\",\"citations\":[\"REV-acme/api#507\"],\"theme\":\"acme/api\"},{\"text\":\"Reviewed the change \\\"Audit log\\\" in acme/data, giving the author detailed feedback.\",\"citations\":[\"REV-acme/data#514\"],\"theme\":\"acme/data\"}]}"
+}

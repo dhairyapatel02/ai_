@@ -1,0 +1,10 @@
+{
+  "persona": "newcomer-sparse",
+  "generator": "appraisal",
+  "promptId": "appraisal",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"executiveSummary\":{\"text\":\"Engineer who merged 2 pull requests across 1 repository in October 2026.\",\"citations\":[\"PR-acme/api#103\"]},\"keyContributions\":[{\"text\":\"Delivered the change to add loading state to profile page in acme/api.\",\"citations\":[\"PR-acme/api#103\"],\"title\":\"Add loading state to profile page\"},{\"text\":\"Resolved a defect: fix typo in signup email copy in acme/api.\",\"citations\":[\"PR-acme/api#100\"],\"title\":\"Fix typo in signup email copy\"}],\"areasOfImpact\":[{\"text\":\"Sustained improvements to acme/api.\",\"citations\":[\"PR-acme/api#103\"]}],\"growth\":[{\"text\":\"Took on more code review, e.g. \\\"Profile avatar upload\\\".\",\"citations\":[\"REV-acme/api#500\"]}],\"nextGoals\":[{\"text\":\"Share the design behind the main changes with the team.\"},{\"text\":\"Keep pull requests small and well-tested.\"}]}"
+}
