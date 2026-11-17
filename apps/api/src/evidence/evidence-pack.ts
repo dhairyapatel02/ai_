@@ -1,4 +1,10 @@
-import { IMPLEMENTED_METRIC_KEYS, metricMeta, type ImplementedMetricKey, type MetricValue, type ResolvedPeriod } from '@devimpact/shared';
+import {
+  IMPLEMENTED_METRIC_KEYS,
+  metricMeta,
+  type ImplementedMetricKey,
+  type MetricValue,
+  type ResolvedPeriod,
+} from '@devimpact/shared';
 
 import { cleanText, TEXT_CAPS } from '../ai/template';
 import { commitRef, prRef, reviewRef } from '../common/evidence-refs';
@@ -111,12 +117,22 @@ export interface EvidencePack {
   metrics: PackMetric[];
   /** Engine values for engine-filled sections (`metrics`, `supportingData`). */
   metricValues: MetricValue[];
-  counts: { prsMerged: number; prsReviewed: number; commits: number; repos: number; achievements: number };
+  counts: {
+    prsMerged: number;
+    prsReviewed: number;
+    commits: number;
+    repos: number;
+    achievements: number;
+  };
   themes: { theme: string; refs: string[] }[];
   scoreStatus: 'ok' | 'insufficient_data';
   redacted: boolean;
   /** Impact score context (impact narrative only); its numbers are citable in prose. */
-  score?: { overall: number | null; band: string | null; dimensions: { label: string; score: number | null }[] };
+  score?: {
+    overall: number | null;
+    band: string | null;
+    dimensions: { label: string; score: number | null }[];
+  };
 }
 
 export interface PackLimits {
@@ -232,9 +248,7 @@ export function formatMetric(unit: string, value: number | null): string | null 
 
 export function packMetrics(inputs: ImpactInputs, keys?: ImplementedMetricKey[]): PackMetric[] {
   // Fixed catalogue order: stored inputs come back from JSONB with reordered keys.
-  const all = (keys ?? IMPLEMENTED_METRIC_KEYS).filter(
-    (k) => inputs.metrics[k] !== undefined,
-  );
+  const all = (keys ?? IMPLEMENTED_METRIC_KEYS).filter((k) => inputs.metrics[k] !== undefined);
   return all.map((key) => {
     const m = inputs.metrics[key];
     const meta = metricMeta(key);
@@ -272,7 +286,8 @@ export function metricValuesFor(inputs: ImpactInputs, keys: ImplementedMetricKey
       direction: meta.direction,
       inScore: meta.inScore,
       evidence: ids.slice(0, EVIDENCE_IN_DOCUMENT),
-      evidenceTruncated: ids.length > EVIDENCE_IN_DOCUMENT || (inputs.evidenceTruncated[key] ?? false),
+      evidenceTruncated:
+        ids.length > EVIDENCE_IN_DOCUMENT || (inputs.evidenceTruncated[key] ?? false),
     };
   });
 }
@@ -303,7 +318,8 @@ export function buildEvidencePack(input: BuildPackInput): EvidencePack {
   const label = (fullName: string) => aliases.get(fullName) ?? fullName;
 
   const prItems: PackItem[] = records.prs.map((pr) => {
-    const lines = pr.additions === null || pr.deletions === null ? null : pr.additions + pr.deletions;
+    const lines =
+      pr.additions === null || pr.deletions === null ? null : pr.additions + pr.deletions;
     return {
       ref: prRef(pr.repo.fullName, pr.number),
       promptRef: prRef(label(pr.repo.fullName), pr.number),
@@ -332,7 +348,8 @@ export function buildEvidencePack(input: BuildPackInput): EvidencePack {
   // Longer excerpts for the most significant PRs (≤ ~60k tokens overall, ADR-0009).
   const bodyById = new Map(records.prs.map((p) => [p.id, p.body]));
   prsRanked.forEach((item, i) => {
-    item.facts.description = cleanText(bodyById.get(item.id), i < 15 ? TEXT_CAPS.body / 2 : 300) || null;
+    item.facts.description =
+      cleanText(bodyById.get(item.id), i < 15 ? TEXT_CAPS.body / 2 : 300) || null;
   });
 
   const reviewItems: PackItem[] = records.reviews.map((r) => ({
@@ -447,7 +464,11 @@ export function buildEvidencePack(input: BuildPackInput): EvidencePack {
 /** Evidence as the model sees it (no URLs, no ids; aliases for redacted repos). */
 export function promptEvidence(pack: EvidencePack) {
   return {
-    period: { label: pack.period.label, startDate: pack.period.startDate, endDate: pack.period.endDate },
+    period: {
+      label: pack.period.label,
+      startDate: pack.period.startDate,
+      endDate: pack.period.endDate,
+    },
     metrics: pack.metrics
       .filter((m) => m.display !== null)
       .map((m) => ({ metric: m.label, value: m.display, sampleSize: m.n })),

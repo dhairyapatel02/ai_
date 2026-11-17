@@ -283,7 +283,11 @@ export class EvidenceBuilder {
         where: {
           userId,
           submittedAt: range,
-          pullRequest: { isAuthoredByUser: false, legacyStub: false, repository: { included: true } },
+          pullRequest: {
+            isAuthoredByUser: false,
+            legacyStub: false,
+            repository: { included: true },
+          },
         },
         select: {
           id: true,

@@ -142,8 +142,8 @@ export class DocumentsService {
     // user-scope: `doc` was loaded by { id, userId } just above.
     const version =
       number > 0
-        // user-scope: `where` / the document was scoped by userId above.
-        ? await this.prisma.documentVersion.findUnique({
+        ? // user-scope: `where` / the document was scoped by userId above.
+          await this.prisma.documentVersion.findUnique({
             where: { documentId_version: { documentId: doc.id, version: number } },
           })
         : null;
@@ -189,17 +189,26 @@ export class DocumentsService {
         source: toSourceWire(v.source),
         createdAt: v.createdAt.toISOString(),
       })),
-      meta: { nextCursor: hasMore ? encodeOffsetCursor(offset + query.limit) : null, hasMore, total },
+      meta: {
+        nextCursor: hasMore ? encodeOffsetCursor(offset + query.limit) : null,
+        hasMore,
+        total,
+      },
     };
   }
 
   // ── Generation ─────────────────────────────────────────────────────────────────────────
 
-  async previewEvidence(userId: string, options: DocumentOptions): Promise<PreviewEvidenceResponse> {
+  async previewEvidence(
+    userId: string,
+    options: DocumentOptions,
+  ): Promise<PreviewEvidenceResponse> {
     const prepared = await this.inputs.prepareStudio(userId, options);
+    const { period } = prepared;
+    if (!period) throw new AppException('INTERNAL', 'The period could not be resolved.');
     const top = prepared.pack.items.slice(0, 25);
     return {
-      period: prepared.period!,
+      period,
       counts: prepared.pack.counts,
       topEvidence: top.map((item) => ({
         ref: item.ref,
@@ -277,7 +286,13 @@ export class DocumentsService {
       const allowed = REGENERABLE_SECTIONS[type as StudioDocumentType];
       if (!allowed.includes(input.section) || doc.currentVersion === 0) {
         throw new AppException('VALIDATION_FAILED', 'The request is invalid', {
-          issues: [{ path: 'body.section', message: `Expected one of ${allowed.join(', ')}`, code: 'custom' }],
+          issues: [
+            {
+              path: 'body.section',
+              message: `Expected one of ${allowed.join(', ')}`,
+              code: 'custom',
+            },
+          ],
         });
       }
     }
@@ -397,7 +412,12 @@ export class DocumentsService {
         });
       }
       const moved = await tx.generatedDocument.updateMany({
-        where: { id: doc.id, userId, currentVersion: doc.currentVersion, status: { notIn: ACTIVE } },
+        where: {
+          id: doc.id,
+          userId,
+          currentVersion: doc.currentVersion,
+          status: { notIn: ACTIVE },
+        },
         data: {
           currentVersion: next,
           ...(input.title ? { title: input.title } : {}),
@@ -433,7 +453,12 @@ export class DocumentsService {
       : verifyCitations(source.content, new Map(doc.evidenceRefs.map((r) => [r, r])));
     await this.prisma.$transaction(async (tx) => {
       const moved = await tx.generatedDocument.updateMany({
-        where: { id: doc.id, userId, currentVersion: doc.currentVersion, status: { notIn: ACTIVE } },
+        where: {
+          id: doc.id,
+          userId,
+          currentVersion: doc.currentVersion,
+          status: { notIn: ACTIVE },
+        },
         data: {
           currentVersion: next,
           status: DocumentStatus.READY,
@@ -494,4 +519,3 @@ export function collectCitations(content: unknown): string[] {
   visit(content);
   return [...out];
 }
-

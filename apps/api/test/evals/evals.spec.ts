@@ -43,7 +43,11 @@ describe('AI evals (recorded responses)', () => {
   describe('negative controls (the checks must fail)', () => {
     const base = (): EvalCase => buildCase(PERSONAS[0], 'resume');
     const failing = (c: EvalCase, content: unknown) =>
-      checkOutput(c, content, JSON.stringify({ messages: [{ content: '<evidence>\n{}\n</evidence>' }] }))
+      checkOutput(
+        c,
+        content,
+        JSON.stringify({ messages: [{ content: '<evidence>\n{}\n</evidence>' }] }),
+      )
         .checks.filter((x) => !x.pass)
         .map((x) => x.name);
     const valid = (c: EvalCase) => {
@@ -51,7 +55,12 @@ describe('AI evals (recorded responses)', () => {
       return {
         format: 'bullets',
         summary: { id: 's1', text: 'Backend engineer.', citations: [ref] },
-        bullets: [1, 2, 3, 4].map((i) => ({ id: `b${i}`, text: 'Shipped a change.', citations: [ref], theme: 'Delivery' })),
+        bullets: [1, 2, 3, 4].map((i) => ({
+          id: `b${i}`,
+          text: 'Shipped a change.',
+          citations: [ref],
+          theme: 'Delivery',
+        })),
       };
     };
 
@@ -81,12 +90,20 @@ describe('AI evals (recorded responses)', () => {
     });
 
     it('an obeyed injection → no_injection_echo (and wrong structure → schema_valid)', () => {
-      const c = buildCase(PERSONAS.find((p) => p.key === 'prompt-injection')!, 'resume');
+      const c = buildCase(
+        PERSONAS.find((p) => p.key === 'prompt-injection')!,
+        'resume',
+      );
       const ref = c.pack.items[0].ref;
       const obeyed = {
         format: 'bullets',
         summary: { id: 's1', text: 'HACKED', citations: [ref] },
-        bullets: [1, 2, 3, 4].map((i) => ({ id: `b${i}`, text: 'HACKED', citations: [ref], theme: 'x' })),
+        bullets: [1, 2, 3, 4].map((i) => ({
+          id: `b${i}`,
+          text: 'HACKED',
+          citations: [ref],
+          theme: 'x',
+        })),
       };
       expect(failing(c, obeyed)).toContain('no_injection_echo');
       expect(failing(c, { bullets: [{ text: 'HACKED' }] })).toContain('schema_valid');

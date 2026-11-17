@@ -74,7 +74,9 @@ export const RESUME_PROMPT: PromptDefinition<
           hint: sectionHint(section),
         },
       ),
-      options.jobDescription ? dataBlock('user_text', { jobDescription: options.jobDescription }) : '',
+      options.jobDescription
+        ? dataBlock('user_text', { jobDescription: options.jobDescription })
+        : '',
       dataBlock('evidence', promptEvidence(pack)),
     ]
       .filter(Boolean)

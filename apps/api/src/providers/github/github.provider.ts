@@ -113,7 +113,8 @@ export class GitHubSession implements ProviderSession {
       baseUrl,
       userAgent: 'DevImpact-AI-sync',
       request: {
-        fetch: (input: Parameters<typeof fetch>[0], init?: RequestInit) => globalThis.fetch(input, init),
+        fetch: (input: Parameters<typeof fetch>[0], init?: RequestInit) =>
+          globalThis.fetch(input, init),
       },
       retry: { retries, doNotRetry: [400, 401, 403, 404, 422, 429, 451] },
       throttle: {

@@ -212,7 +212,10 @@ describe('API conventions: validation, errors, envelope, headers, rate limits (i
       // No activity: each request reaches the handler and answers 409 no_evidence (no AI call).
       const body = { type: 'appraisal', period: 'month:2026-10' };
       for (let i = 0; i < 10; i++) {
-        const res = await request(server()).post('/api/documents').set('authorization', as).send(body);
+        const res = await request(server())
+          .post('/api/documents')
+          .set('authorization', as)
+          .send(body);
         expect(res.status).toBe(409);
         expect(res.body.error.details).toEqual({ reason: 'no_evidence' });
         expect(res.headers['ratelimit-limit']).toBe('10');

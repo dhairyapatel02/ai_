@@ -24,20 +24,35 @@ function config(url: string, overrides: Partial<Record<string, unknown>> = {}): 
 }
 
 const schema = z.object({ ok: z.boolean() });
-const req = { tier: 'default' as const, system: 'sys', user: 'u', outputSchema: schema, maxTokens: 100 };
+const req = {
+  tier: 'default' as const,
+  system: 'sys',
+  user: 'u',
+  outputSchema: schema,
+  maxTokens: 100,
+};
 
 describe('AiClient (ADR-0009)', () => {
   let fake: FakeAnthropic;
   beforeAll(async () => {
     fake = await startFakeAnthropic(() => ({ text: '{"ok":true}' }));
   });
-  afterEach(() => fake.reset());
+  afterEach(() => {
+    fake.reset();
+  });
   afterAll(async () => fake.close());
 
   it('streams text, reports usage and the model, sends structured output + caching', async () => {
     const deltas: string[] = [];
-    fake.queue.push({ text: '{"ok":true}', chunkSize: 3, usage: { input: 10, output: 5, cacheRead: 7, cacheWrite: 2 } });
-    const result = await new AiClient(config(fake.url)).generate({ ...req, onText: (d) => deltas.push(d) });
+    fake.queue.push({
+      text: '{"ok":true}',
+      chunkSize: 3,
+      usage: { input: 10, output: 5, cacheRead: 7, cacheWrite: 2 },
+    });
+    const result = await new AiClient(config(fake.url)).generate({
+      ...req,
+      onText: (d) => deltas.push(d),
+    });
     expect(result).toMatchObject({
       text: '{"ok":true}',
       model: 'model-default',
@@ -49,8 +64,7 @@ describe('AiClient (ADR-0009)', () => {
     expect(body.output_config?.format?.type).toBe('json_schema');
     expect(body.output_config?.effort).toBe('medium');
     expect(body.fallbacks).toBe('default');
-    const h = fake.requests[0].headers;
-    expect(`${String(h['x-api-key'] ?? '')}${String(h.authorization ?? '')}`).toContain('test-key');
+    expect(JSON.stringify(fake.requests[0].headers)).toContain('test-key');
   });
 
   it.each([
@@ -70,7 +84,10 @@ describe('AiClient (ADR-0009)', () => {
     [403, 'bad_request'],
   ])('does not retry %s (terminal → %s)', async (status, kind) => {
     fake.queue.push({ status });
-    await expect(new AiClient(config(fake.url)).generate(req)).rejects.toMatchObject({ kind, retryable: false });
+    await expect(new AiClient(config(fake.url)).generate(req)).rejects.toMatchObject({
+      kind,
+      retryable: false,
+    });
     expect(fake.requests).toHaveLength(1);
   });
 
@@ -86,7 +103,9 @@ describe('AiClient (ADR-0009)', () => {
 
   it('maps refusal and max_tokens stop reasons to typed errors', async () => {
     fake.queue.push({ text: '', stopReason: 'refusal' });
-    await expect(new AiClient(config(fake.url)).generate(req)).rejects.toMatchObject({ kind: 'refused' });
+    await expect(new AiClient(config(fake.url)).generate(req)).rejects.toMatchObject({
+      kind: 'refused',
+    });
     fake.queue.push({ text: '{"ok":', stopReason: 'max_tokens' });
     await expect(new AiClient(config(fake.url)).generate(req)).rejects.toMatchObject({
       kind: 'truncated',
@@ -98,16 +117,26 @@ describe('AiClient (ADR-0009)', () => {
     const controller = new AbortController();
     fake.queue.push({ text: '{"ok":true}', chunkSize: 1, delayMs: 30 });
     const run = new AiClient(config(fake.url)).generate({ ...req, signal: controller.signal });
-    setTimeout(() => controller.abort(), 50);
+    setTimeout(() => {
+      controller.abort();
+    }, 50);
     await expect(run).rejects.toMatchObject({ kind: 'aborted' });
-    expect(() => new AiClient(config(fake.url, { configured: false })).generate(req)).rejects.toMatchObject({
+    await expect(
+      new AiClient(config(fake.url, { configured: false })).generate(req),
+    ).rejects.toMatchObject({
       kind: 'not_configured',
     });
   });
 
   it('classifies connection failures as retryable and unknown errors safely', () => {
-    expect(toAiError(new Anthropic.APIConnectionError({ message: 'x' }))).toMatchObject({ kind: 'unavailable', retryable: true });
+    expect(toAiError(new Anthropic.APIConnectionError({ message: 'x' }))).toMatchObject({
+      kind: 'unavailable',
+      retryable: true,
+    });
     expect(toAiError(new Error('boom'))).toBeInstanceOf(AiError);
-    expect(toAiError(new Anthropic.APIUserAbortError())).toMatchObject({ kind: 'aborted', retryable: false });
+    expect(toAiError(new Anthropic.APIUserAbortError())).toMatchObject({
+      kind: 'aborted',
+      retryable: false,
+    });
   });
 });

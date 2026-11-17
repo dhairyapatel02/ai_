@@ -1,12 +1,13 @@
 import request from 'supertest';
 
-import { autoReply, startFakeAnthropic, type FakeAnthropic } from '../utils/fake-anthropic';
-import { parseSse, startAiWorker } from '../utils/ai-worker';
+import { DocEventsService } from '../../src/ai/doc-events.service';
 import { readStream, seedOctoberActivity, waitForDocument } from '../utils/ai-fixtures';
+import { parseSse, startAiWorker } from '../utils/ai-worker';
 import { createTestApp, type TestApp } from '../utils/app';
 import { bearer } from '../utils/auth';
 import { resetDatabase, resetRedisState } from '../utils/db';
 import { buildFactories, type Factories } from '../utils/factories';
+import { autoReply, startFakeAnthropic, type FakeAnthropic } from '../utils/fake-anthropic';
 
 /**
  * Documents & generation (API_CONTRACT_V2 §13, ADR-0009) end to end: API → `ai` queue → in-process
@@ -78,7 +79,9 @@ describe('Documents API + AI generation (integration)', () => {
     expect(names[names.length - 1]).toBe('done');
     expect(names.indexOf('section')).toBeLessThan(names.indexOf('done'));
     expect(events.every((e) => typeof e.id === 'string')).toBe(true);
-    const sections = events.filter((e) => e.event === 'section').map((e) => e.data as { key: string; index: number });
+    const sections = events
+      .filter((e) => e.event === 'section')
+      .map((e) => e.data as { key: string; index: number });
     expect(sections.map((s) => s.key)).toEqual(expect.arrayContaining(['summary', 'bullets']));
     expect(events[events.length - 1].data).toEqual({
       documentId: id,
@@ -87,17 +90,31 @@ describe('Documents API + AI generation (integration)', () => {
       flags: { uncited: 0, invalid: 0 },
     });
 
-    const detail = await request(server()).get(`/api/documents/${id}`).set('authorization', as).expect(200);
+    const detail = await request(server())
+      .get(`/api/documents/${id}`)
+      .set('authorization', as)
+      .expect(200);
     const { document, version } = detail.body.data;
-    expect(document).toMatchObject({ status: 'ready', currentVersion: 1, citationCoverage: 1, flags: { uncited: 0, invalid: 0 } });
-    expect(document.period).toMatchObject({ spec: 'month:2026-10', startDate: '2026-10-01', endDate: '2026-10-31' });
+    expect(document).toMatchObject({
+      status: 'ready',
+      currentVersion: 1,
+      citationCoverage: 1,
+      flags: { uncited: 0, invalid: 0 },
+    });
+    expect(document.period).toMatchObject({
+      spec: 'month:2026-10',
+      startDate: '2026-10-01',
+      endDate: '2026-10-31',
+    });
     expect(version).toMatchObject({ number: 1, source: 'ai' });
     expect(version.content.format).toBe('bullets');
     expect(version.content.bullets.length).toBe(5);
     expect(version.content.bullets[0]).toMatchObject({ id: 'b1', theme: 'Delivery' });
     // Every citation is one of the user's records (A-3 evidence resolves them).
     const cited = new Set<string>(
-      [version.content.summary, ...version.content.bullets].flatMap((b: { citations: string[] }) => b.citations),
+      [version.content.summary, ...version.content.bullets].flatMap(
+        (b: { citations: string[] }) => b.citations,
+      ),
     );
     expect(document.evidence.map((e: { ref: string }) => e.ref).sort()).toEqual([...cited].sort());
     expect(document.evidence.find((e: { id: string }) => e.id === prs[0].id)).toBeDefined();
@@ -105,7 +122,12 @@ describe('Documents API + AI generation (integration)', () => {
     // Usage recorded: one call, counts toward the quota.
     const usage = await t.prisma.aiUsage.findMany({ where: { userId } });
     expect(usage).toHaveLength(1);
-    expect(usage[0]).toMatchObject({ feature: 'RESUME', status: 'SUCCEEDED', countsTowardQuota: true, documentId: id });
+    expect(usage[0]).toMatchObject({
+      feature: 'RESUME',
+      status: 'SUCCEEDED',
+      countsTowardQuota: true,
+      documentId: id,
+    });
     expect(Number(usage[0].costMicroUsd)).toBeGreaterThan(0);
   });
 
@@ -139,7 +161,11 @@ describe('Documents API + AI generation (integration)', () => {
     const first = await post(resume).expect(201);
     await waitForDocument(t, first.body.data.document.id, as);
     const second = await post(resume).expect(200);
-    expect(second.body.data).toMatchObject({ cached: true, streamUrl: null, document: { id: first.body.data.document.id, status: 'ready' } });
+    expect(second.body.data).toMatchObject({
+      cached: true,
+      streamUrl: null,
+      document: { id: first.body.data.document.id, status: 'ready' },
+    });
     expect(fake.requests).toHaveLength(1);
     expect(await t.prisma.aiUsage.count({ where: { countsTowardQuota: true } })).toBe(1);
 
@@ -155,13 +181,17 @@ describe('Documents API + AI generation (integration)', () => {
     fake.queue.push({ text: '{"summary": "not an object"}' });
     // The repair call gets a valid answer built from the first request's evidence.
     fake.setHandler((req) =>
-      req.body.messages[0].content.includes('<invalid_output>') ? autoReply(fake.requests[0]) : autoReply(req),
+      req.body.messages[0].content.includes('<invalid_output>')
+        ? autoReply(fake.requests[0])
+        : autoReply(req),
     );
     const ok = await post(resume).expect(201);
     const repaired = await waitForDocument(t, ok.body.data.document.id, as);
     expect(repaired.document.status).toBe('ready');
     expect(fake.requests).toHaveLength(2);
-    expect(fake.requests[1].body.model).toBe(process.env.ANTHROPIC_MODEL_FAST ?? 'claude-haiku-5-5');
+    expect(fake.requests[1].body.model).toBe(
+      process.env.ANTHROPIC_MODEL_FAST ?? 'claude-haiku-5-5',
+    );
     expect(fake.requests[1].body.fallbacks).toBeUndefined();
     const usage = await t.prisma.aiUsage.findMany({ orderBy: { createdAt: 'asc' } });
     expect(usage.map((u) => [u.promptId, u.countsTowardQuota])).toEqual([
@@ -178,16 +208,26 @@ describe('Documents API + AI generation (integration)', () => {
       data: { code: 'OUTPUT_INVALID', retryable: false },
     });
     const failed = await waitForDocument(t, bad.body.data.document.id, as);
-    expect(failed.document).toMatchObject({ status: 'failed', errorCode: 'OUTPUT_INVALID', currentVersion: 0 });
+    expect(failed.document).toMatchObject({
+      status: 'failed',
+      errorCode: 'OUTPUT_INVALID',
+      currentVersion: 0,
+    });
     expect(failed.version).toBeNull();
-    expect(await t.prisma.aiUsage.count({ where: { documentId: bad.body.data.document.id, countsTowardQuota: true } })).toBe(0);
+    expect(
+      await t.prisma.aiUsage.count({
+        where: { documentId: bad.body.data.document.id, countsTowardQuota: true },
+      }),
+    ).toBe(0);
   });
 
   it('retries only retryable errors (AI-04): 529 then success; 400 fails at once; refusal → GENERATION_FAILED', async () => {
     await seedOctoberActivity(f, userId);
     fake.queue.push({ status: 529, errorType: 'overloaded_error' });
     const retried = await post(resume).expect(201);
-    expect((await waitForDocument(t, retried.body.data.document.id, as)).document.status).toBe('ready');
+    expect((await waitForDocument(t, retried.body.data.document.id, as)).document.status).toBe(
+      'ready',
+    );
     expect(fake.requests).toHaveLength(2);
 
     fake.reset();
@@ -199,7 +239,11 @@ describe('Documents API + AI generation (integration)', () => {
 
     fake.reset();
     fake.queue.push({ text: '', stopReason: 'refusal' });
-    const refused = await post({ type: 'promotion', currentRole: 'Engineer', targetRole: 'Senior' }).expect(201);
+    const refused = await post({
+      type: 'promotion',
+      currentRole: 'Engineer',
+      targetRole: 'Senior',
+    }).expect(201);
     expect((await waitForDocument(t, refused.body.data.document.id, as)).document).toMatchObject({
       status: 'failed',
       errorCode: 'GENERATION_FAILED',
@@ -221,7 +265,10 @@ describe('Documents API + AI generation (integration)', () => {
     });
     const created = await post(resume).expect(201);
     const { document, version } = await waitForDocument(t, created.body.data.document.id, as);
-    expect(version.content.summary).toMatchObject({ citations: [], flags: ['invalid_citation', 'uncited'] });
+    expect(version.content.summary).toMatchObject({
+      citations: [],
+      flags: ['invalid_citation', 'uncited'],
+    });
     expect(version.content.bullets[0]).toMatchObject({ citations: [], flags: ['uncited'] });
     expect(version.content.bullets[1].flags).toEqual(['invalid_citation']);
     expect(version.content.bullets[1].citations).toHaveLength(1);
@@ -241,16 +288,24 @@ describe('Documents API + AI generation (integration)', () => {
       if (doc.status === 'STREAMING') break;
       await new Promise((r) => setTimeout(r, 20));
     }
-    const cancel = await request(server()).post(`/api/documents/${id}/cancel`).set('authorization', as).expect(200);
+    const cancel = await request(server())
+      .post(`/api/documents/${id}/cancel`)
+      .set('authorization', as)
+      .expect(200);
     expect(cancel.body.data.document.status).toBe('cancelled');
     const events = parseSse((await streamPromise).body as string);
-    expect(events[events.length - 1]).toEqual(expect.objectContaining({ event: 'cancelled', data: { documentId: id } }));
+    expect(events[events.length - 1]).toEqual(
+      expect.objectContaining({ event: 'cancelled', data: { documentId: id } }),
+    );
     await new Promise((r) => setTimeout(r, 800));
     const doc = await t.prisma.generatedDocument.findUniqueOrThrow({ where: { id } });
     expect(doc.status).toBe('CANCELLED');
     expect(await t.prisma.documentVersion.count({ where: { documentId: id } })).toBe(0);
     expect(await t.prisma.aiUsage.count({ where: { countsTowardQuota: true } })).toBe(0);
-    await request(server()).post(`/api/documents/${id}/cancel`).set('authorization', as).expect(409);
+    await request(server())
+      .post(`/api/documents/${id}/cancel`)
+      .set('authorization', as)
+      .expect(409);
   });
 
   it('SSE resumes after Last-Event-ID and replays a finished document as status + done', async () => {
@@ -259,7 +314,7 @@ describe('Documents API + AI generation (integration)', () => {
     worker = null;
     const created = await post(resume).expect(201);
     const id = created.body.data.document.id as string;
-    const raw = await t.app.get((await import('../../src/ai/doc-events.service')).DocEventsService);
+    const raw = t.app.get(DocEventsService);
     const conn = raw.connection();
     const [pending] = await raw.read(conn, id, '0', 10);
     conn.disconnect();
@@ -311,7 +366,10 @@ describe('Documents API + AI generation (integration)', () => {
       .set('authorization', as)
       .send({ baseVersion: 1, content })
       .expect(409);
-    expect(stale.body.error).toMatchObject({ code: 'VERSION_CONFLICT', details: { currentVersion: 2 } });
+    expect(stale.body.error).toMatchObject({
+      code: 'VERSION_CONFLICT',
+      details: { currentVersion: 2 },
+    });
 
     const invalid = await request(server())
       .patch(`/api/documents/${id}`)
@@ -320,8 +378,13 @@ describe('Documents API + AI generation (integration)', () => {
       .expect(400);
     expect(invalid.body.error.code).toBe('VALIDATION_FAILED');
 
-    const versions = await request(server()).get(`/api/documents/${id}/versions`).set('authorization', as).expect(200);
-    expect(versions.body.data.map((v: { number: number; source: string }) => [v.number, v.source])).toEqual([
+    const versions = await request(server())
+      .get(`/api/documents/${id}/versions`)
+      .set('authorization', as)
+      .expect(200);
+    expect(
+      versions.body.data.map((v: { number: number; source: string }) => [v.number, v.source]),
+    ).toEqual([
       [2, 'user_edit'],
       [1, 'ai'],
     ]);
@@ -330,9 +393,17 @@ describe('Documents API + AI generation (integration)', () => {
       .set('authorization', as)
       .expect(200);
     expect(restored.body.data.version).toMatchObject({ number: 3, source: 'restore' });
-    expect(restored.body.data.version.content.sections.executiveSummary.text).not.toBe('Edited twice.');
-    await request(server()).get(`/api/documents/${id}?version=1`).set('authorization', as).expect(200);
-    await request(server()).get(`/api/documents/${id}?version=9`).set('authorization', as).expect(404);
+    expect(restored.body.data.version.content.sections.executiveSummary.text).not.toBe(
+      'Edited twice.',
+    );
+    await request(server())
+      .get(`/api/documents/${id}?version=1`)
+      .set('authorization', as)
+      .expect(200);
+    await request(server())
+      .get(`/api/documents/${id}?version=9`)
+      .set('authorization', as)
+      .expect(404);
   });
 
   it('regenerate: next version (whole or one section); 409 while in progress', async () => {
@@ -342,7 +413,10 @@ describe('Documents API + AI generation (integration)', () => {
     const first = await waitForDocument(t, id, as);
 
     fake.setHandler((req) => {
-      const out = JSON.parse(autoReply(req).text!) as { growth: { text: string }[]; executiveSummary: { text: string } };
+      const out = JSON.parse(autoReply(req).text!) as {
+        growth: { text: string }[];
+        executiveSummary: { text: string };
+      };
       out.growth[0].text = 'Regenerated growth.';
       out.executiveSummary.text = 'Should not be used.';
       return { text: JSON.stringify(out), chunkSize: 20, delayMs: 5 };
@@ -357,12 +431,18 @@ describe('Documents API + AI generation (integration)', () => {
       .patch(`/api/documents/${id}`)
       .set('authorization', as)
       .send({ baseVersion: 1, title: 'x' })
-      .expect((res) => expect([200, 409]).toContain(res.status));
+      .expect((res) => {
+        expect([200, 409]).toContain(res.status);
+      });
     const second = await waitForDocument(t, id, as);
     expect(second.version.number).toBe(2);
     expect(second.version.content.sections.growth[0].text).toBe('Regenerated growth.');
-    expect(second.version.content.sections.executiveSummary).toEqual(first.version.content.sections.executiveSummary);
-    expect(fake.requests[fake.requests.length - 1].body.messages[0].content).toContain('Only the "growth" part');
+    expect(second.version.content.sections.executiveSummary).toEqual(
+      first.version.content.sections.executiveSummary,
+    );
+    expect(fake.requests[fake.requests.length - 1].body.messages[0].content).toContain(
+      'Only the "growth" part',
+    );
 
     await request(server())
       .post(`/api/documents/${id}/regenerate`)
@@ -371,7 +451,11 @@ describe('Documents API + AI generation (integration)', () => {
       .expect(400);
     // In progress → 409 GENERATION_IN_PROGRESS.
     await t.prisma.generatedDocument.update({ where: { id }, data: { status: 'STREAMING' } });
-    const busy = await request(server()).post(`/api/documents/${id}/regenerate`).set('authorization', as).send({}).expect(409);
+    const busy = await request(server())
+      .post(`/api/documents/${id}/regenerate`)
+      .set('authorization', as)
+      .send({})
+      .expect(409);
     expect(busy.body.error.code).toBe('GENERATION_IN_PROGRESS');
   });
 
@@ -395,7 +479,12 @@ describe('Documents API + AI generation (integration)', () => {
     const res = await post(resume).expect(402);
     expect(res.body.error).toMatchObject({
       code: 'QUOTA_EXCEEDED',
-      details: { feature: 'generations', used: 15, limit: 15, resetsAt: expect.stringMatching(/-01T00:00:00.000Z$/) },
+      details: {
+        feature: 'generations',
+        used: 15,
+        limit: 15,
+        resetsAt: expect.stringMatching(/-01T00:00:00.000Z$/),
+      },
     });
     expect(fake.requests).toHaveLength(0);
 
@@ -408,26 +497,40 @@ describe('Documents API + AI generation (integration)', () => {
       byFeature: [{ feature: 'resume', count: 15, tokens: 22500 }],
     });
     await request(server()).get('/api/me/usage?month=2026-13').set('authorization', as).expect(400);
-    const other = await request(server()).get('/api/me/usage?month=2020-01').set('authorization', as).expect(200);
+    const other = await request(server())
+      .get('/api/me/usage?month=2020-01')
+      .set('authorization', as)
+      .expect(200);
     expect(other.body.data.generations.used).toBe(0);
   });
 
   it('no evidence → 409 CONFLICT no_evidence; preview-evidence works without AI', async () => {
     const empty = await f.user();
     const conflict = await post(resume, bearer(empty.id)).expect(409);
-    expect(conflict.body.error).toMatchObject({ code: 'CONFLICT', details: { reason: 'no_evidence' } });
+    expect(conflict.body.error).toMatchObject({
+      code: 'CONFLICT',
+      details: { reason: 'no_evidence' },
+    });
     await seedOctoberActivity(f, userId);
     const preview = await request(server())
       .post('/api/documents/preview-evidence')
       .set('authorization', as)
-      .send({ type: 'promotion', period: 'month:2026-10', currentRole: 'Engineer', targetRole: 'Senior' })
+      .send({
+        type: 'promotion',
+        period: 'month:2026-10',
+        currentRole: 'Engineer',
+        targetRole: 'Senior',
+      })
       .expect(200);
     expect(preview.body.data).toMatchObject({
       period: { spec: 'month:2026-10' },
       counts: { prsMerged: 5, prsReviewed: 2, commits: 2, achievements: 0 },
       estimatedQuotaCost: 1,
     });
-    expect(preview.body.data.topEvidence[0]).toMatchObject({ kind: 'pull_request', ref: expect.stringMatching(/^PR-acme\/api#\d+$/) });
+    expect(preview.body.data.topEvidence[0]).toMatchObject({
+      kind: 'pull_request',
+      ref: expect.stringMatching(/^PR-acme\/api#\d+$/),
+    });
     expect(preview.body.data.metrics.map((m: { key: string }) => m.key)).toContain('prs_merged');
     expect(fake.requests).toHaveLength(0);
   });
@@ -440,7 +543,9 @@ describe('Documents API + AI generation (integration)', () => {
     const sent = JSON.stringify(fake.requests[0].body);
     expect(sent).not.toContain('secret-billing');
     expect(sent).toContain('private/repo-1');
-    const refs = [version.content.summary, ...version.content.bullets].flatMap((b: { citations: string[] }) => b.citations);
+    const refs = [version.content.summary, ...version.content.bullets].flatMap(
+      (b: { citations: string[] }) => b.citations,
+    );
     expect(refs.some((r: string) => r.startsWith('PR-acme/secret-billing#'))).toBe(true);
     expect(refs.every((r: string) => !r.includes('private/repo'))).toBe(true);
     expect(document.flags).toEqual({ uncited: 0, invalid: 0 });
@@ -449,7 +554,10 @@ describe('Documents API + AI generation (integration)', () => {
   it('legacy imported documents are readable but read-only; library filters and sorts', async () => {
     const legacy = await f.document(userId, { title: 'Resume (imported)' });
     await f.document(userId, { title: 'Achievement x', type: 'ACHIEVEMENT_STATEMENT' });
-    const got = await request(server()).get(`/api/documents/${legacy.id}`).set('authorization', as).expect(200);
+    const got = await request(server())
+      .get(`/api/documents/${legacy.id}`)
+      .set('authorization', as)
+      .expect(200);
     expect(got.body.data.version.content).toEqual({ legacy: true, raw: { bullets: [] } });
     expect(got.body.data.document.period).toBeNull();
     await request(server())
@@ -457,15 +565,28 @@ describe('Documents API + AI generation (integration)', () => {
       .set('authorization', as)
       .send({ baseVersion: 1, content: { legacy: true, raw: {} } })
       .expect(409);
-    await request(server()).post(`/api/documents/${legacy.id}/regenerate`).set('authorization', as).send({}).expect(409);
+    await request(server())
+      .post(`/api/documents/${legacy.id}/regenerate`)
+      .set('authorization', as)
+      .send({})
+      .expect(409);
 
     const list = await request(server()).get('/api/documents').set('authorization', as).expect(200);
     expect(list.body.data.map((d: { title: string }) => d.title)).toEqual(['Resume (imported)']);
-    const typed = await request(server()).get('/api/documents?type=achievement_statement').set('authorization', as).expect(200);
+    const typed = await request(server())
+      .get('/api/documents?type=achievement_statement')
+      .set('authorization', as)
+      .expect(200);
     expect(typed.body.meta.total).toBe(1);
-    const q = await request(server()).get('/api/documents?q=IMPORTED&sort=title').set('authorization', as).expect(200);
+    const q = await request(server())
+      .get('/api/documents?q=IMPORTED&sort=title')
+      .set('authorization', as)
+      .expect(200);
     expect(q.body.data).toHaveLength(1);
-    await request(server()).delete(`/api/documents/${legacy.id}`).set('authorization', as).expect(200);
+    await request(server())
+      .delete(`/api/documents/${legacy.id}`)
+      .set('authorization', as)
+      .expect(200);
     expect(await t.prisma.documentVersion.count({ where: { documentId: legacy.id } })).toBe(0);
   });
 });

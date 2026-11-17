@@ -155,7 +155,10 @@ export class DocumentsController {
     tags: ['documents'],
     response: DocumentDetail,
   })
-  restore(@CurrentUser() user: AuthUser, @ZodParams(VersionParams) params: { id: string; n: number }) {
+  restore(
+    @CurrentUser() user: AuthUser,
+    @ZodParams(VersionParams) params: { id: string; n: number },
+  ) {
     return this.documents.restore(user.id, params.id, params.n);
   }
 

@@ -9,8 +9,8 @@ import {
 import { Injectable } from '@nestjs/common';
 import { DocumentStatus } from '@prisma/client';
 
-import { AiConfig } from '../ai/ai.config';
 import { AiQueueService } from '../ai/ai-queue.service';
+import { AiConfig } from '../ai/ai.config';
 import { DocEventsService } from '../ai/doc-events.service';
 import { StructuredGenerator } from '../ai/structured-generator';
 import { AppException } from '../common/app-exception';
@@ -26,10 +26,14 @@ import type { AiJobResult } from '../ai/ai.constants';
 /** Maps a failed quick job to the HTTP error of API_CONTRACT_V2 §10/§14. */
 function quickError(result: Extract<AiJobResult, { ok: false }> | null): AppException {
   if (result === null) {
-    return new AppException('UPSTREAM_UNAVAILABLE', 'The AI service is busy. Try again in a minute.', {
-      provider: 'anthropic',
-      retryAfterSeconds: 30,
-    });
+    return new AppException(
+      'UPSTREAM_UNAVAILABLE',
+      'The AI service is busy. Try again in a minute.',
+      {
+        provider: 'anthropic',
+        retryAfterSeconds: 30,
+      },
+    );
   }
   const { kind, message } = result.error;
   if (kind === 'not_configured') return notConfigured();
@@ -75,18 +79,30 @@ export class QuickActionsService {
     if (!this.generator.configured) throw notConfigured();
     await this.usage.assertQuota(userId, 'quick');
     const doc = await this.prisma.generatedDocument.create({
-      data: { userId, type: toTypeEnum(prepared.type), status: DocumentStatus.PENDING, ...generationColumns(prepared) },
+      data: {
+        userId,
+        type: toTypeEnum(prepared.type),
+        status: DocumentStatus.PENDING,
+        ...generationColumns(prepared),
+      },
     });
-    const result = await this.queue.runQuick({ documentId: doc.id, version: 1 }, this.ai.quickTimeoutMs + 2_000);
-    if (!result || !result.ok) {
+    const result = await this.queue.runQuick(
+      { documentId: doc.id, version: 1 },
+      this.ai.quickTimeoutMs + 2_000,
+    );
+    if (!result?.ok) {
       if (!result) {
         await this.events.requestCancel(doc.id);
         await this.prisma.generatedDocument.updateMany({
-          where: { id: doc.id, userId, status: { in: [DocumentStatus.PENDING, DocumentStatus.STREAMING] } },
+          where: {
+            id: doc.id,
+            userId,
+            status: { in: [DocumentStatus.PENDING, DocumentStatus.STREAMING] },
+          },
           data: { status: DocumentStatus.FAILED, errorCode: 'UPSTREAM_UNAVAILABLE' },
         });
       }
-      throw quickError(result as Extract<AiJobResult, { ok: false }> | null);
+      throw quickError(result);
     }
     const saved = await this.cachedVersion(userId, prepared.inputHash);
     if (!saved) throw new AppException('INTERNAL', 'The generated result could not be loaded.');
@@ -99,9 +115,13 @@ export class QuickActionsService {
   ): Promise<HighlightsResponse & { status: 200 | 201 }> {
     const prepared = await this.inputs.prepareNarrative(userId, input.period);
     if (prepared.inputs.status === 'insufficient_data') {
-      throw new AppException('CONFLICT', 'There is not enough data in this period for highlights.', {
-        reason: 'insufficient_data',
-      });
+      throw new AppException(
+        'CONFLICT',
+        'There is not enough data in this period for highlights.',
+        {
+          reason: 'insufficient_data',
+        },
+      );
     }
     let cached = input.regenerate ? null : await this.cachedVersion(userId, prepared.inputHash);
     const status = cached ? 200 : 201;

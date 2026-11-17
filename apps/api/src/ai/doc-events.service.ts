@@ -83,8 +83,13 @@ export class DocEventsService implements OnApplicationShutdown {
   }
 
   /** Entries after `lastId` (blocking up to `blockMs`). */
-  async read(conn: Redis, documentId: string, lastId: string, blockMs: number): Promise<StreamEntry[]> {
-    const res = (await conn.xread(
+  async read(
+    conn: Redis,
+    documentId: string,
+    lastId: string,
+    blockMs: number,
+  ): Promise<StreamEntry[]> {
+    const res = await conn.xread(
       'COUNT',
       200,
       'BLOCK',
@@ -92,7 +97,7 @@ export class DocEventsService implements OnApplicationShutdown {
       'STREAMS',
       this.streamKey(documentId),
       lastId,
-    )) as [string, [string, string[]][]][] | null;
+    );
     if (!res) return [];
     return res.flatMap(([, entries]) =>
       entries.map(([id, fields]) => {

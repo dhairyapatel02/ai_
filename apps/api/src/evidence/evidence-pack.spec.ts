@@ -28,12 +28,16 @@ const pr = (over: Partial<PrRecord>): PrRecord => ({
 
 describe('EvidenceBuilder core (deterministic ranking, ADR-0009)', () => {
   it('ranks merged, reviewed, incident/perf work above tiny or reverted changes', () => {
-    expect(scorePr(pr({ labels: ['incident'], reviewersCount: 3 }))).toBeGreaterThan(scorePr(pr({})));
+    expect(scorePr(pr({ labels: ['incident'], reviewersCount: 3 }))).toBeGreaterThan(
+      scorePr(pr({})),
+    );
     expect(scorePr(pr({ additions: 5, deletions: 1 }))).toBeLessThan(scorePr(pr({})));
     expect(scorePr(pr({ revertedAt: new Date() }))).toBeLessThan(scorePr(pr({})));
     expect(scorePr(pr({ mergedAt: null, state: 'OPEN' }))).toBeLessThan(scorePr(pr({})));
     // Huge PRs are not rewarded beyond large ones (anti-gaming).
-    expect(scorePr(pr({ additions: 5000, deletions: 0 }))).toBeLessThanOrEqual(scorePr(pr({ additions: 600, deletions: 0 })));
+    expect(scorePr(pr({ additions: 5000, deletions: 0 }))).toBeLessThanOrEqual(
+      scorePr(pr({ additions: 600, deletions: 0 })),
+    );
     expect(tagsOf('Speed up checkout with caching', ['bug'])).toEqual(['performance', 'bugfix']);
   });
 
@@ -46,7 +50,10 @@ describe('EvidenceBuilder core (deterministic ranking, ADR-0009)', () => {
   });
 
   it('redacts private repository names for the model but keeps real refs (F-76)', () => {
-    const pack = buildCase(PERSONAS.find((p) => p.key === 'private-redacted')!, 'resume').pack;
+    const pack = buildCase(
+      PERSONAS.find((p) => p.key === 'private-redacted')!,
+      'resume',
+    ).pack;
     const text = JSON.stringify(promptEvidence(pack));
     expect(text).not.toContain('secret-merger-project');
     expect(text).toContain('private/repo-1');

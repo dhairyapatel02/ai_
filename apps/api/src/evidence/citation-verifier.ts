@@ -18,7 +18,10 @@ export interface VerificationResult<T> {
 
 type Json = unknown;
 
-export function verifyCitations<T>(content: T, allowed: ReadonlyMap<string, string>): VerificationResult<T> {
+export function verifyCitations<T>(
+  content: T,
+  allowed: ReadonlyMap<string, string>,
+): VerificationResult<T> {
   let claims = 0;
   let cited = 0;
   let uncited = 0;

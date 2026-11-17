@@ -28,7 +28,10 @@ const GENERATION_TYPES: DocumentType[] = [
 ];
 
 /** `[start, end)` of a UTC calendar month (D-019: quotas reset on UTC months). */
-export function utcMonth(month?: string, now = new Date()): { month: string; start: Date; end: Date } {
+export function utcMonth(
+  month?: string,
+  now = new Date(),
+): { month: string; start: Date; end: Date } {
   const [y, m] = month
     ? month.split('-').map(Number)
     : [now.getUTCFullYear(), now.getUTCMonth() + 1];
@@ -106,7 +109,10 @@ export class UsageService {
 
   /** Throws `402 QUOTA_EXCEEDED { feature, used, limit, resetsAt }` when the month is used up. */
   async assertQuota(userId: string, group: QuotaGroup, now = new Date()): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { plan: true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { plan: true },
+    });
     const plan: Plan = user?.plan ?? 'FREE';
     const limits = limitsFor(plan);
     const limit = group === 'generations' ? limits.aiGenerationsPerMonth : limits.aiQuickPerMonth;
@@ -125,7 +131,10 @@ export class UsageService {
 
   async usage(userId: string, month?: string, now = new Date()): Promise<UsageResponse> {
     const range = utcMonth(month, now);
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { plan: true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { plan: true },
+    });
     const limits = limitsFor(user?.plan ?? 'FREE');
     const rows = await this.prisma.aiUsage.groupBy({
       by: ['feature', 'countsTowardQuota'],

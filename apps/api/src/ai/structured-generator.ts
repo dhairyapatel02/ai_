@@ -80,7 +80,13 @@ export class StructuredGenerator {
   ): Promise<GenerationResult<Output, Content>> {
     const calls: AiCallRecord[] = [];
     const call = async (
-      meta: { id: string; version: number; tier: 'default' | 'fast'; maxTokens: number; primary: boolean },
+      meta: {
+        id: string;
+        version: number;
+        tier: 'default' | 'fast';
+        maxTokens: number;
+        primary: boolean;
+      },
       system: string,
       user: string,
       onText?: (delta: string) => void,

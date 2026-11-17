@@ -20,9 +20,7 @@ describe('Cross-user isolation (integration)', () => {
   let f: Factories;
 
   beforeAll(async () => {
-    t = await createTestApp((b) =>
-      b.overrideProvider(GitHubAppClient).useValue(githubMock),
-    );
+    t = await createTestApp((b) => b.overrideProvider(GitHubAppClient).useValue(githubMock));
     f = buildFactories(t.prisma);
   });
 
@@ -86,7 +84,9 @@ describe('Cross-user isolation (integration)', () => {
       const res = await request(server)[method](path).set('authorization', as).send(body);
       expect({ path, status: res.status }).toEqual({ path, status: 404 });
     }
-    const untouched = await t.prisma.generatedDocument.findUniqueOrThrow({ where: { id: bobDoc.id } });
+    const untouched = await t.prisma.generatedDocument.findUniqueOrThrow({
+      where: { id: bobDoc.id },
+    });
     expect(untouched.title).toBe(bobDoc.title);
     expect(untouched.currentVersion).toBe(1);
   });

@@ -11,6 +11,9 @@ import { SyncWorkerModule } from './sync/sync-worker.module';
 @Module({})
 export class WorkerModule {
   static register(): DynamicModule {
-    return { module: WorkerModule, imports: [...infrastructureImports(), SyncWorkerModule, AiWorkerModule] };
+    return {
+      module: WorkerModule,
+      imports: [...infrastructureImports(), SyncWorkerModule, AiWorkerModule],
+    };
   }
 }

@@ -10,7 +10,9 @@ import type { INestApplication } from '@nestjs/common';
  * Consumes the test `ai` queue in-process (tests never register the app's processors), with the
  * same dispatch as `AiProcessor`.
  */
-export async function startAiWorker(app: INestApplication): Promise<{ close: () => Promise<void> }> {
+export async function startAiWorker(
+  app: INestApplication,
+): Promise<{ close: () => Promise<void> }> {
   const generation = app.get(DocumentGenerationService);
   const url = new URL(process.env.REDIS_URL ?? 'redis://localhost:6379');
   const worker = new Worker(AI_QUEUE, async (job) => handleAiJob(generation, job), {

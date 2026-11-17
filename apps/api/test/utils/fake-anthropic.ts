@@ -64,7 +64,9 @@ export async function startFakeAnthropic(defaultHandler?: FakeHandler): Promise<
       void (async () => {
         if (!req.url?.startsWith('/v1/messages') || req.method !== 'POST') {
           res.writeHead(404, { 'content-type': 'application/json' });
-          res.end(JSON.stringify({ type: 'error', error: { type: 'not_found_error', message: 'nope' } }));
+          res.end(
+            JSON.stringify({ type: 'error', error: { type: 'not_found_error', message: 'nope' } }),
+          );
           return;
         }
         const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as FakeRequest['body'];
@@ -164,7 +166,9 @@ export async function startFakeAnthropic(defaultHandler?: FakeHandler): Promise<
     },
     close: () =>
       new Promise<void>((resolve) => {
-        server.close(() => resolve());
+        server.close(() => {
+          resolve();
+        });
         server.closeAllConnections();
       }),
   };
@@ -197,12 +201,18 @@ export function autoReply(req: FakeRequest): FakeReply {
   if (sys.includes('Task: resume bullets')) {
     output = {
       summary: claim('Backend engineer focused on reliable payment services.', 0),
-      bullets: [0, 1, 2, 3, 4].map((i) => ({ ...claim(`Delivered change ${i + 1} to the API.`, i), theme: 'Delivery' })),
+      bullets: [0, 1, 2, 3, 4].map((i) => ({
+        ...claim(`Delivered change ${i + 1} to the API.`, i),
+        theme: 'Delivery',
+      })),
     };
   } else if (sys.includes('Task: self-appraisal')) {
     output = {
       executiveSummary: claim('A period of steady delivery across services.', 0),
-      keyContributions: [0, 1].map((i) => ({ ...claim(`Shipped item ${i + 1}.`, i), title: `Contribution ${i + 1}` })),
+      keyContributions: [0, 1].map((i) => ({
+        ...claim(`Shipped item ${i + 1}.`, i),
+        title: `Contribution ${i + 1}`,
+      })),
       areasOfImpact: [claim('Improved reliability of the API.', 1)],
       growth: [claim('Took on larger changes.', 2)],
       nextGoals: [{ text: 'Lead the next migration.' }],
@@ -218,7 +228,10 @@ export function autoReply(req: FakeRequest): FakeReply {
   } else if (sys.includes('Task: narrative highlights')) {
     output = {
       summary: claim('Delivery and reviews drove the period.', 0),
-      highlights: [0, 1].map((i) => ({ ...claim(`Highlight ${i + 1}.`, i), title: `Highlight ${i + 1}` })),
+      highlights: [0, 1].map((i) => ({
+        ...claim(`Highlight ${i + 1}.`, i),
+        title: `Highlight ${i + 1}`,
+      })),
       focusAreas: [{ text: 'Keep pull requests small.' }],
     };
   } else if (sys.includes('Task: turn one pull request or commit')) {
@@ -229,9 +242,14 @@ export function autoReply(req: FakeRequest): FakeReply {
       citations: ref(0),
     };
   } else if (sys.includes('Task: a short summary for the engineer')) {
-    output = { summary: claim('A productive week.', 0), highlights: [claim('Merged a change.', 0)] };
+    output = {
+      summary: claim('A productive week.', 0),
+      highlights: [claim('Merged a change.', 0)],
+    };
   } else if (sys.includes('You repair JSON documents')) {
-    const m = /<invalid_output>\n([\s\S]*?)\n<\/invalid_output>/.exec(req.body.messages[0]?.content ?? '');
+    const m = /<invalid_output>\n([\s\S]*?)\n<\/invalid_output>/.exec(
+      req.body.messages[0]?.content ?? '',
+    );
     output = m ? JSON.parse(m[1]) : {};
   } else {
     output = {};

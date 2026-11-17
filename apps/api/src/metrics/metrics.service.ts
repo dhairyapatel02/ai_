@@ -293,7 +293,10 @@ export class MetricsService {
    * The impact narrative (F-29) generated for exactly these score inputs, if one exists. A plain
    * database lookup — GET /impact never calls the AI (P07/P08 acceptance).
    */
-  private async highlightsFor(userId: string, score: PeriodScore): Promise<ImpactDto['highlights']> {
+  private async highlightsFor(
+    userId: string,
+    score: PeriodScore,
+  ): Promise<ImpactDto['highlights']> {
     const doc = await this.prisma.generatedDocument.findFirst({
       where: {
         userId,

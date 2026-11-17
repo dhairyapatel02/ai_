@@ -47,8 +47,9 @@ export function toAiError(error: unknown): AiError {
     return new AiError('unavailable', 'Could not reach Anthropic', { cause: error });
   }
   if (error instanceof Anthropic.APIError) {
-    const status = error.status;
-    const retryAfter = Number(error.headers?.get?.('retry-after'));
+    const status = error.status as number | undefined;
+    const headers = error.headers as Headers | undefined;
+    const retryAfter = Number(headers?.get('retry-after'));
     const opts = {
       status,
       cause: error,
@@ -57,9 +58,15 @@ export function toAiError(error: unknown): AiError {
     if (status === undefined) {
       // Mid-stream `error` events carry no HTTP status; classify by error type.
       const type = (error.error as { error?: { type?: string } } | undefined)?.error?.type;
-      if (type === 'rate_limit_error') return new AiError('rate_limited', 'Anthropic rate limit', opts);
-      if (type === 'overloaded_error') return new AiError('overloaded', 'Anthropic is overloaded', opts);
-      if (type === 'invalid_request_error' || type === 'authentication_error' || type === 'permission_error') {
+      if (type === 'rate_limit_error')
+        return new AiError('rate_limited', 'Anthropic rate limit', opts);
+      if (type === 'overloaded_error')
+        return new AiError('overloaded', 'Anthropic is overloaded', opts);
+      if (
+        type === 'invalid_request_error' ||
+        type === 'authentication_error' ||
+        type === 'permission_error'
+      ) {
         return new AiError('bad_request', `Anthropic rejected the stream (${type})`, opts);
       }
       return new AiError('unavailable', 'Anthropic stream error', opts);

@@ -93,7 +93,7 @@ export class PartialJsonSections {
     switch (c) {
       case '"': {
         const top = this.stack[depth - 1];
-        this.stringIsKey = top === 'o' && this.expectKey[depth - 1] === true;
+        this.stringIsKey = top === 'o' && this.expectKey[depth - 1];
         if (this.stringIsKey) this.keyBuf = '';
         else this.valueStart(i, depth, false);
         this.inString = true;

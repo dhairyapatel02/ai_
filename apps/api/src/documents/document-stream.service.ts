@@ -107,7 +107,10 @@ export class DocumentStreamService {
           // Stream expired or the worker died: fall back to the database state.
           const fresh = await this.prisma.generatedDocument.findFirst({ where: { id, userId } });
           if (!fresh) {
-            write({ event: 'error', data: { code: 'NOT_FOUND', message: 'Document deleted', retryable: false } });
+            write({
+              event: 'error',
+              data: { code: 'NOT_FOUND', message: 'Document deleted', retryable: false },
+            });
             return;
           }
           if (this.terminal(fresh)) {

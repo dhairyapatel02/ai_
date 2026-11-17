@@ -1,13 +1,13 @@
 import request from 'supertest';
 
 import { DigestSummaryService } from '../../src/documents/digest-summary.service';
-import { parseSse, startAiWorker } from '../utils/ai-worker';
 import { readStream, seedOctoberActivity } from '../utils/ai-fixtures';
+import { parseSse, startAiWorker } from '../utils/ai-worker';
 import { createTestApp, type TestApp } from '../utils/app';
 import { bearer } from '../utils/auth';
 import { resetDatabase, resetRedisState } from '../utils/db';
-import { autoReply, startFakeAnthropic, type FakeAnthropic } from '../utils/fake-anthropic';
 import { buildFactories, type Factories } from '../utils/factories';
+import { autoReply, startFakeAnthropic, type FakeAnthropic } from '../utils/fake-anthropic';
 
 /** Quick AI actions (ai.quick, fast model): impact highlights, achievement statements, digest. */
 describe('Impact highlights, achievement statements, digest summary (integration)', () => {
@@ -47,7 +47,10 @@ describe('Impact highlights, achievement statements, digest summary (integration
 
   it('POST /impact/highlights: 201 new (fast model), 200 cached; GET /impact links it without AI', async () => {
     await seedOctoberActivity(f, userId);
-    const before = await request(server()).get('/api/impact?period=month:2026-10').set('authorization', as).expect(200);
+    const before = await request(server())
+      .get('/api/impact?period=month:2026-10')
+      .set('authorization', as)
+      .expect(200);
     expect(before.body.data.highlights).toBeNull();
 
     const first = await request(server())
@@ -75,8 +78,14 @@ describe('Impact highlights, achievement statements, digest summary (integration
     expect(second.body.data.cached).toBe(true);
     expect(fake.requests).toHaveLength(1);
 
-    const after = await request(server()).get('/api/impact?period=month:2026-10').set('authorization', as).expect(200);
-    expect(after.body.data.highlights).toEqual({ documentId: first.body.data.document.id, status: 'ready' });
+    const after = await request(server())
+      .get('/api/impact?period=month:2026-10')
+      .set('authorization', as)
+      .expect(200);
+    expect(after.body.data.highlights).toEqual({
+      documentId: first.body.data.document.id,
+      status: 'ready',
+    });
     expect(fake.requests).toHaveLength(1);
 
     const usage = await request(server()).get('/api/me/usage').set('authorization', as).expect(200);
@@ -92,7 +101,10 @@ describe('Impact highlights, achievement statements, digest summary (integration
       .set('authorization', as)
       .send({ period: 'month:2026-10' })
       .expect(409);
-    expect(res.body.error).toMatchObject({ code: 'CONFLICT', details: { reason: 'insufficient_data' } });
+    expect(res.body.error).toMatchObject({
+      code: 'CONFLICT',
+      details: { reason: 'insufficient_data' },
+    });
     expect(fake.requests).toHaveLength(0);
   });
 
@@ -127,7 +139,10 @@ describe('Impact highlights, achievement statements, digest summary (integration
       .set('authorization', as)
       .send({ period: 'month:2026-10' })
       .expect(503);
-    expect(outage.body.error).toMatchObject({ code: 'UPSTREAM_UNAVAILABLE', details: { provider: 'anthropic' } });
+    expect(outage.body.error).toMatchObject({
+      code: 'UPSTREAM_UNAVAILABLE',
+      details: { provider: 'anthropic' },
+    });
     expect(JSON.stringify(outage.body)).not.toContain('req_fake');
     expect(fake.requests).toHaveLength(3); // 1 + AI_MAX_RETRIES (2)
     expect(await t.prisma.aiUsage.count({ where: { countsTowardQuota: true } })).toBe(0);
@@ -155,7 +170,9 @@ describe('Impact highlights, achievement statements, digest summary (integration
     expect(again.body.data.cached).toBe(true);
     expect(fake.requests).toHaveLength(1);
     // Only the one item is sent, with its injected text inside the evidence block.
-    const sentEvidence = /<evidence>\n([\s\S]*?)\n<\/evidence>/.exec(fake.requests[0].body.messages[0].content)![1];
+    const sentEvidence = /<evidence>\n([\s\S]*?)\n<\/evidence>/.exec(
+      fake.requests[0].body.messages[0].content,
+    )![1];
     expect(JSON.parse(sentEvidence).items).toHaveLength(1);
 
     const fromCommit = await request(server())
@@ -165,7 +182,9 @@ describe('Impact highlights, achievement statements, digest summary (integration
       .expect(200);
     expect(fromCommit.body.data.citations[0]).toMatch(/^C-acme\/api@[0-9a-f]{7}$/);
 
-    const reviewed = await t.prisma.pullRequest.findFirstOrThrow({ where: { userId, isAuthoredByUser: false } });
+    const reviewed = await t.prisma.pullRequest.findFirstOrThrow({
+      where: { userId, isAuthoredByUser: false },
+    });
     await request(server())
       .post('/api/ai/achievement-statement')
       .set('authorization', as)
@@ -187,10 +206,14 @@ describe('Impact highlights, achievement statements, digest summary (integration
     expect((await digest.summarize(userId, '2026-10-19'))?.cached).toBe(true);
     expect(fake.requests).toHaveLength(1);
     expect(await digest.summarize(userId, '2026-01-05')).toBeNull();
-    const doc = await t.prisma.generatedDocument.findFirstOrThrow({ where: { userId, type: 'DIGEST_SUMMARY' } });
+    const doc = await t.prisma.generatedDocument.findFirstOrThrow({
+      where: { userId, type: 'DIGEST_SUMMARY' },
+    });
     expect(doc.title).toContain('Weekly digest');
     // Quick types never stream: a stream request replays status + done from the database.
-    const events = parseSse((await readStream(t, `/api/documents/${doc.id}/stream`, as)).body as string);
+    const events = parseSse(
+      (await readStream(t, `/api/documents/${doc.id}/stream`, as)).body as string,
+    );
     expect(events.map((e) => e.event)).toEqual(['status', 'done']);
   });
 });

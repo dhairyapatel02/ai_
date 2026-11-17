@@ -69,7 +69,11 @@ export class DigestSummaryService {
       where: { documentId_version: { documentId: doc.id, version: 1 } },
     });
     return version
-      ? { documentId: doc.id, content: version.content as unknown as DigestSummaryContent, cached: false }
+      ? {
+          documentId: doc.id,
+          content: version.content as unknown as DigestSummaryContent,
+          cached: false,
+        }
       : null;
   }
 

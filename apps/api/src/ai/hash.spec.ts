@@ -30,7 +30,10 @@ describe('inputHash (ADR-0009 cache key)', () => {
     ['prompt version', { promptVersion: 2 }],
     ['model', { model: 'model-b' }],
     ['options', { options: { ...base.options, role: 'frontend' } }],
-    ['evidence change', { evidence: [{ ...base.evidence[0], version: 'later' }, base.evidence[1]] }],
+    [
+      'evidence change',
+      { evidence: [{ ...base.evidence[0], version: 'later' }, base.evidence[1]] },
+    ],
     ['metrics version', { metricsVersion: 'metrics@2.1.0' }],
     ['metric values', { metrics: [['prs_merged', 3, 3]] }],
   ])('changes with the %s', (_name, change) => {

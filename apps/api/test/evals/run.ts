@@ -12,7 +12,14 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { buildCase, GENERATORS, runCase, type CaseResult } from './eval-core';
-import { EVAL_MODELS, evalGenerator, fakeHarness, recordingPath, RECORDINGS_DIR, type Recording } from './harness';
+import {
+  EVAL_MODELS,
+  evalGenerator,
+  fakeHarness,
+  recordingPath,
+  RECORDINGS_DIR,
+  type Recording,
+} from './harness';
 import { PERSONAS } from './personas';
 import { referenceReply } from './reference-writer';
 
@@ -43,7 +50,8 @@ async function main() {
   // Capture the request body and response text in live mode too (via fetch interception).
   const realFetch = globalThis.fetch;
   globalThis.fetch = async (input, init) => {
-    if (typeof init?.body === 'string' && String(input).includes('/v1/messages')) lastBody = init.body;
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    if (typeof init?.body === 'string' && url.includes('/v1/messages')) lastBody = init.body;
     return realFetch(input, init);
   };
 
@@ -54,7 +62,9 @@ async function main() {
       const result = await runCase(c, generator, () => lastBody);
       results.push(result);
       const failed = result.checks.filter((x) => !x.pass);
-      console.log(`${failed.length ? '✗' : '✓'} ${persona.key} × ${g}${failed.length ? ` — ${failed.map((f) => `${f.name}: ${f.detail}`).join('; ')}` : ''}`);
+      console.log(
+        `${failed.length ? '✗' : '✓'} ${persona.key} × ${g}${failed.length ? ` — ${failed.map((f) => `${f.name}: ${f.detail}`).join('; ')}` : ''}`,
+      );
       if (record && result.content) {
         const text = JSON.stringify(result.output);
         const rec: Recording = {

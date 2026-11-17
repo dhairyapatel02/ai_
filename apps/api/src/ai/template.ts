@@ -21,8 +21,9 @@ export function fillTemplate(template: string, values: Record<string, string | n
 }
 
 // C0/C1 controls except \t \n, plus zero-width and bidi overrides (Trojan-source style tricks).
-// eslint-disable-next-line no-control-regex
-const CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F​-‏‪-‮⁦-⁩﻿]/g;
+const CONTROL =
+  // eslint-disable-next-line no-control-regex
+  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
 
 export function cleanText(value: string | null | undefined, max: number): string {
   if (!value) return '';

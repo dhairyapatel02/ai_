@@ -1,11 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AiFeature, DocumentStatus, VersionSource, type Prisma } from '@prisma/client';
+import { AiFeature, DocumentStatus, VersionSource } from '@prisma/client';
 
 import { AiConfig } from '../ai/ai.config';
 import { AiError } from '../ai/ai.errors';
 import { DocEventsService } from '../ai/doc-events.service';
 import { PartialJsonSections } from '../ai/partial-json';
-import { GenerationFailure, StructuredGenerator, type AiCallRecord } from '../ai/structured-generator';
+import {
+  GenerationFailure,
+  StructuredGenerator,
+  type AiCallRecord,
+} from '../ai/structured-generator';
 import { allowedRefs, verifyCitations } from '../evidence/citation-verifier';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsageService } from '../usage/usage.service';
@@ -43,15 +47,26 @@ export class DocumentGenerationService {
   async run(job: AiGenerateJobData, opts: { stream: boolean }): Promise<AiJobResult> {
     // user-scope: the job carries only the document id our API created; every later query uses doc.userId.
     const doc = await this.prisma.generatedDocument.findUnique({ where: { id: job.documentId } });
-    if (!doc || doc.status !== DocumentStatus.PENDING) {
-      return { ok: false, error: { kind: 'aborted', code: 'CANCELLED', message: 'Document is not pending.', retryable: false } };
+    if (doc?.status !== DocumentStatus.PENDING) {
+      return {
+        ok: false,
+        error: {
+          kind: 'aborted',
+          code: 'CANCELLED',
+          message: 'Document is not pending.',
+          retryable: false,
+        },
+      };
     }
     const userId = doc.userId;
     const type = toTypeWire(doc.type);
     const publish = opts.stream
       ? (event: Parameters<DocEventsService['publish']>[1], data: unknown) =>
           this.events.publish(doc.id, event, data as never).catch((error: unknown) => {
-            this.logger.warn({ err: error, documentId: doc.id }, 'Could not publish document event');
+            this.logger.warn(
+              { err: error, documentId: doc.id },
+              'Could not publish document event',
+            );
           })
       : () => Promise.resolve();
 
@@ -60,7 +75,15 @@ export class DocumentGenerationService {
       data: { status: DocumentStatus.STREAMING },
     });
     if (claimed.count === 0) {
-      return { ok: false, error: { kind: 'aborted', code: 'CANCELLED', message: 'Document is not pending.', retryable: false } };
+      return {
+        ok: false,
+        error: {
+          kind: 'aborted',
+          code: 'CANCELLED',
+          message: 'Document is not pending.',
+          retryable: false,
+        },
+      };
     }
     await publish('status', { status: 'streaming', version: job.version });
 
@@ -105,7 +128,13 @@ export class DocumentGenerationService {
 
       const result = await prepared.run(this.generator, {
         signal: controller.signal,
-        ...(opts.stream ? { onText: (delta: string) => scanner.push(delta) } : {}),
+        ...(opts.stream
+          ? {
+              onText: (delta: string) => {
+                scanner.push(delta);
+              },
+            }
+          : {}),
         timeoutMs: opts.stream ? this.ai.timeoutMs : this.ai.quickTimeoutMs,
       });
       flushDelta();
@@ -123,7 +152,10 @@ export class DocumentGenerationService {
       const valid = validateContent(type, verified.content);
       if (!valid.success) {
         throw new GenerationFailure(
-          new AiError('output_invalid', `Final content invalid: ${valid.error.issues[0]?.message ?? ''}`),
+          new AiError(
+            'output_invalid',
+            `Final content invalid: ${valid.error.issues[0]?.message ?? ''}`,
+          ),
           calls,
         );
       }
@@ -150,7 +182,7 @@ export class DocumentGenerationService {
           data: {
             documentId: doc.id,
             version: job.version,
-            content: valid.data as Prisma.InputJsonValue,
+            content: valid.data,
             source: VersionSource.AI,
           },
         });
@@ -179,12 +211,17 @@ export class DocumentGenerationService {
               raw instanceof AiError ? raw : new AiError('unavailable', 'Generation failed'),
               calls,
             );
-      if (crashed) this.logger.error({ err: raw, documentId: doc.id }, 'Document generation crashed');
+      if (crashed)
+        this.logger.error({ err: raw, documentId: doc.id }, 'Document generation crashed');
       const { error } = failure;
       const errorCode = crashed ? 'GENERATION_FAILED' : error.code;
       const cancelled = error.kind === 'aborted';
       await this.prisma.generatedDocument.updateMany({
-        where: { id: doc.id, userId, status: { in: [DocumentStatus.STREAMING, DocumentStatus.PENDING] } },
+        where: {
+          id: doc.id,
+          userId,
+          status: { in: [DocumentStatus.STREAMING, DocumentStatus.PENDING] },
+        },
         data: cancelled
           ? { status: DocumentStatus.CANCELLED, errorCode: null }
           : { status: DocumentStatus.FAILED, errorCode },
@@ -192,12 +229,24 @@ export class DocumentGenerationService {
       await this.usage.record(userId, doc.id, AiFeature[doc.type], failure.calls, false);
       if (cancelled) await publish('cancelled', { documentId: doc.id });
       else {
-        this.logger.warn({ documentId: doc.id, kind: error.kind, msg: error.message }, 'Generation failed');
-        await publish('error', { code: errorCode, message: error.userMessage, retryable: error.retryable });
+        this.logger.warn(
+          { documentId: doc.id, kind: error.kind, msg: error.message },
+          'Generation failed',
+        );
+        await publish('error', {
+          code: errorCode,
+          message: error.userMessage,
+          retryable: error.retryable,
+        });
       }
       return {
         ok: false,
-        error: { kind: error.kind, code: errorCode, message: error.userMessage, retryable: error.retryable },
+        error: {
+          kind: error.kind,
+          code: errorCode,
+          message: error.userMessage,
+          retryable: error.retryable,
+        },
       };
     } finally {
       clearInterval(poll);

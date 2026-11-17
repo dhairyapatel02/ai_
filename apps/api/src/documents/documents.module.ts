@@ -16,7 +16,14 @@ import { QuickActionsService } from './quick-actions.service';
 @Module({
   imports: [AiCoreModule, EvidenceModule, UsageModule],
   providers: [DocumentInputs, DocumentGenerationService, DigestSummaryService],
-  exports: [DocumentInputs, DocumentGenerationService, DigestSummaryService, AiCoreModule, EvidenceModule, UsageModule],
+  exports: [
+    DocumentInputs,
+    DocumentGenerationService,
+    DigestSummaryService,
+    AiCoreModule,
+    EvidenceModule,
+    UsageModule,
+  ],
 })
 export class AiGenerationModule {}
 

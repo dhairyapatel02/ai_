@@ -35,7 +35,11 @@ export const EVAL_MODELS = {
   fast: process.env.ANTHROPIC_MODEL_FAST ?? 'claude-haiku-5-5',
 };
 
-export function evalGenerator(opts: { baseUrl?: string; apiKey: string; fallbacks: boolean }): StructuredGenerator {
+export function evalGenerator(opts: {
+  baseUrl?: string;
+  apiKey: string;
+  fallbacks: boolean;
+}): StructuredGenerator {
   const config = {
     configured: true,
     apiKey: opts.apiKey,
@@ -52,7 +56,13 @@ export function evalGenerator(opts: { baseUrl?: string; apiKey: string; fallback
 }
 
 /** A fake Messages API plus a generator wired to it (CI mode). */
-export async function fakeHarness(): Promise<{ fake: FakeAnthropic; generator: StructuredGenerator }> {
+export async function fakeHarness(): Promise<{
+  fake: FakeAnthropic;
+  generator: StructuredGenerator;
+}> {
   const fake = await startFakeAnthropic();
-  return { fake, generator: evalGenerator({ baseUrl: fake.url, apiKey: 'eval-key', fallbacks: true }) };
+  return {
+    fake,
+    generator: evalGenerator({ baseUrl: fake.url, apiKey: 'eval-key', fallbacks: true }),
+  };
 }

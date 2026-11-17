@@ -69,9 +69,18 @@ export class RefResolver {
         : this.prisma.commit.findMany({
             where: {
               userId,
-              OR: commitKeys.map((k) => ({ sha: { startsWith: k.sha }, repository: { fullName: k.repo } })),
+              OR: commitKeys.map((k) => ({
+                sha: { startsWith: k.sha },
+                repository: { fullName: k.repo },
+              })),
             },
-            select: { id: true, sha: true, messageHeadline: true, authoredAt: true, repository: repo },
+            select: {
+              id: true,
+              sha: true,
+              messageHeadline: true,
+              authoredAt: true,
+              repository: repo,
+            },
           }),
     ]);
     const byRef = new Map<string, EvidenceItem>();

@@ -56,7 +56,8 @@ export interface PreparedGeneration {
   ) => Promise<GenerationResult<unknown, unknown>>;
 }
 
-const truncate = (text: string, max = 200) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
+const truncate = (text: string, max = 200) =>
+  text.length > max ? `${text.slice(0, max - 1)}…` : text;
 
 /**
  * Turns `(type, options)` into everything a generation needs: resolved period, deterministic
@@ -87,11 +88,15 @@ export class DocumentInputs {
     });
     return {
       ...rest,
-      prompt: { id: prompt.id, version: prompt.version, model: prompt.model, feature: prompt.feature },
+      prompt: {
+        id: prompt.id,
+        version: prompt.version,
+        model: prompt.model,
+        feature: prompt.feature,
+      },
       inputHash,
       model,
-      run: (generator, opts) =>
-        generator.run(prompt, input, opts) as Promise<GenerationResult<unknown, unknown>>,
+      run: (generator, opts) => generator.run(prompt, input, opts),
     };
   }
 
@@ -117,7 +122,11 @@ export class DocumentInputs {
     }
   }
 
-  async prepareStudio(userId: string, rawOptions: unknown, section?: string): Promise<PreparedGeneration> {
+  async prepareStudio(
+    userId: string,
+    rawOptions: unknown,
+    section?: string,
+  ): Promise<PreparedGeneration> {
     const parsed = DocumentOptions.safeParse(rawOptions);
     if (!parsed.success) {
       throw new AppException('VALIDATION_FAILED', 'The request is invalid', {
@@ -140,27 +149,39 @@ export class DocumentInputs {
     switch (options.type) {
       case 'resume': {
         const o = ResumeOptions.parse(stored);
-        return this.finish(PROMPTS.resume, { pack, options: o, ...(section ? { section } : {}) }, {
-          ...base,
-          type: 'resume',
-          title: truncate(`Resume · ${o.role} · ${ctx.period.label}`),
-        });
+        return this.finish(
+          PROMPTS.resume,
+          { pack, options: o, ...(section ? { section } : {}) },
+          {
+            ...base,
+            type: 'resume',
+            title: truncate(`Resume · ${o.role} · ${ctx.period.label}`),
+          },
+        );
       }
       case 'appraisal': {
         const o = AppraisalOptions.parse(stored);
-        return this.finish(PROMPTS.appraisal, { pack, options: o, ...(section ? { section } : {}) }, {
-          ...base,
-          type: 'appraisal',
-          title: truncate(`Appraisal · ${ctx.period.label}`),
-        });
+        return this.finish(
+          PROMPTS.appraisal,
+          { pack, options: o, ...(section ? { section } : {}) },
+          {
+            ...base,
+            type: 'appraisal',
+            title: truncate(`Appraisal · ${ctx.period.label}`),
+          },
+        );
       }
       case 'promotion': {
         const o = PromotionOptions.parse(stored);
-        return this.finish(PROMPTS.promotion, { pack, options: o, ...(section ? { section } : {}) }, {
-          ...base,
-          type: 'promotion',
-          title: truncate(`Promotion packet · ${o.currentRole} → ${o.targetRole}`),
-        });
+        return this.finish(
+          PROMPTS.promotion,
+          { pack, options: o, ...(section ? { section } : {}) },
+          {
+            ...base,
+            type: 'promotion',
+            title: truncate(`Promotion packet · ${o.currentRole} → ${o.targetRole}`),
+          },
+        );
       }
     }
   }
@@ -188,14 +209,18 @@ export class DocumentInputs {
       inputsHash: inputsHashOf(inputs),
     };
     return {
-      ...this.finish(PROMPTS.impact_narrative, { pack }, {
-        type: 'impact_narrative',
-        pack,
-        period: ctx.period,
-        timezone: ctx.timezone,
-        options,
-        title: truncate(`Impact highlights · ${ctx.period.label}`),
-      }),
+      ...this.finish(
+        PROMPTS.impact_narrative,
+        { pack },
+        {
+          type: 'impact_narrative',
+          pack,
+          period: ctx.period,
+          timezone: ctx.timezone,
+          options,
+          title: truncate(`Impact highlights · ${ctx.period.label}`),
+        },
+      ),
       inputs,
     };
   }
@@ -206,27 +231,35 @@ export class DocumentInputs {
   ): Promise<PreparedGeneration> {
     const ctx = await this.evidence.context(userId, undefined);
     const { pack, title } = await this.evidence.forItem(userId, ctx, source);
-    return this.finish(PROMPTS.achievement_statement, { pack }, {
-      type: 'achievement_statement',
-      pack,
-      period: null,
-      timezone: ctx.timezone,
-      options: { source },
-      title: truncate(`Achievement · ${title}`),
-    });
+    return this.finish(
+      PROMPTS.achievement_statement,
+      { pack },
+      {
+        type: 'achievement_statement',
+        pack,
+        period: null,
+        timezone: ctx.timezone,
+        options: { source },
+        title: truncate(`Achievement · ${title}`),
+      },
+    );
   }
 
   async prepareDigest(userId: string, weekStart: string): Promise<PreparedGeneration> {
     const spec = `custom:${weekStart}..${addDays(weekStart, 6)}`;
     const ctx = await this.evidence.context(userId, spec);
     const pack = await this.evidence.forPeriod(userId, ctx, DIGEST_LIMITS);
-    return this.finish(PROMPTS.digest_summary, { pack }, {
-      type: 'digest_summary',
-      pack,
-      period: ctx.period,
-      timezone: ctx.timezone,
-      options: { weekStart },
-      title: truncate(`Weekly digest · ${ctx.period.label}`),
-    });
+    return this.finish(
+      PROMPTS.digest_summary,
+      { pack },
+      {
+        type: 'digest_summary',
+        pack,
+        period: ctx.period,
+        timezone: ctx.timezone,
+        options: { weekStart },
+        title: truncate(`Weekly digest · ${ctx.period.label}`),
+      },
+    );
   }
 }

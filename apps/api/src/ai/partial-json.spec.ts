@@ -11,7 +11,9 @@ function scan(chunks: string[]) {
       deltas[k] = (deltas[k] ?? '') + t;
     },
   });
-  chunks.forEach((c) => p.push(c));
+  chunks.forEach((c) => {
+    p.push(c);
+  });
   return { sections, deltas };
 }
 
@@ -47,17 +49,20 @@ describe('PartialJsonSections (streamed structured output)', () => {
     const escaped = JSON.stringify({ a: 'x\u00e9\\"y', b: [1, 'z'] }).replace('é', '\\u00e9');
     const whole = scan([escaped]);
     fc.assert(
-      fc.property(fc.array(fc.integer({ min: 1, max: escaped.length }), { maxLength: 8 }), (cuts) => {
-        const points = [...new Set(cuts)].sort((x, y) => x - y);
-        const chunks: string[] = [];
-        let last = 0;
-        for (const p of points) {
-          chunks.push(escaped.slice(last, p));
-          last = p;
-        }
-        chunks.push(escaped.slice(last));
-        expect(scan(chunks)).toEqual(whole);
-      }),
+      fc.property(
+        fc.array(fc.integer({ min: 1, max: escaped.length }), { maxLength: 8 }),
+        (cuts) => {
+          const points = [...new Set(cuts)].sort((x, y) => x - y);
+          const chunks: string[] = [];
+          let last = 0;
+          for (const p of points) {
+            chunks.push(escaped.slice(last, p));
+            last = p;
+          }
+          chunks.push(escaped.slice(last));
+          expect(scan(chunks)).toEqual(whole);
+        },
+      ),
     );
     expect(whole.sections).toEqual([
       ['a', 0, 'xé\\"y'],

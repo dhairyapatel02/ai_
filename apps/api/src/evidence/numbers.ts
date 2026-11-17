@@ -38,7 +38,8 @@ export function allowedNumbers(pack: EvidencePack): Set<string> {
   for (const item of pack.items) {
     add(item.title);
     add(item.promptRef);
-    for (const v of Object.values(item.facts)) add(Array.isArray(v) ? v.join(' ') : (v as string | number | null));
+    for (const v of Object.values(item.facts))
+      add(Array.isArray(v) ? v.join(' ') : (v as string | number | null));
   }
   if (pack.score) {
     add(pack.score.overall);

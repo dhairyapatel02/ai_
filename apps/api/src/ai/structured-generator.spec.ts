@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { AiError } from './ai.errors';
 import { GenerationFailure, StructuredGenerator } from './structured-generator';
 
-import type { AiClient } from './ai-client';
 import type { PromptDefinition } from '../prompts/types';
+import type { AiClient } from './ai-client';
 
 const prompt: PromptDefinition<{ n: number }, { items: string[] }, { list: string[] }> = {
   id: 'test',
@@ -23,11 +23,17 @@ function client(texts: (string | AiError)[]) {
   const stub = {
     configured: true,
     modelFor: (tier: string) => `model-${tier}`,
-    generate: jest.fn(async (r: { tier: string; user: string; system: string }) => {
+    generate: jest.fn((r: { tier: string; user: string; system: string }) => {
       calls.push(r);
       const next = texts.shift();
-      if (next instanceof AiError) throw next;
-      return { text: next ?? '', model: `model-${r.tier}`, usage: { inputTokens: 1, outputTokens: 2, cacheReadTokens: 0, cacheWriteTokens: 0 }, latencyMs: 5, attempts: 1 };
+      if (next instanceof AiError) return Promise.reject(next);
+      return Promise.resolve({
+        text: next ?? '',
+        model: `model-${r.tier}`,
+        usage: { inputTokens: 1, outputTokens: 2, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        latencyMs: 5,
+        attempts: 1,
+      });
     }),
   };
   return { gen: new StructuredGenerator(stub as unknown as AiClient), calls };
@@ -39,7 +45,14 @@ describe('StructuredGenerator: validate → one repair → OUTPUT_INVALID', () =
     const r = await gen.run(prompt, { n: 1 });
     expect(r).toMatchObject({ content: { list: ['a'] }, repaired: false, model: 'model-default' });
     expect(calls).toHaveLength(1);
-    expect(r.calls).toEqual([expect.objectContaining({ promptId: 'test', promptVersion: 3, primary: true, status: 'SUCCEEDED' })]);
+    expect(r.calls).toEqual([
+      expect.objectContaining({
+        promptId: 'test',
+        promptVersion: 3,
+        primary: true,
+        status: 'SUCCEEDED',
+      }),
+    ]);
   });
 
   it('repairs once with the fast model and the validation errors', async () => {
@@ -60,13 +73,18 @@ describe('StructuredGenerator: validate → one repair → OUTPUT_INVALID', () =
     const { gen } = client(['nope', '{"items":"x"}']);
     const error = await gen.run(prompt, { n: 1 }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(GenerationFailure);
-    expect((error as GenerationFailure).error).toMatchObject({ kind: 'output_invalid', code: 'OUTPUT_INVALID' });
+    expect((error as GenerationFailure).error).toMatchObject({
+      kind: 'output_invalid',
+      code: 'OUTPUT_INVALID',
+    });
     expect((error as GenerationFailure).calls).toHaveLength(2);
   });
 
   it('records a failed primary call', async () => {
     const { gen } = client([new AiError('overloaded', 'busy')]);
     const error = (await gen.run(prompt, { n: 1 }).catch((e: unknown) => e)) as GenerationFailure;
-    expect(error.calls).toEqual([expect.objectContaining({ status: 'FAILED', errorCode: 'UPSTREAM_UNAVAILABLE' })]);
+    expect(error.calls).toEqual([
+      expect.objectContaining({ status: 'FAILED', errorCode: 'UPSTREAM_UNAVAILABLE' }),
+    ]);
   });
 });
