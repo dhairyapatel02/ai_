@@ -1,4 +1,4 @@
-import { metricMeta, type ImplementedMetricKey, type MetricValue, type ResolvedPeriod } from '@devimpact/shared';
+import { IMPLEMENTED_METRIC_KEYS, metricMeta, type ImplementedMetricKey, type MetricValue, type ResolvedPeriod } from '@devimpact/shared';
 
 import { cleanText, TEXT_CAPS } from '../ai/template';
 import { commitRef, prRef, reviewRef } from '../common/evidence-refs';
@@ -231,7 +231,8 @@ export function formatMetric(unit: string, value: number | null): string | null 
 }
 
 export function packMetrics(inputs: ImpactInputs, keys?: ImplementedMetricKey[]): PackMetric[] {
-  const all = (keys ?? (Object.keys(inputs.metrics) as ImplementedMetricKey[])).filter(
+  // Fixed catalogue order: stored inputs come back from JSONB with reordered keys.
+  const all = (keys ?? IMPLEMENTED_METRIC_KEYS).filter(
     (k) => inputs.metrics[k] !== undefined,
   );
   return all.map((key) => {

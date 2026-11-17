@@ -3,7 +3,7 @@ import { PRState } from '@prisma/client';
 import { Queue } from 'bullmq';
 import request from 'supertest';
 
-import { AIService } from '../../src/ai/ai.service';
+import { AiClient } from '../../src/ai/ai-client';
 import { computeImpact } from '../../src/metrics/impact';
 import { MetricsQueueService } from '../../src/metrics/metrics-queue.service';
 import { MetricsRecomputeService } from '../../src/metrics/metrics-recompute.service';
@@ -30,17 +30,14 @@ import type { ImpactInputs } from '../../src/metrics/score-inputs';
  * (P07 acceptance criterion; ADR-0008).
  */
 const aiCalls: string[] = [];
-const aiThatThrows = Object.fromEntries(
-  Object.getOwnPropertyNames(AIService.prototype)
-    .filter((name) => name !== 'constructor')
-    .map((name) => [
-      name,
-      () => {
-        aiCalls.push(name);
-        throw new Error(`Anthropic must not be called (AIService.${name})`);
-      },
-    ]),
-);
+const aiThatThrows = {
+  configured: true,
+  modelFor: () => 'test-model',
+  generate: () => {
+    aiCalls.push('generate');
+    throw new Error('Anthropic must not be called (AiClient.generate)');
+  },
+};
 
 const REPO = { R1: 'acme/r1', R2: 'acme/r2', R3: 'acme/r3' } as const;
 type RepoKey = keyof typeof REPO;
@@ -51,7 +48,7 @@ describe('Metrics engine API (integration)', () => {
   let server: ReturnType<TestApp['app']['getHttpServer']>;
 
   beforeAll(async () => {
-    t = await createTestApp((b) => b.overrideProvider(AIService).useValue(aiThatThrows));
+    t = await createTestApp((b) => b.overrideProvider(AiClient).useValue(aiThatThrows));
     f = buildFactories(t.prisma);
     server = t.app.getHttpServer();
   });

@@ -1,17 +1,11 @@
 import request from 'supertest';
 
-import { AIService } from '../../src/ai/ai.service';
 import { GitHubAppClient } from '../../src/integrations/github-app.client';
 import { createTestApp, type TestApp } from '../utils/app';
 import { bearer } from '../utils/auth';
 import { resetDatabase, resetRedisState } from '../utils/db';
 import { buildFactories, type Factories } from '../utils/factories';
 
-const aiMock = {
-  generateResumeBullets: jest.fn().mockResolvedValue({ bullets: [{ text: 'x' }] }),
-  generateAppraisalReport: jest.fn().mockResolvedValue({}),
-  generatePromotionPacket: jest.fn().mockResolvedValue({}),
-};
 const githubMock = {
   revokeToken: jest.fn().mockResolvedValue(true),
   manageUrl: () => 'https://github.com/apps/devimpact-test',
@@ -27,11 +21,7 @@ describe('Cross-user isolation (integration)', () => {
 
   beforeAll(async () => {
     t = await createTestApp((b) =>
-      b
-        .overrideProvider(AIService)
-        .useValue(aiMock)
-        .overrideProvider(GitHubAppClient)
-        .useValue(githubMock),
+      b.overrideProvider(GitHubAppClient).useValue(githubMock),
     );
     f = buildFactories(t.prisma);
   });
@@ -83,7 +73,22 @@ describe('Cross-user isolation (integration)', () => {
     const list = await request(server).get('/api/documents').set('authorization', as).expect(200);
     expect(list.body.data).toHaveLength(1);
     expect(list.body.meta.total).toBe(1);
-    expect(list.body.data[0].userId).toBe(alice.id);
+    expect(list.body.data[0].id).not.toBe(bobDoc.id);
+
+    for (const [method, path, body] of [
+      ['get', `/api/documents/${bobDoc.id}/versions`, undefined],
+      ['get', `/api/documents/${bobDoc.id}/stream`, undefined],
+      ['patch', `/api/documents/${bobDoc.id}`, { baseVersion: 1, title: 'mine now' }],
+      ['post', `/api/documents/${bobDoc.id}/cancel`, {}],
+      ['post', `/api/documents/${bobDoc.id}/regenerate`, {}],
+      ['post', `/api/documents/${bobDoc.id}/versions/1/restore`, {}],
+    ] as const) {
+      const res = await request(server)[method](path).set('authorization', as).send(body);
+      expect({ path, status: res.status }).toEqual({ path, status: 404 });
+    }
+    const untouched = await t.prisma.generatedDocument.findUniqueOrThrow({ where: { id: bobDoc.id } });
+    expect(untouched.title).toBe(bobDoc.title);
+    expect(untouched.currentVersion).toBe(1);
   });
 
   it('integrations: get / reconnect / delete of a foreign id → 404; list shows only own', async () => {
@@ -133,18 +138,25 @@ describe('Cross-user isolation (integration)', () => {
     expect(summary.body.data).toMatchObject({ totalCommits: 0, totalPRs: 0, totalReviews: 0 });
   });
 
-  it('generation reads only the caller’s activity', async () => {
-    const { server, as } = await twoTenants();
-    await request(server)
-      .post('/api/generate/resume')
+  it('evidence preview and AI utilities read only the caller’s activity', async () => {
+    const { server, as, bobPr, bobCommit } = await twoTenants();
+    const preview = await request(server)
+      .post('/api/documents/preview-evidence')
       .set('authorization', as)
-      .send({ dateRange: { from: '2020-01-01', to: '2030-12-31' }, role: 'backend' })
-      .expect(201);
-    const [activity] = aiMock.generateResumeBullets.mock.calls[0] as [
-      { commits: unknown[]; prs: unknown[] },
-    ];
-    expect(activity.commits).toEqual([]);
-    expect(activity.prs).toEqual([]);
+      .send({ type: 'resume', period: 'month:2026-10', role: 'backend' })
+      .expect(200);
+    expect(preview.body.data.topEvidence).toEqual([]);
+    expect(preview.body.data.counts).toMatchObject({ prsMerged: 0, commits: 0, prsReviewed: 0 });
+    for (const source of [
+      { kind: 'pull_request', id: bobPr.id },
+      { kind: 'commit', id: bobCommit.id },
+    ]) {
+      await request(server)
+        .post('/api/ai/achievement-statement')
+        .set('authorization', as)
+        .send({ source })
+        .expect(404);
+    }
   });
 
   it('sync and repos: only the caller’s integration, runs and repositories', async () => {

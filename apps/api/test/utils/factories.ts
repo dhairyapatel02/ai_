@@ -73,7 +73,7 @@ export function buildFactories(prisma: PrismaClient) {
           userId,
           integrationId,
           repositoryId: repository.id,
-          sha: `sha${n.toString().padStart(8, '0')}`,
+          sha: `${n.toString(16).padStart(7, '0')}${'f'.repeat(33)}`,
           messageHeadline: message ?? `feat: change ${n}`,
           branch: 'main',
           additions: 10,
