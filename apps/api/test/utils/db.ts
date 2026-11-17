@@ -19,7 +19,12 @@ export async function resetRedisState(): Promise<void> {
   try {
     await redis.connect();
     // `devimpact-test:*` = BullMQ keys of the test queue prefix (OPS-17).
-    for (const pattern of ['devimpact:rl:*', 'devimpact:oauth-state:*', 'devimpact-test:*']) {
+    for (const pattern of [
+      'devimpact:rl:*',
+      'devimpact:oauth-state:*',
+      'devimpact:metrics-pending:*',
+      'devimpact-test:*',
+    ]) {
       const keys = await redis.keys(pattern);
       if (keys.length > 0) await redis.del(...keys);
     }

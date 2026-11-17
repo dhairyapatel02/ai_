@@ -68,3 +68,23 @@ export function toPage<T extends { id: string }>(
     },
   };
 }
+
+/** Opaque offset cursor (base64url `{ o }`) for lists ordered by a non-time key. */
+export function encodeOffsetCursor(offset: number): string {
+  return Buffer.from(JSON.stringify({ o: offset })).toString('base64url');
+}
+
+export function decodeOffsetCursor(cursor: string | undefined): number {
+  if (!cursor) return 0;
+  try {
+    const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { o?: unknown };
+    if (typeof parsed.o === 'number' && Number.isInteger(parsed.o) && parsed.o >= 0) {
+      return parsed.o;
+    }
+  } catch {
+    // fall through
+  }
+  throw new AppException('VALIDATION_FAILED', 'The request is invalid', {
+    issues: [{ path: 'query.cursor', message: 'Invalid cursor', code: 'invalid_cursor' }],
+  });
+}

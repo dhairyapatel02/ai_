@@ -11,7 +11,6 @@ const aiMock = {
   generateResumeBullets: jest.fn().mockResolvedValue({ bullets: [{ text: 'x' }] }),
   generateAppraisalReport: jest.fn().mockResolvedValue({}),
   generatePromotionPacket: jest.fn().mockResolvedValue({}),
-  calculateImpactScore: jest.fn(),
 };
 const githubMock = {
   revokeToken: jest.fn().mockResolvedValue(true),
@@ -121,7 +120,10 @@ describe('Cross-user isolation (integration)', () => {
       .get('/api/activity/commits')
       .set('authorization', as)
       .expect(200);
-    const prs = await request(server).get('/api/activity/prs').set('authorization', as).expect(200);
+    const prs = await request(server)
+      .get('/api/activity/prs?role=authored')
+      .set('authorization', as)
+      .expect(200);
     const summary = await request(server)
       .get('/api/activity/summary')
       .set('authorization', as)

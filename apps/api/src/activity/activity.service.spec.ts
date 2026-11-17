@@ -9,15 +9,15 @@ function createPrismaMock(timezone = 'UTC') {
     pullRequest: { count: jest.fn().mockResolvedValue(4) },
     pullRequestReview: { count: jest.fn().mockResolvedValue(7) },
     issue: { count: jest.fn().mockResolvedValue(0) },
-    impactScore: { findFirst: jest.fn().mockResolvedValue(null) },
     repository: { findMany: jest.fn().mockResolvedValue([]) },
   };
 }
 
 const included = { repository: { included: true } };
+const nonMerge = { parentsCount: { lte: 1 } };
 
 describe('ActivityService.getSummary (Prisma mocked)', () => {
-  it('returns counts, top repos and a null impact score when none is stored', async () => {
+  it('returns counts, top repos and never an (AI) impact score', async () => {
     const prisma = createPrismaMock();
     prisma.commit.groupBy.mockResolvedValue([
       { repositoryId: 'r1', _count: { id: 9 } },
@@ -41,9 +41,12 @@ describe('ActivityService.getSummary (Prisma mocked)', () => {
       impactScore: null,
     });
     // No date filter when from/to are omitted; excluded repositories never count (F-11).
-    expect(prisma.commit.count).toHaveBeenCalledWith({ where: { userId: 'u1', ...included } });
+    // Merge commits never count (KPI §2.2 `CM`).
+    expect(prisma.commit.count).toHaveBeenCalledWith({
+      where: { userId: 'u1', ...nonMerge, ...included },
+    });
     expect(prisma.commit.groupBy).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId: 'u1', ...included }, take: 5 }),
+      expect.objectContaining({ where: { userId: 'u1', ...nonMerge, ...included }, take: 5 }),
     );
   });
 
@@ -54,10 +57,19 @@ describe('ActivityService.getSummary (Prisma mocked)', () => {
     await service.getSummary('u1', {});
 
     expect(prisma.pullRequest.count).toHaveBeenCalledWith({
-      where: { userId: 'u1', isAuthoredByUser: true, legacyStub: false, ...included },
+      where: {
+        userId: 'u1',
+        isAuthoredByUser: true,
+        legacyStub: false,
+        ...included,
+        mergedAt: { not: null },
+      },
     });
     expect(prisma.pullRequestReview.count).toHaveBeenCalledWith({
-      where: { userId: 'u1', pullRequest: included },
+      where: {
+        userId: 'u1',
+        pullRequest: { isAuthoredByUser: false, legacyStub: false, ...included },
+      },
     });
   });
 
@@ -72,10 +84,11 @@ describe('ActivityService.getSummary (Prisma mocked)', () => {
       lt: new Date('2026-10-31T23:59:59.001Z'),
     };
     expect(prisma.commit.count).toHaveBeenCalledWith({
-      where: { userId: 'u1', ...included, authoredAt: range },
+      where: { userId: 'u1', ...nonMerge, ...included, authoredAt: range },
     });
+    // DATA-02: PRs are counted by merge date, i.e. "PRs merged" in the range.
     expect(prisma.pullRequest.count).toHaveBeenCalledWith({
-      where: expect.objectContaining({ createdAtRemote: range }),
+      where: expect.objectContaining({ mergedAt: range }),
     });
     expect(prisma.pullRequestReview.count).toHaveBeenCalledWith({
       where: expect.objectContaining({ submittedAt: range }),
@@ -93,25 +106,21 @@ describe('ActivityService.getSummary (Prisma mocked)', () => {
     expect(prisma.commit.count).toHaveBeenCalledWith({
       where: {
         userId: 'u1',
+        ...nonMerge,
         ...included,
         authoredAt: { gte: new Date('2026-10-23T04:00:00Z'), lt: new Date('2026-10-24T04:00:00Z') },
       },
     });
   });
 
-  it('reports the most recent stored impact score, ignoring the requested range', async () => {
+  it('DATA-02: totalPRs is the merged count, not all authored PRs', async () => {
     const prisma = createPrismaMock();
-    prisma.impactScore.findFirst.mockResolvedValue({ overall: 81 });
     const service = new ActivityService(prisma as unknown as PrismaService);
-
-    const summary = await service.getSummary('u1', { from: '2020-01-01', to: '2020-01-31' });
-
-    expect(summary.impactScore).toBe(81);
-    expect(prisma.impactScore.findFirst).toHaveBeenCalledWith({
-      where: { userId: 'u1' },
-      orderBy: [{ year: 'desc' }, { month: 'desc' }],
-    });
+    await service.getSummary('u1', { from: '2026-10-01', to: '2026-10-31' });
+    const where = (
+      prisma.pullRequest.count.mock.calls[0] as [{ where: Record<string, unknown> }]
+    )[0].where;
+    expect(where).toHaveProperty('mergedAt');
+    expect(where).not.toHaveProperty('createdAtRemote');
   });
-
-  it.todo('DATA-02: summary distinguishes merged PRs from all authored PRs (P07)');
 });

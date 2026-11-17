@@ -63,24 +63,6 @@ describe('AIService (characterization, Anthropic mocked)', () => {
     expect(prompt).not.toContain('{{');
   });
 
-  it('builds the impact-score prompt with merged counts and LOC totals', async () => {
-    const { service, create, promptOf } = createService();
-    create.mockResolvedValue(
-      textResponse(
-        '{"overall":70,"featureDelivery":70,"codeQuality":70,"collaboration":70,"leadership":70,"highlights":[]}',
-      ),
-    );
-
-    await service.calculateImpactScore(activity, 10, 2026);
-
-    const prompt = promptOf();
-    expect(prompt).toContain('Activity Data for 10/2026');
-    expect(prompt).toContain('- Pull Requests: 2 (1 merged)');
-    expect(prompt).toContain('- Lines Added: 173');
-    expect(prompt).toContain('- Lines Deleted: 51');
-    expect(prompt).not.toContain('{{');
-  });
-
   it('extracts the JSON object from surrounding prose and sends the configured request', async () => {
     const { service, create } = createService();
     create.mockResolvedValue(

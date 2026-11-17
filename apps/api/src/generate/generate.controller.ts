@@ -1,14 +1,13 @@
 import {
-  ImpactScoreQuery,
   generateAppraisalSchema,
   generatePromotionSchema,
   generateResumeSchema,
 } from '@devimpact/shared';
-import { Controller, Get, Header, Logger, Post } from '@nestjs/common';
+import { Controller, Logger, Post } from '@nestjs/common';
 
 import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
 import { AppException } from '../common/app-exception';
-import { ApiDoc, ZodBody, ZodQuery } from '../common/zod-validation';
+import { ApiDoc, ZodBody } from '../common/zod-validation';
 import { RateLimit } from '../throttle/rate-limit';
 import { GenerateService } from './generate.service';
 
@@ -88,24 +87,6 @@ export class GenerateController {
   ) {
     return this.upstream(() =>
       this.generateService.generatePromotion(user.id, body.currentRole, body.targetRole),
-    );
-  }
-
-  /** API-04: side-effecting GET, replaced by read-only `GET /impact` in P07. AI-rate-limited meanwhile. */
-  @Get('impact-score')
-  @Header('Deprecation', 'true')
-  @ApiDoc({
-    summary: 'Deprecated LLM impact score (P07: GET /impact)',
-    tags: ['generate'],
-    deprecated: true,
-    rateLimit: 'ai',
-  })
-  getImpactScore(
-    @CurrentUser() user: AuthUser,
-    @ZodQuery(ImpactScoreQuery) query: ImpactScoreQuery,
-  ) {
-    return this.upstream(() =>
-      this.generateService.getImpactScore(user.id, query.month, query.year, query.force),
     );
   }
 }

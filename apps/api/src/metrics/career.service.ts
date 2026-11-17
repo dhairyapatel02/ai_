@@ -1,0 +1,251 @@
+import {
+  localDateOf,
+  localRangeToUtc,
+  todayIn,
+  type CareerTimelineResponse,
+} from '@devimpact/shared';
+import { Injectable } from '@nestjs/common';
+
+import { prRef, reviewRef, safeUrl } from '../common/evidence-refs';
+import { PrismaService } from '../prisma/prisma.service';
+import { computeMetric } from './metric-definitions';
+import { MetricsRepository } from './metrics.repository';
+
+export const CAREER_ITEMS_PER_REPO = 50;
+
+type Quarter = CareerTimelineResponse['quarters'][number];
+type RepoGroup = Quarter['repos'][number];
+
+/**
+ * `GET /career/timeline` (API_CONTRACT_V2 §12, F-30): the year by quarter — merged PRs per
+ * repository, one review cluster per repository, milestones and totals. Server-side aggregation
+ * over included repositories only (fixes PERF-03's client-side 200-row truncation; no reviewed-PR
+ * stubs or commit-count cards, UX-10/DATA-01).
+ */
+@Injectable()
+export class CareerService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly repo: MetricsRepository,
+  ) {}
+
+  async timeline(
+    userId: string,
+    requestedYear?: number,
+    now = new Date(),
+  ): Promise<CareerTimelineResponse> {
+    const { timezone } = await this.repo.settings(userId);
+    const today = todayIn(timezone, now);
+    const currentYear = Number(today.slice(0, 4));
+    const year = requestedYear ?? currentYear;
+
+    const years = await this.prisma.$queryRaw<{ y: number }[]>`
+      SELECT DISTINCT y::int AS y FROM (
+        SELECT EXTRACT(YEAR FROM (p."mergedAt" AT TIME ZONE 'UTC') AT TIME ZONE ${timezone}) AS y
+        FROM pull_requests p JOIN repositories r ON r.id = p.repository_id AND r.included
+        WHERE p."userId" = ${userId} AND p.is_authored_by_user AND NOT p.legacy_stub
+          AND p."mergedAt" IS NOT NULL
+        UNION
+        SELECT EXTRACT(YEAR FROM (v.submitted_at AT TIME ZONE 'UTC') AT TIME ZONE ${timezone}) AS y
+        FROM pull_request_reviews v
+        JOIN pull_requests p ON p.id = v.pull_request_id AND NOT p.is_authored_by_user AND NOT p.legacy_stub
+        JOIN repositories r ON r.id = p.repository_id AND r.included
+        WHERE v.user_id = ${userId}
+      ) years ORDER BY y DESC`;
+
+    const { start, endExclusive } = localRangeToUtc(`${year}-01-01`, `${year}-12-31`, timezone);
+    const included = { included: true } as const;
+    const [mergedRows, reviews, firstMerges, facts] = await Promise.all([
+      this.prisma.pullRequest.findMany({
+        where: {
+          userId,
+          isAuthoredByUser: true,
+          legacyStub: false,
+          repository: included,
+          mergedAt: { gte: start, lt: endExclusive },
+        },
+        select: {
+          id: true,
+          number: true,
+          title: true,
+          url: true,
+          labels: true,
+          mergedAt: true,
+          additions: true,
+          deletions: true,
+          repositoryId: true,
+          repository: { select: { fullName: true } },
+        },
+        orderBy: [{ mergedAt: 'desc' }, { id: 'desc' }],
+      }),
+      this.prisma.pullRequestReview.findMany({
+        where: {
+          userId,
+          submittedAt: { gte: start, lt: endExclusive },
+          pullRequest: { isAuthoredByUser: false, legacyStub: false, repository: included },
+        },
+        select: {
+          id: true,
+          submittedAt: true,
+          pullRequestId: true,
+          pullRequest: {
+            select: {
+              number: true,
+              repositoryId: true,
+              repository: { select: { fullName: true } },
+            },
+          },
+        },
+        orderBy: [{ submittedAt: 'desc' }, { id: 'desc' }],
+      }),
+      this.prisma.pullRequest.groupBy({
+        by: ['repositoryId'],
+        where: {
+          userId,
+          isAuthoredByUser: true,
+          legacyStub: false,
+          repository: included,
+          mergedAt: { not: null },
+        },
+        _min: { mergedAt: true },
+      }),
+      this.repo.loadFacts(userId, start, endExclusive),
+    ]);
+    const merged = mergedRows.flatMap((p) =>
+      p.mergedAt
+        ? [
+            {
+              ...p,
+              mergedAt: p.mergedAt,
+              size: p.additions !== null && p.deletions !== null ? p.additions + p.deletions : null,
+            },
+          ]
+        : [],
+    );
+    const firstMergeAt = new Map(
+      firstMerges.map((g) => [g.repositoryId, g._min.mergedAt?.getTime() ?? null]),
+    );
+
+    const lastQuarter =
+      year < currentYear ? 4 : year > currentYear ? 0 : Math.ceil(Number(today.slice(5, 7)) / 3);
+    const quarters: Quarter[] = [];
+    for (let q = lastQuarter; q >= 1; q--) {
+      const qStart = `${year}-${String((q - 1) * 3 + 1).padStart(2, '0')}-01`;
+      const qEndMonth = q * 3;
+      const qEnd = new Date(Date.UTC(year, qEndMonth, 0)).toISOString().slice(0, 10);
+      const inProgress = today >= qStart && today <= qEnd;
+      const displayEnd = inProgress ? today : qEnd;
+      const range = localRangeToUtc(qStart, displayEnd, timezone);
+      const inQ = (t: Date) => t >= range.start && t < range.endExclusive;
+
+      const qMerged = merged.filter((p) => inQ(p.mergedAt));
+      const qReviews = reviews.filter((r) => inQ(r.submittedAt));
+      const groups = new Map<
+        string,
+        { fullName: string; prs: typeof qMerged; reviews: typeof qReviews }
+      >();
+      const group = (id: string, fullName: string) => {
+        let g = groups.get(id);
+        if (!g) {
+          g = { fullName, prs: [], reviews: [] };
+          groups.set(id, g);
+        }
+        return g;
+      };
+      for (const p of qMerged) group(p.repositoryId, p.repository.fullName).prs.push(p);
+      for (const r of qReviews) {
+        group(r.pullRequest.repositoryId, r.pullRequest.repository.fullName).reviews.push(r);
+      }
+
+      const repos: RepoGroup[] = [...groups.entries()].map(([repositoryId, g]) => {
+        const items: RepoGroup['items'] = g.prs.slice(0, CAREER_ITEMS_PER_REPO).map((p) => ({
+          type: 'pr_merged' as const,
+          id: p.id,
+          ref: prRef(g.fullName, p.number),
+          title: p.title,
+          date: localDateOf(p.mergedAt, timezone),
+          url: safeUrl(p.url),
+          tags: p.labels.slice(0, 3),
+        }));
+        const reviewedPrs = new Set(g.reviews.map((r) => r.pullRequestId)).size;
+        const latest = g.reviews[0];
+        if (latest) {
+          items.push({
+            type: 'review_cluster',
+            id: latest.id,
+            ref: reviewRef(g.fullName, latest.pullRequest.number),
+            title: `Reviewed ${reviewedPrs} pull request${reviewedPrs === 1 ? '' : 's'} by teammates`,
+            date: localDateOf(latest.submittedAt, timezone),
+            url: null,
+            tags: [],
+            count: reviewedPrs,
+          });
+        }
+        return {
+          repositoryId,
+          fullName: g.fullName,
+          items,
+          truncated: g.prs.length > CAREER_ITEMS_PER_REPO,
+          totalItems: g.prs.length + (latest ? 1 : 0),
+        };
+      });
+      repos.sort((a, b) => b.totalItems - a.totalItems || a.fullName.localeCompare(b.fullName));
+
+      const milestones: Quarter['milestones'] = [];
+      for (const p of [...qMerged].reverse()) {
+        if (firstMergeAt.get(p.repositoryId) === p.mergedAt.getTime()) {
+          milestones.push({
+            kind: 'first_merged_pr_in_repo',
+            date: localDateOf(p.mergedAt, timezone),
+            title: `First merged PR in ${p.repository.fullName}`,
+            refs: [prRef(p.repository.fullName, p.number)],
+          });
+        }
+      }
+      let largest: (typeof qMerged)[number] | null = null;
+      for (const p of qMerged) {
+        if (p.size !== null && (largest === null || p.size > (largest.size ?? -1))) {
+          largest = p;
+        }
+      }
+      if (largest) {
+        milestones.push({
+          kind: 'largest_merged_pr',
+          date: localDateOf(largest.mergedAt, timezone),
+          title: `Largest merged PR: ${largest.title}`,
+          refs: [prRef(largest.repository.fullName, largest.number)],
+        });
+      }
+      const streak = computeMetric('longest_active_week_streak', facts, {
+        ...range,
+        startDate: qStart,
+        endDate: displayEnd,
+        timezone,
+        periodDays: 92,
+      });
+      if ((streak.value ?? 0) >= 2) {
+        milestones.push({
+          kind: 'longest_active_week_streak',
+          date: qStart,
+          title: `Longest active-week streak: ${streak.value} weeks`,
+          refs: [],
+        });
+      }
+      milestones.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+
+      quarters.push({
+        quarter: q,
+        label: `Q${q} ${year}`,
+        inProgress,
+        repos,
+        milestones,
+        totals: {
+          prsMerged: qMerged.length,
+          prsReviewed: new Set(qReviews.map((r) => r.pullRequestId)).size,
+          achievements: 0,
+        },
+      });
+    }
+    return { years: years.map((r) => r.y), year, timezone, quarters };
+  }
+}

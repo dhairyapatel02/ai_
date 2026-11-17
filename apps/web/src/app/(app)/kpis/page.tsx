@@ -1,55 +1,46 @@
 'use client';
 
-import { TrendingUp, Code2, Users, Shield, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { ImpactScoreCard } from '@/components/impact-score-card';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth-context';
+import { formatDelta, formatMetric } from '@/lib/metrics-format';
 
-interface Summary {
-  totalCommits: number;
-  totalPRs: number;
-  totalReviews: number;
-  totalIssues: number;
-  topRepos: { repo: string; commits: number }[];
-  impactScore: number | null;
-}
+import type { DefinitionsResponse, ImpactDto, KpisResponse } from '@devimpact/shared';
 
-interface ImpactScoreData {
-  overall: number;
-  featureDelivery: number;
-  codeQuality: number;
-  collaboration: number;
-  leadership: number;
-}
-
+/**
+ * Minimal P07 KPI page on `GET /metrics/kpis` (UX-06): the five methodology sections with the
+ * catalogue's labels and definitions, honest "Not enough data" states and the deterministic impact
+ * score. The designed KPI page with explain drawers (S8) arrives in P10.
+ */
 export default function KPIsPage() {
   const { apiFetch, user } = useAuth();
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [impactScore, setImpactScore] = useState<ImpactScoreData | null>(null);
+  const [kpis, setKpis] = useState<KpisResponse | null>(null);
+  const [impact, setImpact] = useState<ImpactDto | null>(null);
+  const [definitions, setDefinitions] = useState<DefinitionsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const now = new Date();
-      const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const to = now.toISOString();
-
-      const [summaryRes, scoreRes] = await Promise.all([
-        apiFetch<Summary>(`/activity/summary?from=${from}&to=${to}`),
-        apiFetch<ImpactScoreData>(
-          `/generate/impact-score?month=${now.getMonth() + 1}&year=${now.getFullYear()}`,
-        ),
+      const [kpisRes, impactRes, defsRes] = await Promise.all([
+        apiFetch<KpisResponse>('/metrics/kpis'),
+        apiFetch<ImpactDto>('/impact'),
+        apiFetch<DefinitionsResponse>('/metrics/definitions'),
       ]);
-
-      if (summaryRes.success && summaryRes.data) setSummary(summaryRes.data);
-      if (scoreRes.success && scoreRes.data) setImpactScore(scoreRes.data);
+      if (kpisRes.success && kpisRes.data) setKpis(kpisRes.data);
+      if (impactRes.success && impactRes.data) setImpact(impactRes.data);
+      if (defsRes.success && defsRes.data) setDefinitions(defsRes.data);
       setLoading(false);
     }
     void load();
   }, [user, apiFetch]);
+
+  const definitionOf = new Map((definitions?.metrics ?? []).map((m) => [m.key, m.definition]));
+  const scoreOf = new Map((impact?.dimensions ?? []).map((d) => [d.key, d.score]));
 
   if (loading && user) {
     return (
@@ -62,98 +53,72 @@ export default function KPIsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">KPI Dashboard</h1>
-        <p className="text-muted-foreground">Track your engineering performance metrics</p>
+        <h1 className="text-3xl font-bold">KPIs</h1>
+        <p className="text-muted-foreground">
+          {kpis
+            ? `${kpis.period.label}${kpis.period.inProgress ? ' · in progress' : ''} · ${kpis.metricsVersion} · Only included repositories count`
+            : 'Engineering KPIs from your GitHub activity'}
+        </p>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Productivity</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary?.totalCommits ?? 0}</div>
-            <p className="text-xs text-muted-foreground">Commits this month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Code Quality</CardTitle>
-            <Code2 className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary?.totalPRs ?? 0}</div>
-            <p className="text-xs text-muted-foreground">Pull requests this month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Collaboration</CardTitle>
-            <Users className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary?.totalReviews ?? 0}</div>
-            <p className="text-xs text-muted-foreground">Reviews this month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ownership</CardTitle>
-            <Shield className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary?.topRepos?.length ?? 0}</div>
-            <p className="text-xs text-muted-foreground">Repos contributed</p>
-          </CardContent>
-        </Card>
-      </div>
+      <ImpactScoreCard
+        score={impact?.overall ?? null}
+        band={impact?.band ?? null}
+        dimensions={(impact?.dimensions ?? []).map((d) => ({
+          key: d.key,
+          label: d.label,
+          score: d.score,
+        }))}
+        scoreVersion={impact?.scoreVersion}
+      />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <ImpactScoreCard
-          score={impactScore?.overall ?? 0}
-          breakdown={{
-            featureDelivery: impactScore?.featureDelivery ?? 0,
-            codeQuality: impactScore?.codeQuality ?? 0,
-            collaboration: impactScore?.collaboration ?? 0,
-            leadership: impactScore?.leadership ?? 0,
-          }}
-        />
-
-        {/* Top Repos Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Top Repositories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {summary?.topRepos && summary.topRepos.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="py-2 text-left">Repository</th>
-                      <th className="py-2 text-right">Commits</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.topRepos.map((repo) => (
-                      <tr key={repo.repo} className="border-b last:border-0">
-                        <td className="max-w-[200px] truncate py-2">{repo.repo}</td>
-                        <td className="py-2 text-right">{repo.commits}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+      {(kpis?.sections ?? []).map((section) => {
+        const dimensionScore = scoreOf.get(section.key as 'delivery');
+        return (
+          <Card key={section.key}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-lg">{section.title}</CardTitle>
+              {section.key !== 'consistency' && (
+                <span className="text-sm text-muted-foreground">
+                  {section.title} score {dimensionScore ?? '—'}
+                </span>
+              )}
+            </CardHeader>
+            <CardContent>
+              <div className="divide-y">
+                {section.metrics.map((m) => {
+                  const delta = formatDelta(m);
+                  return (
+                    <div key={m.key} className="flex items-start justify-between gap-4 py-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{m.label}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {m.inScore ? 'Scored' : 'Informational'}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{definitionOf.get(m.key)}</p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <div className="font-semibold" data-testid={`kpi-${m.key}`}>
+                          {formatMetric(m)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {m.status === 'ok' ? (delta ?? '') : `n = ${m.n}`}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                No data yet. Connect and sync your GitHub to see KPIs.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+
+      <p className="text-xs text-muted-foreground">
+        Durations use business hours (weekends excluded). Lines of code are never used as a KPI.
+      </p>
     </div>
   );
 }

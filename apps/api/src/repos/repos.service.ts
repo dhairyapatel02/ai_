@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { type Prisma, type Repository } from '@prisma/client';
 
 import { AppException } from '../common/app-exception';
+import { decodeOffsetCursor, encodeOffsetCursor } from '../common/pagination';
 import { MetricsQueueService } from '../metrics/metrics-queue.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -36,23 +37,6 @@ export function toRepositoryDto(row: Repository): RepositoryDto {
   };
 }
 
-/** Offset cursor for name-sorted lists (opaque base64url, like the time cursors). */
-const encodeOffset = (offset: number) =>
-  Buffer.from(JSON.stringify({ o: offset })).toString('base64url');
-function decodeOffset(cursor: string | undefined): number {
-  if (!cursor) return 0;
-  try {
-    const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { o?: unknown };
-    if (typeof parsed.o === 'number' && Number.isInteger(parsed.o) && parsed.o >= 0)
-      return parsed.o;
-  } catch {
-    // fall through
-  }
-  throw new AppException('VALIDATION_FAILED', 'Invalid cursor', {
-    issues: [{ path: 'cursor', message: 'Invalid cursor', code: 'custom' }],
-  });
-}
-
 /**
  * Repository selection (F-11, API_CONTRACT_V2 §7). Changing inclusion records a user choice
  * (`inclusionSource = USER`, never overridden by sync) and queues a full-history metrics recompute.
@@ -73,7 +57,7 @@ export class ReposService {
       ...(query.accessible !== undefined ? { accessible: query.accessible } : {}),
       ...(query.q ? { fullName: { contains: query.q, mode: 'insensitive' } } : {}),
     };
-    const offset = decodeOffset(query.cursor);
+    const offset = decodeOffsetCursor(query.cursor);
     const orderBy: Prisma.RepositoryOrderByWithRelationInput[] =
       query.sort === '-lastActivityAt'
         ? [{ lastActivityAt: { sort: 'desc', nulls: 'last' } }, { fullName: 'asc' }]
@@ -88,7 +72,11 @@ export class ReposService {
     const items = (hasMore ? rows.slice(0, query.limit) : rows).map(toRepositoryDto);
     return {
       items,
-      meta: { nextCursor: hasMore ? encodeOffset(offset + query.limit) : null, hasMore, total },
+      meta: {
+        nextCursor: hasMore ? encodeOffsetCursor(offset + query.limit) : null,
+        hasMore,
+        total,
+      },
     };
   }
 

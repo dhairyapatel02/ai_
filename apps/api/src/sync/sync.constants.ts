@@ -12,7 +12,13 @@ export const SYNC_JOBS = {
   fanout: 'sync.fanout',
 } as const;
 
-export const METRICS_JOBS = { recompute: 'metrics.recompute' } as const;
+export const METRICS_JOBS = { recompute: 'metrics.recompute', nightly: 'metrics.nightly' } as const;
+export const METRICS_NIGHTLY_SCHEDULER_ID = 'metrics-nightly';
+/** Debounce of `metrics.recompute` per user (ARCHITECTURE_V2 §2). */
+export const METRICS_DEBOUNCE_MS = 30_000;
+/** User-initiated recomputes (time zone, repository selection) run almost immediately. */
+export const METRICS_FAST_DELAY_MS = 1_000;
+export const metricsJobId = (userId: string) => `metrics-${userId}`;
 
 /**
  * One backfill/incremental run per integration at a time. BullMQ custom ids may not contain ':',
@@ -44,5 +50,5 @@ export interface MetricsRecomputeJobData {
   /** Affected range, ISO timestamps (P07 maps it to local dates in the user's time zone). */
   from: string;
   to: string;
-  reason: 'sync' | 'webhook' | 'repository_inclusion';
+  reason: 'sync' | 'webhook' | 'repository_inclusion' | 'timezone' | 'nightly' | 'manual';
 }

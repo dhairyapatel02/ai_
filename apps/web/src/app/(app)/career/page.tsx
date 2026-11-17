@@ -9,92 +9,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth-context';
 
-interface CommitData {
-  message: string;
-  repo: string;
-  timestamp: string;
-  sha: string;
-}
+import type { CareerTimelineResponse } from '@devimpact/shared';
 
-interface PRData {
-  title: string;
-  repo: string;
-  state: string;
-  timestamp: string;
-}
-
-interface TimelinePeriod {
-  year: string;
-  quarter: string;
-  items: { title: string; repo: string; tags: string[] }[];
-}
-
-function groupByQuarter(commits: CommitData[], prs: PRData[]): TimelinePeriod[] {
-  const quarters: Record<string, { title: string; repo: string; tags: string[] }[]> = {};
-
-  for (const pr of prs) {
-    const d = new Date(pr.timestamp);
-    const q = `Q${Math.ceil((d.getMonth() + 1) / 3)}`;
-    const key = `${d.getFullYear()}-${q}`;
-    if (!quarters[key]) quarters[key] = [];
-    quarters[key].push({
-      title: pr.title,
-      repo: pr.repo,
-      tags: [pr.state === 'MERGED' ? 'merged' : pr.state.toLowerCase()],
-    });
-  }
-
-  const repoCommitCounts: Record<string, Record<string, number>> = {};
-  for (const c of commits) {
-    const d = new Date(c.timestamp);
-    const q = `Q${Math.ceil((d.getMonth() + 1) / 3)}`;
-    const key = `${d.getFullYear()}-${q}`;
-    if (!repoCommitCounts[key]) repoCommitCounts[key] = {};
-    repoCommitCounts[key][c.repo] = (repoCommitCounts[key][c.repo] || 0) + 1;
-  }
-
-  for (const [key, repos] of Object.entries(repoCommitCounts)) {
-    if (!quarters[key]) quarters[key] = [];
-    for (const [repo, count] of Object.entries(repos)) {
-      const existing = quarters[key].find((i) => i.repo === repo);
-      if (existing) {
-        existing.tags.push(`${count} commits`);
-      } else {
-        quarters[key].push({ title: `${count} commits`, repo, tags: ['commits'] });
-      }
-    }
-  }
-
-  return Object.entries(quarters)
-    .sort(([a], [b]) => b.localeCompare(a))
-    .map(([key, items]) => {
-      const [year, quarter] = key.split('-');
-      return { year, quarter, items: items.slice(0, 8) };
-    });
-}
-
+/**
+ * Minimal P07 career page on `GET /career/timeline` (server-side aggregation; fixes PERF-03's
+ * 200-row client grouping and the reviewed-PR/commit-count noise). The designed timeline (S10)
+ * arrives in P10.
+ */
 export default function CareerPage() {
   const { apiFetch, user } = useAuth();
-  const [timeline, setTimeline] = useState<TimelinePeriod[]>([]);
+  const [timeline, setTimeline] = useState<CareerTimelineResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      const from = sixMonthsAgo.toISOString();
-      const to = new Date().toISOString();
-
-      const [commitsRes, prsRes] = await Promise.all([
-        // Cursor-paginated (max 100 per page); P10 replaces this page with /career/timeline.
-        apiFetch<CommitData[]>(`/activity/commits?from=${from}&to=${to}&limit=100`),
-        apiFetch<PRData[]>(`/activity/prs?from=${from}&to=${to}&limit=100`),
-      ]);
-
-      const commits = commitsRes.success && commitsRes.data ? commitsRes.data : [];
-      const prs = prsRes.success && prsRes.data ? prsRes.data : [];
-      setTimeline(groupByQuarter(commits, prs));
+      const res = await apiFetch<CareerTimelineResponse>('/career/timeline');
+      if (res.success && res.data) setTimeline(res.data);
       setLoading(false);
     }
     void load();
@@ -108,14 +39,20 @@ export default function CareerPage() {
     );
   }
 
+  const quarters = (timeline?.quarters ?? []).filter(
+    (q) => q.repos.length > 0 || q.milestones.length > 0,
+  );
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Career Timeline</h1>
-        <p className="text-muted-foreground">Your engineering journey visualized</p>
+        <p className="text-muted-foreground">
+          {timeline ? `${timeline.year} by quarter` : 'Your engineering journey visualized'}
+        </p>
       </div>
 
-      {timeline.length === 0 ? (
+      {quarters.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-lg font-medium text-muted-foreground">No timeline data yet</p>
@@ -129,33 +66,50 @@ export default function CareerPage() {
         </Card>
       ) : (
         <div className="space-y-8">
-          {timeline.map((period, idx) => (
-            <div key={idx} className="relative">
+          {quarters.map((q) => (
+            <div key={q.quarter} className="relative">
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                  {period.quarter}
+                  Q{q.quarter}
                 </div>
                 <h2 className="text-xl font-semibold">
-                  {period.year} {period.quarter}
+                  {q.label}
+                  {q.inProgress ? ' · in progress' : ''}
                 </h2>
+                <span className="text-sm text-muted-foreground">
+                  {q.totals.prsMerged} PRs merged · {q.totals.prsReviewed} reviewed
+                </span>
               </div>
               <div className="ml-5 space-y-3 border-l-2 border-border pl-6">
-                {period.items.map((item, i) => (
-                  <Card key={i}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h3 className="font-medium">{item.title}</h3>
-                          <p className="text-sm text-muted-foreground">{item.repo}</p>
+                {q.milestones.map((m) => (
+                  <p key={`${m.kind}-${m.title}`} className="text-sm font-medium">
+                    ★ {m.title}
+                  </p>
+                ))}
+                {q.repos.map((repo) => (
+                  <Card key={repo.repositoryId}>
+                    <CardContent className="space-y-2 p-4">
+                      <h3 className="font-medium">{repo.fullName}</h3>
+                      {repo.items.slice(0, 8).map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-start justify-between gap-2 text-sm"
+                        >
+                          <span>{item.title}</span>
+                          <div className="flex flex-wrap gap-1">
+                            {item.tags.map((tag) => (
+                              <Badge key={tag} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex flex-wrap gap-1">
-                          {item.tags.map((tag) => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
+                      ))}
+                      {repo.items.length > 8 && (
+                        <p className="text-xs text-muted-foreground">
+                          and {repo.totalItems - 8} more
+                        </p>
+                      )}
                     </CardContent>
                   </Card>
                 ))}

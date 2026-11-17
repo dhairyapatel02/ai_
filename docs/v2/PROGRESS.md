@@ -13,7 +13,7 @@ Every phase session updates this file before opening its PR.
 | 04 | UX/UI Design System & Prototype | ✅ Done | (this PR) | 2026-11-16 | Prototype approved as-is (D-020): [Artifact](https://claude.ai/artifact/7sRsUMg2VuwC1A5J4m9xFB); `design/` |
 | 05 | Backend Platform | ✅ Done | (this PR) | 2026-11-16 | Better Auth + JWT/JWKS, encrypted GitHub App connect, D-006 conventions, rate limits, logging |
 | 06 | Sync Engine v2 | ✅ Done | (this PR) | 2026-11-16 | GitHub App sync (GraphQL), SyncRun, webhooks, scheduler, Prisma 7; budget 119/250 requests |
-| 07 | Metrics Engine & Impact Score v2 | ⏳ Not started | | | |
+| 07 | Metrics Engine & Impact Score v2 | ✅ Done | (this PR) | 2026-11-17 | Deterministic `metrics@2.0.0` / `impact@2.0.0`, rollups, metrics/impact/career/activity APIs; p95 ≤ 100 ms |
 | 08 | AI Layer v2 | ⏳ Not started | | | |
 | 09 | Frontend Foundation & App Shell | ⏳ Not started | | | |
 | 10 | Frontend: Insights Pages | ⏳ Not started | | | |
@@ -586,3 +586,171 @@ script. No commit is lost and all reviews are preserved on their owner's PR rows
 - *Running locally:* `RUN_WORKER_IN_API=true` (default) runs the processors and registers the
   scheduler in the API; a real sync needs the GitHub App env (README → GitHub App, webhooks).
 
+### Phase 07 — Metrics Engine & Impact Score v2 (2026-11-17)
+**Branch / PR:** `claude/sweet-franklin-t5fhaa` → `main` / PR "Phase 07: Metrics Engine & Impact Score v2"
+(branched from `main@8ad98f0` = P06 merged).
+
+**Summary:**
+- **Shared (`packages/shared`):** `periods/` — `parsePeriod` / `resolvePeriod` / `previousPeriod` /
+  `comparisonPeriod` / `shiftPeriodSpec` / `periodSpecsEnding` / `localRangeToUtc` /
+  `localDateOf` / `todayIn`, ISO weeks and `businessHours` (DST-correct, memoised offsets);
+  `metrics/catalogue.ts` — the `metrics@2.0.0` catalogue (21 metrics + 3 deferred issue metrics:
+  labels, definitions, formulas, units, min n, good ranges, caveats, anti-gaming, direction),
+  `impact@2.0.0` bands and dimensions; `api/metrics.ts` + v2 `api/activity.ts` Zod schemas.
+- **Schema (P07-1 `metrics_v2`):** `metric_snapshots` (additive daily counters), new
+  `impact_scores` (period, versions, status, overall + 4 dimensions, `inputs` JSON, explanation),
+  `ScoreStatus` enum; v0.1 table renamed to `impact_scores_legacy` with its constraints (never
+  displayed, dropped in P15). `migrate diff` shows no drift.
+- **Engine (`apps/api/src/metrics/`):** `metric-definitions.ts` (one pure function per metric,
+  evidence ids), `impact.ts` (bands, k = 3 shrinkage, renormalisation, thresholds, half-up
+  rounding, §6.7 explanation), `score-inputs.ts` (§6.6 inputs), `rollup.ts` (pure daily counters),
+  `metrics.repository.ts` (parameterised `$queryRaw` fact loads; included repos, no stubs, no
+  merge commits), `rollup.service.ts`, `impact-score.service.ts` (lazy cache; one fact load for
+  many periods), `metrics.service.ts`, `career.service.ts`, `evidence.ts`.
+- **Jobs:** `metrics.recompute` consumer (merged per-user ranges in Redis + BullMQ debounce;
+  rewrites snapshot days in one transaction, deletes overlapping cached scores — DATA-09);
+  `metrics.nightly` job scheduler (`metrics-nightly`, `30 2 * * *` UTC, registered on worker boot:
+  last 35 days of active users, full history for users without snapshots). `PATCH /me/settings`
+  timezone change drops cached scores/other-zone snapshots and queues a full recompute
+  (`meta.recomputeQueued`). Scripts: `npm run metrics:recompute`, `db:seed:heavy`, `perf:metrics`.
+- **API:** `GET /metrics/definitions|overview|kpis|timeseries|heatmap|repos|trends (A-1)|evidence (A-2)`,
+  `GET /impact`, `/impact/history`, `GET /career/timeline`, `GET /activity/feed`, v2
+  `/activity/prs` (`role` required) + `/activity/prs/:id`, `/activity/reviews`, v2
+  `/activity/commits` + `/activity/commits/:id`. `GET /generate/impact-score`,
+  `AIService.calculateImpactScore` and its prompt removed (AI-01, API-04); `/activity/summary`
+  deprecated (`Deprecation`, `Sunset`, `Link`; merged count — DATA-02); v1 generators use local
+  date ranges in the user's time zone (BUG-06).
+- **Web (minimal, task 9):** dashboard (`/metrics/overview`, `/impact`, `/metrics/repos`), KPI page
+  (`/metrics/kpis` five sections with catalogue labels and "Not enough data"), career page
+  (`/career/timeline`), `ImpactScoreCard` with Delivery/Quality/Collaboration/Ownership and a
+  null state. No AI call on any page load.
+- **Seed:** demo user in Europe/London with every KPI edge case (drafts, revert, unknown sizes,
+  drive-by and follow-up reviews, merge commits, excluded repo, legacy stub) and snapshots computed
+  by the rollup service; placeholder impact scores removed. Heavy perf fixture (`seed-heavy.ts`).
+- **Tests:** shared Vitest 69 (periods: grammar, labels, in-progress, previous/same-elapsed,
+  Auckland/Los Angeles boundaries, leap year, ISO week 53, business hours incl. Berlin/New York
+  DST and a 23-hour Jerusalem Friday, fast-check properties); API unit 130 (+2 skipped, 1 todo
+  AI-02 → P08) incl. the golden dataset for **every** metric, G-1, G-2, threshold cases,
+  stored-inputs reproduction, determinism, rollup properties (idempotent, sub-range additive,
+  consistent with the engine); API integration 137 (+34 `metrics.int-spec.ts`: every endpoint's
+  shape/validation/ownership, golden values through the DB, cache + invalidation, debounced range
+  merge, time-zone change, excluded repos, nightly scheduler, **AI client mocked to throw on every
+  method — no call on any metrics/impact GET**); web Vitest 36; Playwright 5. All green locally.
+- **Performance:** heavy user (5.2k commits, 1.1k PRs, 1.65k reviews, 12 months) — p95 server time
+  overview month cold 28 ms / warm 3.5 ms, overview **year cold 99.9 ms**, timeseries ≤ 47 ms
+  (snapshot-backed ≤ 4.4 ms); EXPLAIN ANALYZE plans and method in
+  [`blueprint/PERF_NOTES.md`](blueprint/PERF_NOTES.md). No new activity index needed.
+- **Security review** (`security-review` skill): no HIGH/MEDIUM findings. Verified: all runtime raw
+  SQL is parameterised `$queryRaw` (incl. `AT TIME ZONE ${timezone}`, and the time zone is IANA-validated);
+  evidence ids, detail endpoints, `repoIds`, career and repo lookups are all scoped by `userId`;
+  cursors are validated and ANDed with `userId`; fixed Lua scripts with keys/args only; no `@Public`
+  on new routes; URLs pass `safeUrl` (http/https only); reviewed PRs never expose bodies.
+
+**Acceptance criteria:** all met —
+- Every metric of KPI_METHODOLOGY §3.1–§3.5 is implemented under its exact key and label
+  (catalogue in shared); golden test with hand-computed values for all 21 metrics
+  (`metric-definitions.spec.ts`, documented dataset in `test/fixtures/metrics/golden.ts`) and again
+  through the database (`metrics.int-spec.ts`); issue metrics (§3.6) are listed as deferred.
+- Impact score deterministic (G-1 = 78, G-2 = 77.5975, golden dataset = 64), stores
+  `scoreVersion` + `metricsVersion` + full inputs, returns the explanation; `insufficient_data`
+  for `prs_merged + prs_reviewed < 3`, `periodDays < 7` (and a 6-day custom period is
+  `INVALID_PERIOD`) and < 2 dimensions; recomputing from stored JSON reproduces every score.
+- No Anthropic call on metrics/impact GETs (AIService replaced by a throwing stub; 15 GET routes).
+- Period boundaries follow `UserSettings.timezone` and include the whole last day (unit +
+  integration tests: Auckland commits at local 23:30 count, 00:30 next day don't).
+- p95 < 150 ms for overview/timeseries on the heavy seeded user (measured, recorded).
+- Current UI shows correct, correctly-labelled numbers (PRs merged = merged count; v2 dimensions;
+  E2E asserts the cards).
+- `npm run check`, `test:int`, `test:e2e` green locally (CI runs on the PR).
+
+**Deviations from the phase file:**
+- **Activity explorer endpoints** (`/activity/prs/:id`, `/reviews`, `/commits/:id`, v2 list
+  shapes) were built too — the contract (§11/§20) assigns their v2 shapes to P07 and P10 needs them;
+  `/activity/prs` now requires `role` (contract), and lists/feeds exclude merge commits (D-023).
+- Recompute **debounce merges ranges in Redis** instead of relying on BullMQ deduplication alone
+  (deduplication drops later ranges); job ids `metrics-<userId>` (BullMQ forbids `:`).
+- `ImpactScore` cache rows for in-progress periods are keyed by the displayed end date (today), so
+  one row per day; P14 retention prunes them (OPS-18).
+- Performance measured in-process (server time without HTTP/auth, which add ≈ 2–5 ms).
+- Contract additions are additive only (listed in D-023); `ImpactDto.highlights` stays `null`.
+- Docker images were not rebuilt locally (as in P05/P06); no Dockerfile or env change in P07.
+
+**Deferred items:** `POST /impact/highlights` + AI narrative → P08 (typed `highlights: null`
+hook); removing `/activity/summary` and its last callers → P10; achievements in snapshots, feed,
+timeline → P12; retention of old-version / in-progress score rows → P14 (OPS-18); late-revert
+invalidation → P14 (DATA-12); cache-write race → P14 (PERF-06).
+
+**New issues found:** DATA-12, PERF-06 (`audit/ISSUES.md`, TRACEABILITY §2). Fixed: DATA-02,
+AI-01, BUG-06, DATA-09, API-04, PERF-03 (API), UX-06 (current UI), BUG-05 (period grammar).
+
+**Handoff notes for next phases:**
+- *Versions:* metrics **`metrics@2.0.0`**, score **`impact@2.0.0`** (`METRICS_VERSION`,
+  `SCORE_VERSION` in `@devimpact/shared`). Any formula/anchor/weight/threshold change = version
+  bump + DECISIONS entry (KPI §9); new versions compute new `ImpactScore` rows lazily.
+- *Periods everywhere:* `?period=` (§3.4) with the shared `parsePeriod`/`resolvePeriod`; default
+  = the user's `defaultPeriodType` containing today; in-progress periods end today
+  (`inProgress: true`, `periodDays` = full length); invalid range → `400 INVALID_PERIOD`
+  `{ details.period }`. The web can import the same utilities for URL state (F-31).
+- *P08:* read period metrics and evidence from `ImpactScoreService.scoreFor(userId, period)` →
+  `inputs.metrics[key] = { value, n, status }`, `inputs.evidence[key] = [ids]` (PR / review /
+  commit cuids, newest first, ≤ 200) and `inputs.dimensions`; resolve ids to refs with
+  `metrics/evidence.ts` (`PR-<repo>#n`, `REV-<repo>#n`, `C-<repo>@sha7`). Numbers in documents
+  must come from these inputs (KPI §8). `POST /impact/highlights` fills `ImpactDto.highlights`
+  (currently always `null`) and must 409 `CONFLICT { reason: 'insufficient_data' }` when
+  `status = insufficient_data`. The v1 generators still use `ActivityService.getActivityDataForAI`.
+- *P10 endpoints (all `GET`, Bearer JWT, envelope, `default` rate class, `Cache-Control: private,
+  no-store` except definitions `private, max-age=3600`):*
+  - `/metrics/overview?period=` → `{ period, previousPeriod, comparison, cards[commits, prs_merged,
+    prs_reviewed], impact { status, overall, delta, band }, dataFreshness }`, e.g. (demo, Oct 2026)
+    `cards[1] = { key: "prs_merged", label: "PRs merged", unit: "count", value: 7, n: 7,
+    status: "ok", previousValue: 5, delta: 2, deltaPct: 0.4, direction: "higher_is_better",
+    inScore: true, evidence: ["cmwk…", …], evidenceTruncated: false }`,
+    `impact = { status: "ok", overall: 74, delta: -6, band: "Strong" }`,
+    `dataFreshness = { lastSuccessfulSyncAt: "2026-11-17T00:00:00.000Z", syncing: false }`.
+  - `/metrics/kpis?period=` → `{ period, previousPeriod, comparison, sections[delivery, quality,
+    collaboration, ownership, consistency] { key, title, metrics: MetricValue[] }, impactStatus,
+    metricsVersion }`. Low sample = `status: "insufficient_data"`, `value: null`, `n` kept
+    ("n = 2 of 3 needed": `minN` from definitions).
+  - `/metrics/definitions` → `{ metricsVersion, scoreVersion, metrics[24] { key, label, section,
+    definition, formula, unit, minN, goodRange, caveats, antiGaming, inScore, deferred, direction },
+    bands[4] }` — use it for every label/definition/caveat (S8 copy).
+  - `/metrics/timeseries?metric=&interval=day|week|month&(period=|from=&to=)` →
+    `{ metric, interval, unit, points[{ start, end, value, n }], timezone }` (≤ 400 points; ISO
+    weeks / months clipped to the range), e.g. `{ start: "2026-10-01", end: "2026-10-04", value: 0, n: 0 }`.
+  - `/metrics/heatmap?from=&to=` (≤ 366 days, default last 365) → `{ from, to, days[{ date, count,
+    commits, prsOpened, prsMerged, reviews }], max, total, activeDays, timezone }` (every day
+    present; also feeds the dashboard activity chart per F-21).
+  - `/metrics/repos?period=&limit=` → `{ period, repos[{ repositoryId, fullName, commits,
+    prsMerged, prsReviewed, firstContributionAt, lastContributionAt, twoWay }], total }`.
+  - `/metrics/trends?period=&count=1..12&metrics=a,b` (A-1) → `{ periodType, points[{ period }],
+    series[{ metric, values[] }] }` — same values as kpis per period (sparklines, S8).
+  - `/metrics/evidence?metric=&period=&cursor=&limit=` (A-2) → `EvidenceItem[] { ref, kind, id,
+    title, repo, url, occurredAt }`, `meta { nextCursor, hasMore, total, truncated }`.
+  - `/impact?period=` → `ImpactDto { period, status, scoreVersion: "impact@2.0.0", overall: 74,
+    band: "Strong", dimensions[{ key, label, score, weight, available, components[{ metric, value,
+    n, bandScore, shrunkScore, weight, effectiveWeight, available }] }], explanation (§6.7 text),
+    inputs (§6.6), computedAt, highlights: null }`; insufficient → `overall/band/score: null` +
+    §5 copy in `explanation`.
+  - `/impact/history?periodType=month|quarter&count=1..24` → `{ points[{ period, status, overall,
+    band, dimensions { delivery, quality, collaboration, ownership }, scoreVersion }], scoreVersion }`
+    (null points = gaps in the chart).
+  - `/career/timeline?year=` → `{ years, year, timezone, quarters[{ quarter, label, inProgress,
+    repos[{ repositoryId, fullName, items[{ type: pr_merged|review_cluster, id, ref, title, date,
+    url, tags, count? }], truncated, totalItems }], milestones[{ kind, date, title, refs }],
+    totals { prsMerged, prsReviewed, achievements } }] }` (newest quarter first, ≤ 50 PRs per repo).
+  - `/activity/feed?period=|from=&to=&types=&repoIds=&q=&cursor=&limit=` → `FeedItem[] { id
+    ("<type>:<rowId>"), type, occurredAt, repo { id, fullName }, title, url, ref, meta
+    { recordId, … } }`, cursor-paginated newest first. Detail: `/activity/prs/:id`,
+    `/activity/commits/:id`; lists `/activity/prs?role=authored|reviewed&state=&sort=`,
+    `/activity/reviews?state=`, `/activity/commits` (shapes in `packages/shared/src/api/activity.ts`).
+  - Remove `/activity/summary` (deprecated, `Sunset` 2027-03-01) once the new pages ship.
+- *Recompute after data changes:* call `MetricsQueueService.enqueueRecompute({ userId, from, to,
+  reason })` (ISO instants; reasons `sync | webhook | repository_inclusion | timezone | nightly |
+  manual`). P12 must enqueue on achievement writes and fill `MetricSnapshot.achievements`.
+- *Tests:* golden fixture `apps/api/test/fixtures/metrics/golden.ts` (`GOLDEN_FACTS`,
+  `windowOf`); `metrics.int-spec.ts` shows how to load it through the DB and how to run a
+  recompute in-process (`MetricsRecomputeService.handle`, `RollupService.recompute`). Redis
+  pending ranges are cleared by `resetRedisState()`.
+- *Local data:* after migrating an existing DB run `npm run metrics:recompute` once (the nightly
+  job also bootstraps users without snapshots). Seed: `npm run db:seed` (demo, Europe/London),
+  `npm run db:seed:heavy` (perf).

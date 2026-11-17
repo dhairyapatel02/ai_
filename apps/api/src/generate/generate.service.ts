@@ -1,4 +1,11 @@
-import { resumeBulletsResultSchema } from '@devimpact/shared';
+import {
+  addDays,
+  parsePeriod,
+  periodSpecContaining,
+  resumeBulletsResultSchema,
+  shiftPeriodSpec,
+  todayIn,
+} from '@devimpact/shared';
 import { Injectable } from '@nestjs/common';
 import { DocumentType, Prisma } from '@prisma/client';
 
@@ -47,7 +54,7 @@ export class GenerateService {
   }
 
   async generateAppraisal(userId: string, period: string, month: number, year: number) {
-    const { from, to } = this.getDateRangeForPeriod(period, month, year);
+    const { from, to } = GenerateService.appraisalRange(period, month, year);
     const activityData = await this.activityService.getActivityDataForAI(userId, from, to);
     const result = await this.aiService.generateAppraisalReport(activityData, period, month, year);
 
@@ -64,10 +71,9 @@ export class GenerateService {
   }
 
   async generatePromotion(userId: string, currentRole: string, targetRole: string) {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    const from = sixMonthsAgo.toISOString();
-    const to = new Date().toISOString();
+    const { from, to } = GenerateService.promotionRange(
+      await this.activityService.timezoneOf(userId),
+    );
 
     const activityData = await this.activityService.getActivityDataForAI(userId, from, to);
     const result = await this.aiService.generatePromotionPacket(
@@ -88,70 +94,23 @@ export class GenerateService {
     return { document: doc, packet: result };
   }
 
-  async getImpactScore(userId: string, month: number, year: number, force = false) {
-    if (!force) {
-      const existing = await this.prisma.impactScore.findUnique({
-        where: { userId_month_year: { userId, month, year } },
-      });
-
-      if (existing) return existing;
-    }
-
-    // Generate new score
-    const { from, to } = this.getDateRangeForPeriod('monthly', month, year);
-    const activityData = await this.activityService.getActivityDataForAI(userId, from, to);
-    const result = await this.aiService.calculateImpactScore(activityData, month, year);
-
-    const score = await this.prisma.impactScore.upsert({
-      where: { userId_month_year: { userId, month, year } },
-      update: {
-        overall: result.overall,
-        featureDelivery: result.featureDelivery,
-        codeQuality: result.codeQuality,
-        collaboration: result.collaboration,
-        leadership: result.leadership,
-        highlights: result.highlights ?? [],
-      },
-      create: {
-        userId,
-        month,
-        year,
-        overall: result.overall,
-        featureDelivery: result.featureDelivery,
-        codeQuality: result.codeQuality,
-        collaboration: result.collaboration,
-        leadership: result.leadership,
-        highlights: result.highlights ?? [],
-      },
-    });
-
-    return score;
+  /**
+   * Local-date range (inclusive, interpreted in the user's time zone by the activity reads) of an
+   * appraisal period — BUG-06: no server-local time is involved.
+   */
+  static appraisalRange(period: string, month: number, year: number): { from: string; to: string } {
+    const date = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-01`;
+    const type = period === 'quarterly' ? 'quarter' : period === 'yearly' ? 'year' : 'month';
+    const { startDate, endDate } = parsePeriod(periodSpecContaining(type, date));
+    return { from: startDate, to: endDate };
   }
 
-  private getDateRangeForPeriod(period: string, month: number, year: number) {
-    let from: Date;
-    let to: Date;
-
-    switch (period) {
-      case 'monthly':
-        from = new Date(year, month - 1, 1);
-        to = new Date(year, month, 0, 23, 59, 59);
-        break;
-      case 'quarterly': {
-        const quarterStart = Math.floor((month - 1) / 3) * 3;
-        from = new Date(year, quarterStart, 1);
-        to = new Date(year, quarterStart + 3, 0, 23, 59, 59);
-        break;
-      }
-      case 'yearly':
-        from = new Date(year, 0, 1);
-        to = new Date(year, 11, 31, 23, 59, 59);
-        break;
-      default:
-        from = new Date(year, month - 1, 1);
-        to = new Date(year, month, 0, 23, 59, 59);
-    }
-
-    return { from: from.toISOString(), to: to.toISOString() };
+  /** The six months before today in the user's time zone (inclusive local dates). */
+  static promotionRange(timezone: string, now = new Date()): { from: string; to: string } {
+    const today = todayIn(timezone, now);
+    const sixMonthsBack = parsePeriod(shiftPeriodSpec(periodSpecContaining('month', today), -6));
+    const day = Math.min(Number(today.slice(8, 10)), Number(sixMonthsBack.endDate.slice(8, 10)));
+    const from = addDays(sixMonthsBack.startDate, day - 1);
+    return { from, to: today };
   }
 }
