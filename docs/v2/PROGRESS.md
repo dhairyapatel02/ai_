@@ -808,6 +808,15 @@ AI-01, BUG-06, DATA-09, API-04, PERF-03 (API), UX-06 (current UI), BUG-05 (perio
   lengths, banned phrases, injection, redaction) + 6 negative controls. Recordings are synthetic
   (no key); `npm run eval:live` not run → AI-10.
 
+- **Security review** (`security-review` skill): no HIGH/MEDIUM findings. Verified: every
+  documents / quick-action / usage path loads by `{ id, userId }` and repeats `userId` in writes;
+  `inputHash` caches, the `GET /impact` highlights lookup and `RefResolver` are user-scoped; the
+  worker takes `userId` from the loaded document; Redis keys come from DB ids and `Last-Event-ID`
+  is pattern-checked; SSE/HTTP errors carry fixed codes and messages (provider payloads only in
+  logs); redaction keeps private repo names and real refs out of model requests; no new raw SQL
+  beyond the static migration; the web preview renders through JSX only. Found and fixed during
+  the phase: a 400 with an `api_error` body type was classified retryable (status now wins).
+
 **Acceptance criteria:**
 - [x] No model ID outside config: `grep -r "claude-" apps/api/src` hits only `src/config/env.ts`,
   `src/config/ai-pricing.ts` (price table, in config) and specs.
