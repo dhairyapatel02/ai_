@@ -11,5 +11,7 @@ void startFakeAnthropic(
   (req) => ({ ...autoReply(req), chunkSize: 12, delayMs: 15 }),
   Number(process.argv[2] ?? 4010),
 ).then((fake) => {
-  console.log(`Fake Anthropic API on ${fake.url} (set ANTHROPIC_BASE_URL and any ANTHROPIC_API_KEY)`);
+  console.log(
+    `Fake Anthropic API on ${fake.url} (set ANTHROPIC_BASE_URL and any ANTHROPIC_API_KEY)`,
+  );
 });
