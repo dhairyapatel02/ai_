@@ -145,6 +145,8 @@ model User {
   syncRuns     SyncRun[]
   documents    GeneratedDocument[]
   impactScores ImpactScore[]
+  snapshots    MetricSnapshot[]
+  legacyScores ImpactScoreLegacy[]
 
   @@map("users")
 }
@@ -524,7 +526,8 @@ model GeneratedDocument {
   @@map("generated_documents")
 }
 
-model ImpactScore {
+/// v0.1 LLM-generated scores (AI-01), renamed by migration P07-1. Never displayed; dropped in P15.
+model ImpactScoreLegacy {
   id              String   @id @default(cuid())
   userId          String
   month           Int
@@ -539,5 +542,63 @@ model ImpactScore {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, month, year])
+  @@map("impact_scores_legacy")
+}
+
+// ───────────── Metrics (KPI_METHODOLOGY §4, §6; migration P07-1) ─────────────
+/// One row per user per local date with additive counters only (medians/ratios come from the fact
+/// tables). Rebuilt by `metrics.recompute`; only days with activity are stored.
+model MetricSnapshot {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  date              DateTime @db.Date // local date in `timezone`
+  timezone          String
+  commits           Int      @default(0)
+  prsOpened         Int      @default(0) @map("prs_opened")
+  prsMerged         Int      @default(0) @map("prs_merged")
+  prsClosedUnmerged Int      @default(0) @map("prs_closed_unmerged")
+  reviewsSubmitted  Int      @default(0) @map("reviews_submitted")
+  prsReviewed       Int      @default(0) @map("prs_reviewed") // distinct PRs reviewed that day
+  reviewComments    Int      @default(0) @map("review_comments")
+  achievements      Int      @default(0)
+  active            Boolean  @default(false)
+  metricsVersion    String   @map("metrics_version")
+  computedAt        DateTime @default(now()) @map("computed_at")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("metric_snapshots")
+}
+
+enum ScoreStatus {
+  OK
+  INSUFFICIENT_DATA
+}
+
+/// Lazily computed, cached period metrics + impact score (ADR-0008). `inputs` (§6.6) reproduces the
+/// score without the database and doubles as the period-metrics cache for /metrics/kpis.
+/// `metrics.recompute` deletes rows whose period overlaps the recomputed range.
+model ImpactScore {
+  id             String      @id @default(cuid())
+  userId         String      @map("user_id")
+  periodType     PeriodType  @map("period_type")
+  periodStart    DateTime    @map("period_start") @db.Date
+  periodEnd      DateTime    @map("period_end") @db.Date
+  timezone       String
+  scoreVersion   String      @map("score_version")
+  metricsVersion String      @map("metrics_version")
+  status         ScoreStatus
+  overall        Float?
+  delivery       Float?
+  quality        Float?
+  collaboration  Float?
+  ownership      Float?
+  inputs         Json
+  explanation    String
+  computedAt     DateTime    @default(now()) @map("computed_at")
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periodType, periodStart, periodEnd, scoreVersion])
+  @@index([userId, periodStart, periodEnd])
   @@map("impact_scores")
 }
