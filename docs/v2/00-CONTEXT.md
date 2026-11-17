@@ -182,3 +182,24 @@ raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
 - **New env:** `GITHUB_APP_PRIVATE_KEY_FILE`, `GITHUB_WEBHOOK_SECRET` (now used), `GITHUB_REQUEST_RETRIES`,
   `GITHUB_THROTTLING`, `SYNC_RATE_LIMIT_MIN_REMAINING`, `QUEUE_PREFIX` (see `.env.example`).
 
+
+### After Phase 07 (2026-11-17)
+- **Deterministic metrics engine:** `metrics@2.0.0` (21 metrics, KPI_METHODOLOGY §3) and
+  `impact@2.0.0` (overall + Delivery/Quality/Collaboration/Ownership) in `apps/api/src/metrics/`
+  as pure functions; the LLM never produces a number. Period grammar, business hours and the
+  metric catalogue live in `packages/shared` (`periods/`, `metrics/catalogue.ts`) for API and web.
+- **Schema:** migration P07-1 — `metric_snapshots` (daily additive counters), `impact_scores` v2
+  (lazy cache with stored inputs + explanation); v0.1 LLM scores kept only in
+  `impact_scores_legacy` (never shown, dropped in P15).
+- **Jobs:** `metrics.recompute` (debounced per user, merged ranges, rewrites snapshot days and
+  invalidates overlapping scores) and the `metrics-nightly` job scheduler (02:30 UTC). Time-zone
+  changes queue a full recompute. `npm run metrics:recompute` rebuilds manually.
+- **API:** `/metrics/{definitions,overview,kpis,timeseries,heatmap,repos,trends,evidence}`,
+  `/impact`, `/impact/history`, `/career/timeline`, `/activity/{feed,prs,prs/:id,reviews,commits,
+  commits/:id}` (v2 shapes, `role` required on `/activity/prs`). `GET /generate/impact-score` is
+  gone; `/activity/summary` is deprecated (removed in P10). p95 ≤ 100 ms on a heavy user
+  (`blueprint/PERF_NOTES.md`).
+- **Web (interim):** dashboard, KPIs and career pages read the new endpoints with correct labels;
+  no AI call on page load. The designed pages are P10.
+- **No env changes.** Seed: demo user now in Europe/London with KPI edge cases and snapshots;
+  `npm run db:seed:heavy` adds a perf fixture.

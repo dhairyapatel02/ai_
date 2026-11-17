@@ -91,11 +91,11 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | SEC-08 | 🟠 | ADR-0006 | P05, P14 (web CSP) | |
 | SEC-09 | 🟠 | ADR-0002, ADR-0003 | P02 (patch), P09 (major) | next-auth removed in P05 |
 | BUG-04 | 🟠 | ADR-0006 (Zod pipe + exception filter) | P05 | invalid query → 400, never 500 |
-| DATA-02 | 🟠 | F-20, KPI §3.7 | P07, P10 | |
+| DATA-02 | 🟠 | F-20, KPI §3.7 | P07, P10 | ✅ fixed in P07 |
 | DATA-03 | 🟠 | F-11, F-12, ADR-0007 | P06 | |
 | DATA-04 | 🟠 | F-15, ADR-0007 | P06 | |
 | DATA-05 | 🟠 | ADR-0007 | P06 | non-default-branch commits not counted (documented caveat) |
-| AI-01 | 🟠 | F-28, ADR-0008 | P07 | |
+| AI-01 | 🟠 | F-28, ADR-0008 | P07 | ✅ fixed in P07 |
 | AI-02 | 🟠 | ADR-0009 | P08 | |
 | AI-03 | 🟠 | F-44, F-50, ADR-0009 | P08 | |
 | API-01 | 🟠 | ADR-0006 | P05 | |
@@ -115,8 +115,8 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | SEC-12 | 🟡 | ADR-0006 | P05 | |
 | SEC-13 | 🟡 | F-17, ADR-0004 | P05/P06 | token revoke on disconnect |
 | SEC-14 | 🟡 | ADR-0013 | P15 | non-root images |
-| BUG-05 | 🟡 | KPI §2.4, ADR-0006 | P05 (validation), P07 (periods) | inclusive end dates |
-| BUG-06 | 🟡 | F-05, KPI §2.4 | P07 | |
+| BUG-05 | 🟡 | KPI §2.4, ADR-0006 | P05 (validation), P07 (periods) | inclusive end dates ✅ (P05 + P07 period grammar) |
+| BUG-06 | 🟡 | F-05, KPI §2.4 | P07 | ✅ fixed in P07 |
 | BUG-07 | 🟡 | ADR-0006, F-40–F-42 | P05, P08 | |
 | BUG-08 | 🟡 | F-15 | P06, P10 | |
 | BUG-09 | 🟡 | F-15 | P06 | progress from planned units |
@@ -126,7 +126,7 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | DATA-06 | 🟡 | F-15, ADR-0007 | P06 | |
 | DATA-07 | 🟡 | F-17 | P06, P10 | |
 | DATA-08 | 🟡 | ADR-0007, DATA_MODEL | P06 | |
-| DATA-09 | 🟡 | ADR-0008 (recompute flow) | P07 | |
+| DATA-09 | 🟡 | ADR-0008 (recompute flow) | P07 | ✅ fixed in P07 |
 | DATA-10 | ⚪ | DATA_MODEL_V2 (designed in P03) | P06 (implement) | |
 | OPS-13 | 🟡 | ARCHITECTURE §11 | P14, P15 | |
 | AI-04 | 🟡 | ADR-0009 | P08 | |
@@ -135,13 +135,13 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | AI-07 | 🟡 | KPI §8, ADR-0009 | P08 | |
 | AI-08 | 🟡 | F-06, F-07 | P08, P12 | |
 | API-03 | 🟡 | F-01 | P05 | stubs removed |
-| API-04 | 🟡 | F-28 | P05 (contract), P07 | |
+| API-04 | 🟡 | F-28 | P05 (contract), P07 | ✅ fixed in P07 |
 | API-05 | 🟡 | ADR-0006 | P05 | |
 | PERF-02 | 🟡 | ADR-0007 | P06 | batched writes |
-| PERF-03 | 🟡 | ADR-0008 | P07, P10 | |
+| PERF-03 | 🟡 | ADR-0008 | P07, P10 | ✅ API fixed in P07; pages P10 |
 | PERF-04 | 🟡 | ADR-0010 | P09 | |
 | PERF-05 | ⚪ | ADR-0010 (RSC shells, code splitting) | P09 | added by P02 |
-| UX-06 | 🟡 | F-26, F-27 | P07, P10 | |
+| UX-06 | 🟡 | F-26, F-27 | P07, P10 | ✅ current UI fixed in P07; drawers P10 |
 | UX-07 | 🟡 | F-73 | P09 | |
 | UX-08 | 🟡 | F-73, F-75, F-44 | P09, P11 | |
 | UX-09 | 🟡 | F-74 | P09 | |
@@ -170,5 +170,7 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | DATA-11 | ⚪ | F-15, F-16, DATA_MODEL §4 | P14 | added by P06: automatic `ERROR` / `SUSPENDED` integration status |
 | GAP-11 | ⚪ | F-15, API_CONTRACT §8 | P10 | added by P06: optional `GET /sync/stream` SSE (polling contract exists) |
 | DEBT-12 | ⚪ | ADR-0002 | P09, P14 | added by P06: ESM `prisma-client` generator, drop root Prisma devDependencies |
+| DATA-12 | 🟡 | F-26, F-28, KPI §3.2 (revert rate) | P14 | added by P07: late reverts refresh the merge period’s cached score |
+| PERF-06 | ⚪ | ADR-0008, ARCHITECTURE_V2 §9 | P14 | added by P07: per-user data version against the score cache-write race |
 
 Every open ISSUES row with a target of P05 or later is mapped above; one (GAP-10) is won't-fix for v2.0.

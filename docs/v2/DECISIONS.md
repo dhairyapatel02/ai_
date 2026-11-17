@@ -366,3 +366,59 @@ Within D-004/D-005/D-008 and ADR-0004/0007, Phase 06 chose:
 *Consequences:* P07 consumes `metrics.recompute { userId, from, to, reason }` and reads only
 `isAuthoredByUser`, `legacyStub = false` and `repository.included` rows; P09 can move to the ESM Prisma
 generator; P14 adds the retention jobs (`SyncRun`, `WebhookDelivery`) and Bull Board.
+
+### D-023 · P07 implementation choices (metrics engine, impact score) · APPLIED (P07)
+Within D-007/D-019 and ADR-0008, KPI_METHODOLOGY `metrics@2.0.0` / `impact@2.0.0` (formulas,
+thresholds, anchors, weights and rounding unchanged), Phase 07 chose:
+- **Samples with unknown data:** PRs whose size GitHub did not report (`additions`/`deletions`
+  null, legacy rows) are left out of `small_pr_ratio` and `pr_size_median_lines` (their `n` counts
+  sized PRs); PRs with a null `changesRequestedCount` are left out of `first_pass_approval_rate`.
+  Caveat text added to the catalogue. Reviews on v0.1 `legacyStub` PRs never count.
+- **Evidence ids (§7):** counts → the counted records; medians → the sample; ratios → the
+  numerator (e.g. reverted PRs); reviewed PRs → the first review in the period (`REV-` refs);
+  repository/day/week metrics → one representative (newest) record per repo/day/week. Newest
+  first, capped at 200, `evidenceTruncated` flag.
+- **In-progress periods (§2.4):** `ResolvedPeriod.endDate` = today (display and data window),
+  `periodDays` = full calendar length; deltas compare the same elapsed days of the previous period
+  (`comparison: 'same_elapsed'`, clipped to the shorter month). Cache rows are keyed by the
+  displayed end, so an in-progress period gets a new row per day (old rows are invalidated by
+  recomputes / retention in P14).
+- **Insufficient scores (§5):** overall and dimension scores and component band/shrunk scores
+  are `null`; component values and `n` stay visible. The explanation is the §5 copy + version.
+- **Impact cache:** `ImpactScore` lookups also match the user's current time zone; a time-zone
+  change deletes the user's scores and other-zone snapshots synchronously (PATCH `/me/settings`,
+  `meta.recomputeQueued`) and queues a full-history recompute. Concurrent misses tolerate the
+  unique-key race (P2002 → keep the other row; identical inputs).
+- **Recompute queue:** `enqueueRecompute` merges `[from, to]` per user in Redis
+  (`devimpact:metrics-pending:<prefix>:<userId>`, Lua min/max) and adds one delayed job per user
+  with BullMQ deduplication in debounce mode (`id metrics-<userId>`, `extend` + `replace`; 30 s,
+  1 s for `timezone`/`repository_inclusion`); the consumer unions job + pending ranges and
+  drains new ranges (≤ 5 rounds). Reasons extended with `timezone`, `nightly`, `manual`.
+  `metrics.nightly` = BullMQ job scheduler `metrics-nightly` `30 2 * * *` UTC: last 35 days of
+  every user with an ACTIVE integration, full history for users without snapshots.
+- **Snapshots:** only days with a counted event are stored (reads fill zeros); heatmap `count` =
+  commits + PRs opened + reviews (the `active_days` contributions); `reviewComments` =
+  Σ (comments + body); `achievements` stays 0 until P12.
+- **Timeseries:** count metrics (`commits`, `prs_opened`, `prs_merged`, `active_days`) from
+  snapshots; every other metric (incl. distinct `prs_reviewed`) from one fact load per request,
+  computed per bucket; ISO-week / calendar-month buckets clipped to the range; ≤ 400 points
+  (`VALIDATION_FAILED` on `query.interval` otherwise); future days are clipped to today.
+- **Activity (§11):** lists and the feed exclude merge commits (same `CM` set as the metrics);
+  `GET /activity/prs` now requires `role`; `sort=-changedLines` uses an opaque offset cursor;
+  feed item ids are `<type>:<rowId>` (`meta.recordId` = the row id). Deprecated
+  `/activity/summary`: `totalPRs` = PRs **merged** in the range, `impactScore: null`,
+  `Deprecation`, `Sunset: Mon, 01 Mar 2027 00:00:00 GMT` and `Link` to `/metrics/overview`.
+- **Additive contract fields** (API_CONTRACT_V2 allows them): `KpisResponse.previousPeriod/
+  comparison/metricsVersion`; `MetricDefinition.direction`; `ImpactDto` component
+  `effectiveWeight/available`; history points `band/scoreVersion`; heatmap `from/to/total/
+  activeDays`; repos `period/total`; evidence `meta.truncated`; PR items `isAuthoredByUser/
+  authorLogin`; career `timezone`, quarter `inProgress`, repo `truncated/totalItems`, review
+  cluster `count`. `ImpactDto.highlights` is always `null` until P08 (typed hook).
+- **Removed:** `GET /generate/impact-score`, `AIService.calculateImpactScore` and the
+  `calculate-impact` prompt (AI-01, API-04). v1 generators take appraisal/promotion ranges as local
+  dates in the user's time zone (BUG-06).
+- **Values on the wire** are full precision (hours, ratios); only the UI rounds (§2.6).
+*Consequences:* P08 reads `ImpactScore.inputs` (metrics, evidence ids) for prompts and adds
+`POST /impact/highlights`; P10 builds S6–S10 on these endpoints and removes `/activity/summary`;
+P12 fills `achievements` in snapshots, feed and timeline; P14 adds retention for old/in-progress
+score rows and the fixes logged as DATA-12/PERF-06.

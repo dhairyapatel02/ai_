@@ -82,9 +82,14 @@ npm run db:seed
 ```
 
 `db:deploy` applies the committed migrations in `apps/api/prisma/migrations`. `db:seed` creates the
-demo account **`demo@devimpact.dev`** with ~9 months of commits, pull requests, reviews, monthly
-scores and generated documents (deterministic; safe to re-run). To start over:
-`npm run db:reset` (drops all data, re-applies migrations, re-seeds).
+demo account **`demo@devimpact.dev`** (Europe/London) with ~9 months of commits, pull requests,
+reviews and generated documents, including the edge cases every KPI needs (draft PRs, a reverted
+PR, drive-by reviews, merge commits, an excluded repository, a v0.1 stub), and computes its daily
+metric snapshots (deterministic; safe to re-run). Impact scores are not seeded — `GET /api/impact`
+computes them. To start over: `npm run db:reset` (drops all data, re-applies migrations, re-seeds).
+`npm run db:seed:heavy` adds `heavy@devimpact.dev` (12 months, ~5k commits, ~1.1k PRs, ~1.7k
+reviews) plus 20 filler users for performance work (`npm run perf:metrics`, see
+[`docs/v2/blueprint/PERF_NOTES.md`](docs/v2/blueprint/PERF_NOTES.md)).
 
 ### 5. Run
 
@@ -187,9 +192,10 @@ Implementation: `apps/api/src/sync/` (orchestrator, queues, scheduler, webhooks 
 - **Queues** (BullMQ, prefix `QUEUE_PREFIX`, default `devimpact`; `devimpact-test` in tests):
   `sync` — `sync.backfill`, `sync.incremental` (job id `sync-<integrationId>`, one run per
   integration, 3 attempts with exponential backoff), `sync.targeted` (webhooks, `sync-t-<deliveryId>`),
-  `sync.fanout` (hourly job scheduler); `metrics` — `metrics.recompute` (consumer is a no-op until
-  P07). Jobs carry ids only, never tokens. The worker (`node dist/worker.js`, or the API with
-  `RUN_WORKER_IN_API=true`) consumes them and upserts the `sync-fanout` scheduler on boot.
+  `sync.fanout` (hourly job scheduler); `metrics` — `metrics.recompute`, `metrics.nightly` (see
+  [How metrics work](#how-metrics-work)). Jobs carry ids only, never tokens. The worker
+  (`node dist/worker.js`, or the API with `RUN_WORKER_IN_API=true`) consumes them and upserts the
+  `sync-fanout` and `metrics-nightly` schedulers on boot.
 - **Runs:** `POST /api/sync` (or connect/reconnect, the scheduler, a webhook) creates a `SyncRun`;
   `GET /api/sync/status`, `/sync/runs`, `/sync/runs/:id` read it from Postgres, so status
   survives a Redis restart. Poll `/sync/status` every 2 s while `queued`/`running` (30 s while
@@ -226,6 +232,32 @@ Implementation: `apps/api/src/sync/` (orchestrator, queues, scheduler, webhooks 
   user-token sync discovers newly granted repos).
 - **Not captured (v2.0):** commits that never reach the default branch, issues (Jira/Linear are
   v2.1), other people's review comments (aggregates only), PR bodies of reviewed PRs.
+
+### How metrics work
+
+Implementation: `apps/api/src/metrics/`; spec: [`KPI_METHODOLOGY.md`](docs/v2/blueprint/KPI_METHODOLOGY.md)
+(`metrics@2.0.0`, `impact@2.0.0`), ADR-0008. Period utilities and the metric catalogue live in
+`packages/shared` (`periods/`, `metrics/catalogue.ts`) and are shared with the web app.
+
+- **Deterministic, no AI.** Every number is a pure function of stored rows, the period and the
+  user's time zone (`metric-definitions.ts`, `impact.ts`). No metrics/impact endpoint calls
+  Anthropic or enqueues work; AI highlights (`POST /impact/highlights`) are P08.
+- **What counts:** included repositories only; authored PRs (`isAuthoredByUser`, no v0.1 stubs);
+  your reviews on others' PRs; default-branch commits without merge commits. Durations are
+  business hours in your time zone (weekends excluded).
+- **Periods:** `?period=month:2026-10 | quarter:2026-Q4 | half:2026-H2 | year:2026 |
+custom:2026-10-01..2026-11-15` (7–366 days), inclusive local dates in `UserSettings.timezone`;
+  default = your default period type containing today. Invalid ranges → `400 INVALID_PERIOD`.
+- **Storage:** `metric_snapshots` = additive daily counters for charts (heatmap, count
+  timeseries); `impact_scores` = lazily computed period metrics + score per (user, period,
+  `scoreVersion`), with all inputs (`inputs`, reproducible without the DB) and the explanation.
+  Medians and ratios always come from the fact tables.
+- **Recompute:** sync, webhooks, repository inclusion and time-zone changes call
+  `MetricsQueueService.enqueueRecompute({ userId, from, to, reason })`; ranges are merged per user in
+  Redis and one delayed job per user is debounced (30 s; 1 s for user-initiated changes). The job
+  rewrites the affected snapshot days in one transaction and deletes cached scores whose period
+  overlaps. `metrics.nightly` (02:30 UTC) recomputes the last 35 days of every active user and the
+  full history of users without snapshots. Manual: `npm run metrics:recompute [-- <email>]`.
 
 ### Local webhook forwarding
 
@@ -347,28 +379,37 @@ message, details?, requestId } }` with real HTTP status codes; the full contract
 rate-limit classes, pagination) is [`docs/v2/blueprint/API_CONTRACT_V2.md`](docs/v2/blueprint/API_CONTRACT_V2.md)
 and the live schema is at `/api/docs` outside production.
 
-| Method | Path                                       | Description                                         |
-| ------ | ------------------------------------------ | --------------------------------------------------- |
-| GET    | /api/health · /api/health/live             | Readiness (Postgres + Redis) · liveness (public)    |
-| GET    | /api/me · /api/auth/me (deprecated)        | User, settings, entitlements, integrations          |
-| PATCH  | /api/me · /api/me/settings                 | Update name · settings (IANA time zone, …)          |
-| GET    | /api/me/settings · /api/me/entitlements    | Settings · plan limits                              |
-| DELETE | /api/me                                    | Delete account and all data (`{ confirmEmail }`)    |
-| GET    | /api/integrations · /:id                   | Integrations (never tokens)                         |
-| POST   | /api/integrations/github/connect           | GitHub App install/authorize URL with signed state  |
-| POST   | /api/integrations/github/callback          | Verify state, exchange code, store encrypted tokens |
-| POST   | /api/integrations/:id/reconnect            | Authorize again                                     |
-| DELETE | /api/integrations/:id?purgeData=           | Disconnect (revoke token; keep or purge data)       |
-| POST   | /api/sync                                  | Queue a sync (202; 409 in progress / needs reauth)  |
-| GET    | /api/sync/status · /sync/runs · /runs/:id  | DB-backed state, progress, history                  |
-| GET    | /api/repos · PATCH /repos · /repos/:id     | Repositories; include/exclude (recomputes KPIs)     |
-| POST   | /api/repos/:id/purge                       | Delete a repository's synced activity               |
-| POST   | /api/webhooks/github                       | GitHub App webhook (public, HMAC, idempotent, 202)  |
-| GET    | /api/activity/commits · /prs?role=         | Cursor-paginated activity (`authored`/`reviewed`)   |
-| GET    | /api/activity/summary                      | Aggregated stats (deprecated → P07 metrics)         |
-| POST   | /api/generate/{resume,appraisal,promotion} | v1 generators (AI rate limit; P08 → /documents)     |
-| GET    | /api/generate/impact-score                 | Deprecated LLM score (P07 → /impact)                |
-| GET    | /api/documents · /:id, DELETE /:id         | Generated documents                                 |
+| Method | Path                                            | Description                                           |
+| ------ | ----------------------------------------------- | ----------------------------------------------------- |
+| GET    | /api/health · /api/health/live                  | Readiness (Postgres + Redis) · liveness (public)      |
+| GET    | /api/me · /api/auth/me (deprecated)             | User, settings, entitlements, integrations            |
+| PATCH  | /api/me · /api/me/settings                      | Update name · settings (IANA time zone, …)            |
+| GET    | /api/me/settings · /api/me/entitlements         | Settings · plan limits                                |
+| DELETE | /api/me                                         | Delete account and all data (`{ confirmEmail }`)      |
+| GET    | /api/integrations · /:id                        | Integrations (never tokens)                           |
+| POST   | /api/integrations/github/connect                | GitHub App install/authorize URL with signed state    |
+| POST   | /api/integrations/github/callback               | Verify state, exchange code, store encrypted tokens   |
+| POST   | /api/integrations/:id/reconnect                 | Authorize again                                       |
+| DELETE | /api/integrations/:id?purgeData=                | Disconnect (revoke token; keep or purge data)         |
+| POST   | /api/sync                                       | Queue a sync (202; 409 in progress / needs reauth)    |
+| GET    | /api/sync/status · /sync/runs · /runs/:id       | DB-backed state, progress, history                    |
+| GET    | /api/repos · PATCH /repos · /repos/:id          | Repositories; include/exclude (recomputes KPIs)       |
+| POST   | /api/repos/:id/purge                            | Delete a repository's synced activity                 |
+| POST   | /api/webhooks/github                            | GitHub App webhook (public, HMAC, idempotent, 202)    |
+| GET    | /api/metrics/definitions                        | Metric catalogue, versions, score bands (cacheable)   |
+| GET    | /api/metrics/overview?period=                   | Stat cards with deltas, impact summary, freshness     |
+| GET    | /api/metrics/kpis?period=                       | Five KPI sections (value, n, status, delta, evidence) |
+| GET    | /api/metrics/timeseries?metric=&interval=       | One metric per day/week/month (`period` or `from/to`) |
+| GET    | /api/metrics/heatmap?from=&to=                  | Daily activity counts (≤ 366 days)                    |
+| GET    | /api/metrics/repos · /trends · /evidence        | Per-repo contributions · N-period trends · evidence   |
+| GET    | /api/impact?period= · /impact/history           | Deterministic impact score `impact@2.0.0` + history   |
+| GET    | /api/career/timeline?year=                      | The year by quarter (merged PRs, reviews, milestones) |
+| GET    | /api/activity/feed                              | Unified feed (commits, PR events, reviews)            |
+| GET    | /api/activity/prs?role= · /prs/:id              | Authored or reviewed PRs (cycle time, my reviews)     |
+| GET    | /api/activity/reviews · /commits · /commits/:id | Reviews (turnaround) · commits                        |
+| GET    | /api/activity/summary                           | Deprecated v1 summary (`Sunset`, removed in P10)      |
+| POST   | /api/generate/{resume,appraisal,promotion}      | v1 generators (AI rate limit; P08 → /documents)       |
+| GET    | /api/documents · /:id, DELETE /:id              | Generated documents                                   |
 
 Web routes: `/api/auth/*` (Better Auth), `POST /api/dev-login` (development only), `GET /api/health`.
 
