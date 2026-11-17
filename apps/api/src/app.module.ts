@@ -11,6 +11,7 @@ import { HealthModule } from './health/health.module';
 import { infrastructureImports } from './infrastructure';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { MeModule } from './me/me.module';
+import { MetricsModule } from './metrics/metrics.module';
 import { ReposModule } from './repos/repos.module';
 import { SyncWorkerModule } from './sync/sync-worker.module';
 import { SyncModule } from './sync/sync.module';
@@ -44,6 +45,7 @@ export class AppModule {
         WebhooksModule,
         ...(options.runWorker ? [SyncWorkerModule] : []),
         ActivityModule,
+        MetricsModule,
         GenerateModule,
         DocumentsModule,
         AIModule,

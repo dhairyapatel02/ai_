@@ -5,6 +5,8 @@ import { AppException } from '../common/app-exception';
 import { limitsFor } from '../entitlements/entitlements';
 import { toIntegrationSummary } from '../integrations/integration.mapper';
 import { IntegrationsService } from '../integrations/integrations.service';
+import { MetricsQueueService } from '../metrics/metrics-queue.service';
+import { MetricsRepository } from '../metrics/metrics.repository';
 import { PrismaService } from '../prisma/prisma.service';
 
 import type {
@@ -69,6 +71,8 @@ export class MeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly integrations: IntegrationsService,
+    private readonly metricsQueue: MetricsQueueService,
+    private readonly metrics: MetricsRepository,
   ) {}
 
   /** A valid JWT for a deleted account must not keep working (tokens live ≤ 15 min). */
@@ -120,8 +124,12 @@ export class MeService {
     return toSettingsDto(await this.settingsRow(userId));
   }
 
-  async updateSettings(userId: string, input: UpdateSettingsInput): Promise<SettingsDto> {
+  async updateSettings(
+    userId: string,
+    input: UpdateSettingsInput,
+  ): Promise<{ settings: SettingsDto; recomputeQueued: boolean }> {
     await this.user(userId);
+    const before = await this.settingsRow(userId);
     const { onboardingCompleted, defaultPeriodType, ...rest } = input;
     const data: Prisma.UserSettingsUpdateInput = {
       ...rest,
@@ -137,8 +145,20 @@ export class MeService {
       update: data,
       create: { userId, ...(data as Omit<Prisma.UserSettingsUncheckedCreateInput, 'userId'>) },
     });
-    // A timezone change triggers a full metrics recompute once the metrics engine exists (P07).
-    return toSettingsDto(row);
+    // KPI_METHODOLOGY §2.4: a timezone change re-buckets every local date — drop cached scores and
+    // snapshots of the old zone now, and rebuild the full history in the worker.
+    const recomputeQueued = row.timezone !== before.timezone;
+    if (recomputeQueued) {
+      await this.metrics.deleteAllScores(userId);
+      await this.metrics.deleteSnapshotsNotIn(userId, row.timezone);
+      await this.metricsQueue.enqueueRecompute({
+        userId,
+        from: new Date(0).toISOString(),
+        to: new Date().toISOString(),
+        reason: 'timezone',
+      });
+    }
+    return { settings: toSettingsDto(row), recomputeQueued };
   }
 
   async entitlements(userId: string): Promise<Entitlements> {

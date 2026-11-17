@@ -17,6 +17,8 @@ const USER_OWNED = [
   'syncRun',
   'generatedDocument',
   'impactScore',
+  'impactScoreLegacy',
+  'metricSnapshot',
   'userSettings',
 ];
 const SRC = path.resolve(__dirname, '../../src');

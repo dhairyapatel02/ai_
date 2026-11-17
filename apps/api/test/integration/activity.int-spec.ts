@@ -78,7 +78,10 @@ describe('Activity API (integration)', () => {
       .expect(200);
 
     expect(res.body.meta.hasMore).toBe(true);
-    expect(res.body.data.map((c: { message: string }) => c.message)).toEqual(['day 3', 'day 2']);
+    expect(res.body.data.map((c: { messageHeadline: string }) => c.messageHeadline)).toEqual([
+      'day 3',
+      'day 2',
+    ]);
   });
 
   it('respects the user’s time zone for date-only bounds (D-019)', async () => {

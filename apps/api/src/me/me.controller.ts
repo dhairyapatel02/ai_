@@ -11,6 +11,7 @@ import { Controller, Delete, Get, Header, HttpCode, Patch } from '@nestjs/common
 import { z } from 'zod';
 
 import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
+import { withMeta } from '../common/envelope.interceptor';
 import { ApiDoc, ZodBody } from '../common/zod-validation';
 import { RateLimit } from '../throttle/rate-limit';
 import { MeService } from './me.service';
@@ -43,15 +44,17 @@ export class MeController {
 
   @Patch('settings')
   @ApiDoc({
-    summary: 'Update user settings (timezone validated against IANA names)',
+    summary:
+      'Update user settings (timezone validated against IANA names; a change queues a full metrics recompute, meta.recomputeQueued)',
     tags: ['me'],
     response: SettingsDto,
   })
-  updateSettings(
+  async updateSettings(
     @CurrentUser() user: AuthUser,
     @ZodBody(UpdateSettingsInput) body: UpdateSettingsInput,
   ) {
-    return this.me.updateSettings(user.id, body);
+    const { settings, recomputeQueued } = await this.me.updateSettings(user.id, body);
+    return withMeta(settings, { recomputeQueued });
   }
 
   @Get('entitlements')

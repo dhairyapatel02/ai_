@@ -1,46 +1,104 @@
-import { ActivityListQuery, DateRangeQuery, PullRequestListQuery } from '@devimpact/shared';
+import {
+  ActivityListQuery,
+  CommitDetail,
+  CommitItem,
+  DateRangeQuery,
+  FeedItem,
+  FeedQuery,
+  IdParams,
+  PullRequestDetail,
+  PullRequestListItem,
+  PullRequestListQuery,
+  ReviewItem,
+  ReviewListQuery,
+} from '@devimpact/shared';
 import { Controller, Get, Header } from '@nestjs/common';
+import { z } from 'zod';
 
 import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
 import { withMeta } from '../common/envelope.interceptor';
-import { ApiDoc, ZodQuery } from '../common/zod-validation';
+import { ApiDoc, ZodParams, ZodQuery } from '../common/zod-validation';
 import { ActivityService } from './activity.service';
 
-/**
- * v1 activity endpoints on v2 conventions: validated queries, cursor pagination, inclusive local
- * end dates (BUG-05). Item shapes stay v1 until P07 (API_CONTRACT_V2 §20).
- */
+/** Removal date of the deprecated `/activity/summary` (P10 replaces its last callers). */
+export const SUMMARY_SUNSET = 'Mon, 01 Mar 2027 00:00:00 GMT';
+
+/** API_CONTRACT_V2 §11 — activity feed and explorer (F-23, F-25). */
 @Controller('activity')
 export class ActivityController {
   constructor(private activityService: ActivityService) {}
 
-  @Get('commits')
-  @ApiDoc({ summary: 'Commits, newest first (cursor pagination)', tags: ['activity'] })
-  async getCommits(
-    @CurrentUser() user: AuthUser,
-    @ZodQuery(ActivityListQuery) query: ActivityListQuery,
-  ) {
-    const page = await this.activityService.getCommits(user.id, query);
+  @Get('feed')
+  @ApiDoc({
+    summary: 'Unified activity feed (commits, PRs opened/merged/closed, reviews), newest first',
+    tags: ['activity'],
+    response: z.array(FeedItem),
+  })
+  async feed(@CurrentUser() user: AuthUser, @ZodQuery(FeedQuery) query: FeedQuery) {
+    const page = await this.activityService.feed(user.id, query);
     return withMeta(page.items, page.meta);
   }
 
   @Get('prs')
   @ApiDoc({
-    summary: 'Pull requests by role (authored | reviewed), newest first (cursor pagination)',
+    summary: 'Pull requests by role (authored | reviewed)',
     tags: ['activity'],
+    response: z.array(PullRequestListItem),
   })
   async getPullRequests(
     @CurrentUser() user: AuthUser,
     @ZodQuery(PullRequestListQuery) query: PullRequestListQuery,
   ) {
-    const page = await this.activityService.getPullRequests(user.id, query);
+    const page = await this.activityService.pullRequests(user.id, query);
     return withMeta(page.items, page.meta);
+  }
+
+  @Get('prs/:id')
+  @ApiDoc({ summary: 'Pull request detail', tags: ['activity'], response: PullRequestDetail })
+  getPullRequest(@CurrentUser() user: AuthUser, @ZodParams(IdParams) params: { id: string }) {
+    return this.activityService.pullRequest(user.id, params.id);
+  }
+
+  @Get('reviews')
+  @ApiDoc({
+    summary: 'Your reviews on others’ PRs',
+    tags: ['activity'],
+    response: z.array(ReviewItem),
+  })
+  async getReviews(
+    @CurrentUser() user: AuthUser,
+    @ZodQuery(ReviewListQuery) query: ReviewListQuery,
+  ) {
+    const page = await this.activityService.reviews(user.id, query);
+    return withMeta(page.items, page.meta);
+  }
+
+  @Get('commits')
+  @ApiDoc({
+    summary: 'Default-branch commits (merge commits excluded), newest first',
+    tags: ['activity'],
+    response: z.array(CommitItem),
+  })
+  async getCommits(
+    @CurrentUser() user: AuthUser,
+    @ZodQuery(ActivityListQuery) query: ActivityListQuery,
+  ) {
+    const page = await this.activityService.commits(user.id, query);
+    return withMeta(page.items, page.meta);
+  }
+
+  @Get('commits/:id')
+  @ApiDoc({ summary: 'Commit detail', tags: ['activity'], response: CommitDetail })
+  getCommit(@CurrentUser() user: AuthUser, @ZodParams(IdParams) params: { id: string }) {
+    return this.activityService.commit(user.id, params.id);
   }
 
   @Get('summary')
   @Header('Deprecation', 'true')
+  @Header('Sunset', SUMMARY_SUNSET)
+  @Header('Link', '</api/metrics/overview>; rel="successor-version"')
   @ApiDoc({
-    summary: 'Deprecated v1 summary (replaced by /metrics/* in P07)',
+    summary: 'Deprecated v1 summary — use /metrics/overview and /metrics/kpis (removed in P10)',
     tags: ['activity'],
     deprecated: true,
   })

@@ -10,7 +10,6 @@ const aiMock = {
   generateResumeBullets: jest.fn().mockResolvedValue({ bullets: [{ text: 'Shipped' }] }),
   generateAppraisalReport: jest.fn().mockResolvedValue({ summary: 'ok' }),
   generatePromotionPacket: jest.fn().mockResolvedValue({ summary: 'ok' }),
-  calculateImpactScore: jest.fn(),
 };
 
 describe('API conventions: validation, errors, envelope, headers, rate limits (integration)', () => {
@@ -48,8 +47,8 @@ describe('API conventions: validation, errors, envelope, headers, rate limits (i
       ['/api/activity/commits?from=2026-10-10&to=2026-10-01', 'query.from'],
       ['/api/activity/summary?to=2026-13-01', 'query.to'],
       ['/api/documents?cursor=%25%25', 'query.cursor'],
-      ['/api/generate/impact-score?month=abc&year=2026', 'query.month'],
-      ['/api/generate/impact-score?month=13&year=1900', 'query.month'],
+      ['/api/metrics/overview?period=month:2026-13', 'query.period'],
+      ['/api/metrics/timeseries?metric=nope', 'query.metric'],
       [`/api/documents/not-a-cuid`, 'params.id'],
     ])('GET %s → 400 VALIDATION_FAILED mentioning %s', async (path, issuePath) => {
       const res = await request(server()).get(path).set('authorization', as).expect(400);
@@ -145,7 +144,7 @@ describe('API conventions: validation, errors, envelope, headers, rate limits (i
         .get('/api/activity/commits?limit=2')
         .set('authorization', as)
         .expect(200);
-      expect(first.body.data.map((c: { message: string }) => c.message)).toEqual([
+      expect(first.body.data.map((c: { messageHeadline: string }) => c.messageHeadline)).toEqual([
         'day 3',
         'day 2',
       ]);
@@ -155,7 +154,9 @@ describe('API conventions: validation, errors, envelope, headers, rate limits (i
         .get(`/api/activity/commits?limit=2&cursor=${first.body.meta.nextCursor as string}`)
         .set('authorization', as)
         .expect(200);
-      expect(second.body.data.map((c: { message: string }) => c.message)).toEqual(['day 1']);
+      expect(second.body.data.map((c: { messageHeadline: string }) => c.messageHeadline)).toEqual([
+        'day 1',
+      ]);
       expect(second.body.meta).toEqual({ nextCursor: null, hasMore: false });
     });
 

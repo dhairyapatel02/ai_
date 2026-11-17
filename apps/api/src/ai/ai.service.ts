@@ -2,7 +2,6 @@ import Anthropic from '@anthropic-ai/sdk';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { CALCULATE_IMPACT_PROMPT } from '../prompts/calculate-impact';
 import { ENHANCE_COMMIT_PROMPT } from '../prompts/enhance-commit';
 import { GENERATE_APPRAISAL_PROMPT } from '../prompts/generate-appraisal';
 import { GENERATE_PROMOTION_PROMPT } from '../prompts/generate-promotion';
@@ -134,36 +133,6 @@ export class AIService {
       .replace('{{collaborationEvidence}}', collaborationEvidence);
 
     return this.callClaude(prompt);
-  }
-
-  async calculateImpactScore(activityData: ActivityData, month: number, year: number) {
-    const prsMerged = activityData.prs.filter((p) => p.state === 'MERGED').length;
-    const totalAdditions = activityData.commits.reduce((sum, c) => sum + c.additions, 0);
-    const totalDeletions = activityData.commits.reduce((sum, c) => sum + c.deletions, 0);
-    const workSamples = activityData.commits
-      .slice(0, 10)
-      .map((c) => `- ${c.message} [${c.repo}] (+${c.additions}/-${c.deletions})`)
-      .join('\n');
-
-    const prompt = CALCULATE_IMPACT_PROMPT.replace('{{month}}', String(month))
-      .replace('{{year}}', String(year))
-      .replace('{{commitsCount}}', String(activityData.commits.length))
-      .replace('{{prsCount}}', String(activityData.prs.length))
-      .replace('{{prsMerged}}', String(prsMerged))
-      .replace('{{reviewsCount}}', String(activityData.reviews.length))
-      .replace('{{totalAdditions}}', String(totalAdditions))
-      .replace('{{totalDeletions}}', String(totalDeletions))
-      .replace('{{repoCount}}', String(this.getTopRepos(activityData.commits).length))
-      .replace('{{workSamples}}', workSamples);
-
-    return this.callClaude<{
-      overall: number;
-      featureDelivery: number;
-      codeQuality: number;
-      collaboration: number;
-      leadership: number;
-      highlights: string[];
-    }>(prompt);
   }
 
   private async callClaude<T = Record<string, unknown>>(prompt: string, retries = 3): Promise<T> {

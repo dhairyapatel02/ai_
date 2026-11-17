@@ -160,7 +160,7 @@ describe('Sync engine v2 (integration, fake GitHub)', () => {
     const server = t.app.getHttpServer();
 
     const authored = await request(server)
-      .get('/api/activity/prs?limit=100')
+      .get('/api/activity/prs?role=authored&limit=100')
       .set('authorization', as)
       .expect(200);
     const reviewed = await request(server)
@@ -173,7 +173,9 @@ describe('Sync engine v2 (integration, fake GitHub)', () => {
       .expect(200);
     expect(authored.body.data).toHaveLength(4);
     expect(reviewed.body.data).toHaveLength(3);
-    expect(summary.body.data).toMatchObject({ totalPRs: 4, totalReviews: 4 });
+    // DATA-02: the deprecated summary's `totalPRs` counts merged authored PRs only.
+    const merged = authored.body.data.filter((p: { state: string }) => p.state === 'merged').length;
+    expect(summary.body.data).toMatchObject({ totalPRs: merged, totalReviews: 4 });
 
     // A new review on another PR adds a review, never an authored PR.
     const pr60 = gh.dataset.pullRequests.find((p) => p.number === 60);
@@ -190,7 +192,7 @@ describe('Sync engine v2 (integration, fake GitHub)', () => {
       .get('/api/activity/summary')
       .set('authorization', as)
       .expect(200);
-    expect(again.body.data).toMatchObject({ totalPRs: 4, totalReviews: 5 });
+    expect(again.body.data).toMatchObject({ totalPRs: merged, totalReviews: 5 });
   });
 
   it('re-running the same sync produces zero new rows (idempotent)', async () => {
@@ -420,16 +422,20 @@ describe('Sync engine v2 (integration, fake GitHub)', () => {
       await t.prisma.commit.count({ where: { sha: 'f000000000000000000000000000000000000001' } }),
     ).toBe(0);
 
-    const summary = await request(server)
-      .get('/api/activity/summary')
+    const authoredPrs = await request(server)
+      .get('/api/activity/prs?role=authored&limit=100')
       .set('authorization', as)
       .expect(200);
-    expect(summary.body.data.totalPRs).toBe(2); // acme/api PRs excluded
+    expect(authoredPrs.body.data).toHaveLength(2); // acme/api PRs excluded
     const commits = await request(server)
       .get('/api/activity/commits?limit=100')
       .set('authorization', as)
       .expect(200);
-    expect(commits.body.data.every((c: { repo: string }) => c.repo !== 'acme/api')).toBe(true);
+    expect(
+      commits.body.data.every(
+        (c: { repo: { fullName: string } }) => c.repo.fullName !== 'acme/api',
+      ),
+    ).toBe(true);
     // A later sync never re-includes a repository the user excluded.
     expect((await t.prisma.repository.findUniqueOrThrow({ where: { id: api.id } })).included).toBe(
       false,

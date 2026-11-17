@@ -8,6 +8,13 @@
  *
  * No GitHub or Anthropic access is needed. Seeded integrations carry no tokens. Sign in as the demo
  * user with the web dev login (`ENABLE_DEV_LOGIN=true`, development only).
+ *
+ * P07: the data exercises every metric of KPI_METHODOLOGY §3 including edge cases — draft PRs
+ * (`readyForReviewAt`), a reverted PR, PRs without a reported size, drive-by reviews (no review
+ * request), several reviews on one PR, merge commits, an excluded repository and a v0.1 legacy
+ * stub (both must never count) — and the daily `MetricSnapshot` rows are computed by the real
+ * rollup service. Impact scores are not seeded: `GET /impact` computes them deterministically.
+ * The user's time zone is Europe/London (DST transitions inside the data).
  */
 import {
   DocumentType,
@@ -22,7 +29,11 @@ import {
 
 import { loadEnvFiles } from '../src/config/load-env';
 import { scheduleSlotFor } from '../src/integrations/integration.mapper';
+import { MetricsRepository } from '../src/metrics/metrics.repository';
+import { RollupService } from '../src/metrics/rollup.service';
 import { createPrismaClient } from '../src/prisma/create-client';
+
+import type { PrismaService } from '../src/prisma/prisma.service';
 
 loadEnvFiles();
 
@@ -33,7 +44,7 @@ const DAYS = 270;
 const DAY_MS = 86_400_000;
 
 /** mulberry32: tiny, fast, deterministic PRNG. */
-function createRng(seed: number) {
+export function createRng(seed: number) {
   let a = seed >>> 0;
   const next = () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -74,6 +85,9 @@ const REPOS = [
   ['acme/design-system', 1.5],
   ['oss/fast-json', 0.7],
 ] as const;
+
+/** Excluded repository: activity here must never appear in metrics, feeds or the timeline. */
+const EXCLUDED_REPO = 'acme/legacy-monolith';
 
 const COMMIT_TEMPLATES: Record<string, readonly string[]> = {
   feat: [
@@ -177,7 +191,7 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
       emailVerified: true,
       name: 'Dana Demo',
       plan: Plan.PRO,
-      settings: { create: { timezone: 'UTC', onboardingCompletedAt: anchor } },
+      settings: { create: { timezone: 'Europe/London', onboardingCompletedAt: anchor } },
     },
   });
   const teammate = await prisma.user.create({
@@ -233,6 +247,8 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
   await prisma.repository.createMany({
     data: [
       ...REPOS.map(([fullName]) => repoRow(demo.id, demoGh.id, fullName)),
+      // Excluded by the user (F-11): its activity is stored but never counted.
+      { ...repoRow(demo.id, demoGh.id, EXCLUDED_REPO), included: false, inclusionSource: 'USER' },
       ...REPOS.map(([fullName]) => repoRow(teammate.id, teammateGh.id, fullName)),
     ],
   });
@@ -295,6 +311,41 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
         authorExternalId: 'seed:dana-demo',
       });
     }
+    // Merge commits (2 parents) are stored but never counted (KPI §2.2 `CM`).
+    if (rng.chance(0.15)) {
+      const authoredAt = at(daysAgo, 17, rng.int(0, 59));
+      commits.push({
+        userId: demo.id,
+        integrationId: demoGh.id,
+        repositoryId: repoId(demo.id, repo),
+        sha: rng.hex(40),
+        messageHeadline: `Merge branch 'main' into feature`,
+        branch: 'main',
+        additions: 0,
+        deletions: 0,
+        parentsCount: 2,
+        authoredAt,
+        committedAt: authoredAt,
+        authorExternalId: 'seed:dana-demo',
+      });
+    }
+    // Work in the excluded repository (never counted).
+    if (rng.chance(0.1)) {
+      const authoredAt = at(daysAgo, 12, rng.int(0, 59));
+      commits.push({
+        userId: demo.id,
+        integrationId: demoGh.id,
+        repositoryId: repoId(demo.id, EXCLUDED_REPO),
+        sha: rng.hex(40),
+        messageHeadline: 'chore: legacy monolith upkeep',
+        branch: 'main',
+        additions: rng.int(1, 30),
+        deletions: rng.int(0, 10),
+        authoredAt,
+        committedAt: authoredAt,
+        authorExternalId: 'seed:dana-demo',
+      });
+    }
 
     // Authored PRs: roughly every other active day.
     if (rng.chance(0.45)) {
@@ -307,17 +358,28 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
               [PRState.CLOSED, 12],
             ] as const);
       const createdAt = at(daysAgo, rng.int(10, 17));
+      // ~25 % start as drafts: cycle time counts from "ready for review" (KPI §2.3).
+      const readyForReviewAt = rng.chance(0.25)
+        ? new Date(createdAt.getTime() + rng.int(2, 30) * 3_600_000)
+        : null;
+      const readyAt = readyForReviewAt ?? createdAt;
       const mergedAt =
-        state === PRState.MERGED
-          ? new Date(createdAt.getTime() + rng.int(2, 72) * 3_600_000)
-          : null;
+        state === PRState.MERGED ? new Date(readyAt.getTime() + rng.int(2, 72) * 3_600_000) : null;
       const closedAt =
         state === PRState.OPEN
           ? null
           : (mergedAt ?? new Date(createdAt.getTime() + rng.int(4, 96) * 3_600_000));
-      const additions = rng.int(10, 600);
+      // Sizes: mostly small, some large; ~3 % without a reported size (legacy rows).
+      const unknownSize = rng.chance(0.03);
+      const additions = rng.weighted([
+        [rng.int(5, 200), 7],
+        [rng.int(200, 900), 3],
+      ] as const);
       const reviewers = rng.int(1, 3);
       const number = nextPrNumber(repo);
+      // ~5 % of merged PRs are later reverted (GitHub "Revert" PR referencing this one).
+      const revertedAt =
+        mergedAt && rng.chance(0.05) ? new Date(mergedAt.getTime() + rng.int(1, 4) * DAY_MS) : null;
       prs.push({
         userId: demo.id,
         integrationId: demoGh.id,
@@ -333,14 +395,17 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
         authorExternalId: 'seed:dana-demo',
         baseRef: 'main',
         createdAtRemote: createdAt,
+        readyForReviewAt,
         updatedAtRemote: closedAt ?? createdAt,
         mergedAt,
         closedAt,
-        additions,
-        deletions: Math.round(additions * rng.next() * 0.5),
-        changedFiles: rng.int(1, 20),
+        additions: unknownSize ? null : additions,
+        deletions: unknownSize ? null : Math.round(additions * rng.next() * 0.5),
+        changedFiles: unknownSize ? null : rng.int(1, 20),
         commitsCount: rng.int(1, 8),
-        firstReviewAt: new Date(createdAt.getTime() + rng.int(1, 30) * 3_600_000),
+        revertedAt,
+        revertedByUrl: revertedAt ? `https://github.com/${repo}/pull/${number + 1000}` : null,
+        firstReviewAt: new Date(readyAt.getTime() + rng.int(1, 30) * 3_600_000),
         reviewersCount: reviewers,
         approvalsCount: state === PRState.MERGED ? Math.min(reviewers, rng.int(1, 2)) : 0,
         changesRequestedCount: rng.chance(0.2) ? 1 : 0,
@@ -414,9 +479,56 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
       submittedAt,
       hasBody: changesRequested || rng.chance(0.4),
       commentsCount: rng.int(changesRequested ? 2 : 0, changesRequested ? 9 : 3),
-      reviewRequestedAt: new Date(createdAt.getTime() + 30 * 60_000),
+      // ~20 % are drive-by reviews without a request (excluded from review turnaround).
+      reviewRequestedAt: rng.chance(0.2) ? null : new Date(createdAt.getTime() + 30 * 60_000),
     });
+    // Follow-up replies are separate COMMENTED reviews on the same PR (counted once per PR).
+    if (rng.chance(0.3)) {
+      reviews.push({
+        userId: demo.id,
+        integrationId: demoGh.id,
+        pullRequestId: `pending:${repo}#${number}`,
+        externalId: `seed:review:${repo}#${number}:reply`,
+        state: 'COMMENTED',
+        submittedAt: new Date(submittedAt.getTime() + rng.int(1, 6) * 3_600_000),
+        hasBody: true,
+        commentsCount: rng.int(0, 2),
+      });
+    }
   }
+
+  // An excluded-repo PR and a v0.1 legacy stub ("PR #n", reviewed only): never counted.
+  prs.push(
+    {
+      userId: demo.id,
+      integrationId: demoGh.id,
+      repositoryId: repoId(demo.id, EXCLUDED_REPO),
+      externalId: `seed:pr:${EXCLUDED_REPO}#7`,
+      number: 7,
+      title: 'Legacy monolith: bump runtime',
+      url: `https://github.com/${EXCLUDED_REPO}/pull/7`,
+      state: PRState.MERGED,
+      isAuthoredByUser: true,
+      authorLogin: 'dana-demo',
+      createdAtRemote: at(5, 10),
+      mergedAt: at(4, 10),
+      closedAt: at(4, 10),
+      additions: 12,
+      deletions: 3,
+    },
+    {
+      userId: demo.id,
+      integrationId: demoGh.id,
+      repositoryId: repoId(demo.id, 'acme/payments-api'),
+      number: 9001,
+      title: 'PR #9001',
+      state: PRState.CLOSED,
+      isAuthoredByUser: false,
+      legacyStub: true,
+      createdAtRemote: at(20, 10),
+      closedAt: at(20, 10),
+    },
+  );
 
   await prisma.commit.createMany({ data: commits });
   await prisma.pullRequest.createMany({ data: prs });
@@ -433,7 +545,12 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
     data: reviews.map((r) => ({ ...r, pullRequestId: reviewedIds.get(r.pullRequestId) ?? '' })),
   });
   const reviewCount = reviews.length;
-  const authoredCount = prs.filter((p) => p.userId === demo.id && p.isAuthoredByUser).length;
+  const authoredCount = prs.filter(
+    (p) =>
+      p.userId === demo.id &&
+      p.isAuthoredByUser &&
+      p.repositoryId !== repoId(demo.id, EXCLUDED_REPO),
+  ).length;
 
   // One finished backfill so sync status/history render without GitHub.
   await prisma.integration.update({
@@ -476,25 +593,9 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
     },
   });
 
-  // Monthly impact scores for the last 6 months (incl. the current one) so the dashboard never
-  // has to call the AI. Placeholder numbers — the deterministic engine replaces them in P07.
-  const scores: Prisma.ImpactScoreCreateManyInput[] = [];
-  for (let monthsAgo = 5; monthsAgo >= 0; monthsAgo--) {
-    const d = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() - monthsAgo, 1));
-    const base = rng.int(62, 84);
-    scores.push({
-      userId: demo.id,
-      month: d.getUTCMonth() + 1,
-      year: d.getUTCFullYear(),
-      overall: base,
-      featureDelivery: Math.min(100, base + rng.int(-6, 10)),
-      codeQuality: Math.min(100, base + rng.int(-8, 8)),
-      collaboration: Math.min(100, base + rng.int(-4, 12)),
-      leadership: Math.min(100, base + rng.int(-12, 4)),
-      highlights: ['Seeded demo score (not computed from activity)'],
-    });
-  }
-  await prisma.impactScore.createMany({ data: scores });
+  // Daily snapshots via the real rollup service (KPI §4); impact scores are computed lazily.
+  const rollups = new RollupService(new MetricsRepository(prisma as PrismaService));
+  const snapshot = await rollups.recompute(demo.id, at(DAYS + 7, 0), today, today);
 
   const sixMonthsAgo = new Date(anchor.getTime() - 182 * DAY_MS).toISOString();
   const now = anchor.toISOString();
@@ -575,7 +676,7 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
     pullRequests: authoredCount,
     reviews: reviewCount,
     issues: issues.length,
-    impactScores: scores.length,
+    snapshots: snapshot.snapshots,
     documents: 3,
   };
 }

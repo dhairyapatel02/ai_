@@ -17,7 +17,10 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset --force",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "db:seed:heavy": "tsx prisma/scripts/seed-heavy.ts",
+    "metrics:recompute": "tsx prisma/scripts/recompute-metrics.ts",
+    "perf:metrics": "tsx prisma/scripts/measure-metrics-perf.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.0",
@@ -57,6 +60,7 @@
     "@types/node": "^22.20.0",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^6.0.3",
+    "fast-check": "^4.10.2",
     "jest": "^30.2.0",
     "pg": "^8.23.1",
     "supertest": "^7.1.0",

@@ -10,7 +10,6 @@ const aiMock = {
   generateResumeBullets: jest.fn(),
   generateAppraisalReport: jest.fn(),
   generatePromotionPacket: jest.fn(),
-  calculateImpactScore: jest.fn(),
 };
 
 describe('Generate API (integration, AI mocked)', () => {
