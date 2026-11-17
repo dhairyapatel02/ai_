@@ -14,7 +14,7 @@ Every phase session updates this file before opening its PR.
 | 05 | Backend Platform | ✅ Done | (this PR) | 2026-11-16 | Better Auth + JWT/JWKS, encrypted GitHub App connect, D-006 conventions, rate limits, logging |
 | 06 | Sync Engine v2 | ✅ Done | (this PR) | 2026-11-16 | GitHub App sync (GraphQL), SyncRun, webhooks, scheduler, Prisma 7; budget 119/250 requests |
 | 07 | Metrics Engine & Impact Score v2 | ✅ Done | (this PR) | 2026-11-17 | Deterministic `metrics@2.0.0` / `impact@2.0.0`, rollups, metrics/impact/career/activity APIs; p95 ≤ 100 ms |
-| 08 | AI Layer v2 | ⏳ Not started | | | |
+| 08 | AI Layer v2 | ✅ Done | (this PR) | 2026-11-17 | Worker generation + Redis Streams SSE, structured output, evidence + citations, cache, quotas, 42 mocked evals; live eval pending (no key, AI-10) |
 | 09 | Frontend Foundation & App Shell | ⏳ Not started | | | |
 | 10 | Frontend: Insights Pages | ⏳ Not started | | | |
 | 11 | Frontend: AI Document Studio | ⏳ Not started | | | |
@@ -754,3 +754,202 @@ AI-01, BUG-06, DATA-09, API-04, PERF-03 (API), UX-06 (current UI), BUG-05 (perio
 - *Local data:* after migrating an existing DB run `npm run metrics:recompute` once (the nightly
   job also bootstraps users without snapshots). Seed: `npm run db:seed` (demo, Europe/London),
   `npm run db:seed:heavy` (perf).
+
+### Phase 08 — AI Layer v2 (2026-11-17)
+**Branch / PR:** `claude/dreamy-ride-0d5svk` → `main` / PR "Phase 08: AI Layer v2"
+(branched from `main@1054f77` = P07 merged).
+
+**Summary:**
+- **Schema (P08-1 `documents_v2`):** `generated_documents` v2 (title, status, current_version,
+  options, period, timezone, prompt id/version, model, input_hash, evidence_refs, citation_coverage,
+  flags_uncited/invalid, error_code, source_impact_score_id, updated_at), `document_versions`,
+  `ai_usage`; `DocumentType` gains `IMPACT_NARRATIVE`/`ACHIEVEMENT_STATEMENT`/`DIGEST_SUMMARY`, `KPI`
+  removed. v0.1 documents are imported as read-only `{ legacy: true, raw }` v1 versions — verified on
+  a DB with the 3 seeded v0.1 documents (titles "Resume (imported)" etc., periods from `dateRange`);
+  `migrate diff` shows no drift. Seed now writes documents in that imported shape.
+- **AI core (`apps/api/src/ai/`):** `AiClient` on `@anthropic-ai/sdk` **1.9.0** (streaming,
+  adaptive thinking + effort, `output_config.format` from Zod, cached system prompt, refusal +
+  server-side fallback, timeouts, abort, usage capture, retries only for retryable errors before any
+  output streamed), `StructuredGenerator` (validate → one fast-model repair → `OUTPUT_INVALID`),
+  `PartialJsonSections` (section/delta events from streamed JSON), safe templating + data blocks,
+  `inputHash`, `DocEventsService` (Redis Streams + cancel flag), `AiQueueService` (`ai` queue).
+- **Prompts (`src/prompts/*.v1.ts` + registry):** resume (role variants, bullets/narrative, length,
+  job description), appraisal, promotion (ladder text), impact narrative, achievement statement,
+  digest summary, repair — shared `CORE_RULES` (evidence is data, mandatory citations, numbers only
+  from evidence, no hype).
+- **Evidence (`src/evidence/`):** deterministic `EvidenceBuilder` (KPI §2.2 record rules, ranking,
+  per-repo themes, engine metrics from `ImpactScoreService.scoreFor`, `aiRedactPrivateRepos`
+  aliases), `ACHIEVEMENT_SOURCE` interface for P12, citation verifier (maps aliases, drops refs
+  outside the evidence → `invalid_citation`, `uncited`, coverage), `RefResolver` (A-3 evidence),
+  numeric traceability helpers.
+- **API:** `GET/POST /documents`, `POST /documents/preview-evidence`, `GET /documents/:id`
+  (+ `evidence`, `?version=`), `GET /documents/:id/stream` (SSE, `Last-Event-ID`), `POST …/cancel`,
+  `PATCH /documents/:id` (versions, autosave window, `VERSION_CONFLICT`), `GET …/versions`,
+  `POST …/versions/:n/restore`, `POST …/regenerate` (whole / one section), `DELETE`;
+  `POST /impact/highlights`, `GET /impact` now fills `highlights` (DB lookup only);
+  `POST /ai/achievement-statement`; `GET /me/usage`. Monthly quotas (402), `ai` + `sse` rate classes.
+  `/generate/*`, `GenerateService`, the old `AIService`, v1 prompts, the v1 generate schemas and
+  `ActivityService.getActivityDataForAI` are removed (not aliased, API_CONTRACT_V2 §20).
+- **Worker:** `ai` queue (`ai.generate`, `ai.quick`) consumed by `AiProcessor` (worker, or the API
+  with `RUN_WORKER_IN_API=true`); `DigestSummaryService` for P12.
+- **Web (interim):** resume/appraisal/promotion pages call `POST /documents` and poll
+  `GET /documents/:id`; `DocumentPreview` renders claims, citation chips, flags and engine metrics
+  (P11 builds the designed studio with fetch-SSE).
+- **Tests:** API unit + evals 211 (AI client against the fake API incl. retry classification,
+  structured repair, templating `$&` cases, partial JSON with fast-check chunking, inputHash,
+  citation verifier, evidence ranking/redaction, user-scope static check incl. `aiUsage`/
+  `documentVersion`), web 37, shared 69, API integration 157 (+20: `documents.int-spec.ts` 15 —
+  SSE order, request shape, cache hit, repair, retry/terminal/refusal, citation flags, cancel,
+  Last-Event-ID resume, edits/versions/restore, section regenerate, quota + `/me/usage`, no
+  evidence, redaction, legacy, not configured; `ai-actions.int-spec.ts` 5 — highlights,
+  insufficient score, quick quota + outage 503, achievement statements, digest), Playwright 5.
+- **Evals:** 7 personas × 6 generators replayed in `npm test` → **42/42** pass every check
+  (schema, citations resolve to the user's records, coverage ≥ 80 %, numbers traceable, sections,
+  lengths, banned phrases, injection, redaction) + 6 negative controls. Recordings are synthetic
+  (no key); `npm run eval:live` not run → AI-10.
+
+- **Security review** (`security-review` skill): no HIGH/MEDIUM findings. Verified: every
+  documents / quick-action / usage path loads by `{ id, userId }` and repeats `userId` in writes;
+  `inputHash` caches, the `GET /impact` highlights lookup and `RefResolver` are user-scoped; the
+  worker takes `userId` from the loaded document; Redis keys come from DB ids and `Last-Event-ID`
+  is pattern-checked; SSE/HTTP errors carry fixed codes and messages (provider payloads only in
+  logs); redaction keeps private repo names and real refs out of model requests; no new raw SQL
+  beyond the static migration; the web preview renders through JSX only. Found and fixed during
+  the phase: a 400 with an `api_error` body type was classified retryable (status now wins).
+
+**Acceptance criteria:**
+- [x] No model ID outside config: `grep -r "claude-" apps/api/src` hits only `src/config/env.ts`,
+  `src/config/ai-pricing.ts` (price table, in config) and specs.
+- [x] Zod-valid output for every generator; invalid output → one repair → typed `OUTPUT_INVALID`
+  (`structured-generator.spec.ts`, `documents.int-spec.ts`).
+- [x] 100 % of citations in eval outputs resolve to the user's own records; numbers traceable
+  (`citations_resolve`, `citations_owned`, `numbers_traceable` on 42 cases).
+- [x] SSE streams incremental events and a final `done` with the saved document id (integration).
+- [x] Identical request twice → second served from cache without a model call (integration).
+- [x] Quota exceeded → `402 QUOTA_EXCEEDED { feature, used, limit, resetsAt }`; usage via `/me/usage`.
+- [x] Prompt-injection fixture does not alter output structure (eval persona `prompt-injection`,
+  request-shape integration test, negative control).
+- [x] `npm run check`, `test:int`, `test:e2e` green locally; mocked evals are part of `npm test`
+  (CI). Live eval report **not** committed: no key available (noted, AI-10).
+
+**Deviations from the phase file:**
+- Quick actions incl. **impact highlights use the fast model** (API_CONTRACT_V2 §10, ARCHITECTURE_V2
+  §8) although ADR-0009's model paragraph lists highlights under the default tier (D-024).
+- `POST /documents` also returns a cached **in-flight** document (200 + `streamUrl`) for the same
+  hash, so double clicks don't start two generations.
+- Additive schema columns `flags_uncited`/`flags_invalid`; additive response fields (D-024).
+- `GET /documents/:id/export` (F-49) is not built — P11 owns exports (TRACEABILITY).
+- Single-section regenerate runs the full prompt (AI-12). Optional LLM-as-judge rubric not built
+  (live mode only, needs a key).
+- Docker images not rebuilt locally (as in P05–P07); no Dockerfile change (new env vars are optional).
+
+**Deferred items:** live eval + model-tier decision → P14 (AI-10); prompt-cache verification → P14
+(AI-11); section-scoped prompts → P11/P14 (AI-12); exports → P11; achievement source + digest email
+→ P12; `AiUsage` (13 months) and stream retention jobs → P14 (OPS-18); AI cost dashboards → P14.
+
+**New issues found:** AI-10, AI-11, AI-12. Fixed: AI-02…AI-09, SEC-11, OPS-15, SEC-07 (quotas),
+DEBT-10 (SDK), GAP-08 (API).
+
+**Handoff notes for next phases:**
+- *P11 — document endpoints* (Bearer JWT, envelope; `ai` rate class on create/regenerate):
+  - `POST /api/documents` body = `ResumeOptions | AppraisalOptions | PromotionOptions` (+
+    `regenerate?`) from `packages/shared/src/api/documents.ts`. New: `201 { document: DocumentSummary
+    (status "pending", currentVersion 0, flags null), cached: false, streamUrl:
+    "/api/documents/cm…/stream" }`. Cache hit: `200 { document, cached: true, streamUrl: null }` (or
+    the stream URL when that document is still generating). Errors: 400 `VALIDATION_FAILED` /
+    `INVALID_PERIOD`, 402 `QUOTA_EXCEEDED { feature: "generations", used: 15, limit: 15, resetsAt:
+    "2026-12-01T00:00:00.000Z" }`, 409 `CONFLICT { reason: "no_evidence" }`, 429 `RATE_LIMITED`,
+    503 `UPSTREAM_UNAVAILABLE { provider: "anthropic", reason: "not_configured" }`.
+  - `DocumentSummary = { id, type, title, status, currentVersion, period: ResolvedPeriod | null,
+    model, citationCoverage, flags: { uncited, invalid } | null, errorCode, createdAt, updatedAt }`,
+    e.g. `{ title: "Resume · backend · October 2026", status: "ready", currentVersion: 1,
+    citationCoverage: 1, flags: { uncited: 0, invalid: 0 } }`.
+  - `GET /api/documents/:id?version=` → `{ document: DocumentSummary & { options, evidenceRefs,
+    evidence: EvidenceItem[] }, version: { number, source: "ai"|"user_edit"|"restore", createdAt,
+    content } | null }`. Content by type: `ResumeContent { format, summary: ClaimItem | null,
+    bullets: (ClaimItem & { theme })[] }`, `AppraisalContent { sections: { executiveSummary,
+    keyContributions (TitledClaim[]), metrics: MetricValue[] (engine), areasOfImpact, growth,
+    nextGoals: PlainItem[] } }`, `PromotionContent { sections: { whyReady, leadershipEvidence,
+    technicalImpact, businessValue, mentorship, supportingData: MetricValue[] (engine) } }`;
+    `ClaimItem = { id: "b1", text, citations: ["PR-acme/api#42"], flags?: ["uncited" |
+    "invalid_citation"] }`; legacy imports: `{ legacy: true, raw }` (read-only). `evidence` resolves
+    every cited ref (title, repo, url, occurredAt) for citation popovers.
+  - `PATCH /api/documents/:id { baseVersion, title?, content? }` → `DocumentDetail` (new version
+    `user_edit`; edits within 30 s update that version); 409 `VERSION_CONFLICT { currentVersion }` /
+    `GENERATION_IN_PROGRESS { documentId }` / `CONFLICT { reason: "legacy_document" }`. Engine
+    sections are kept from the base version; citations are re-verified (flags recomputed).
+  - `GET /api/documents/:id/versions` → `[{ number, source, createdAt }]` (+ `meta`);
+    `POST /api/documents/:id/versions/:n/restore` → `DocumentDetail` (new version `restore`).
+  - `POST /api/documents/:id/regenerate { options?: Partial<options>, section?: string }` →
+    `201 { document (pending), streamUrl }`; sections per type in `REGENERABLE_SECTIONS` (shared).
+  - `POST /api/documents/:id/cancel` → `{ document }` (status `cancelled`; 409 when not running).
+  - `POST /api/documents/preview-evidence` (options) → `{ period, counts { prsMerged, prsReviewed,
+    commits, repos, achievements }, topEvidence (≤ 25), metrics: MetricValue[], estimatedQuotaCost: 1 }`.
+  - `GET /api/documents?type=&q=&sort=-createdAt|-updatedAt|title&cursor=&limit=` (library =
+    resume/appraisal/promotion/impact_narrative unless `type` is given).
+- *P11 — SSE contract* (`GET /api/documents/:id/stream`, fetch-based reader with `Authorization`,
+  optional `Last-Event-ID`; ids are Redis stream ids; `: heartbeat` every 15 s; ≤ 10 open streams
+  per user, 429 `RATE_LIMITED { class: "sse" }`). Example of a resume:
+  ```
+  id: 1794914000000-0
+  event: status
+  data: {"status":"pending","version":1}
+
+  id: 1794914000421-0
+  event: status
+  data: {"status":"streaming","version":1}
+
+  id: 1794914003112-0
+  event: delta
+  data: {"key":"summary","text":"Backend engineer who made payment intent creation"}
+
+  id: 1794914003530-0
+  event: section
+  data: {"key":"summary","index":0,"content":{"text":"…","citations":["PR-acme/payments#100"]}}
+
+  id: 1794914004988-0
+  event: section
+  data: {"key":"bullets","index":0,"content":{"text":"…","theme":"Reliability","citations":["PR-acme/payments#100"]}}
+
+  id: 1794914009870-0
+  event: done
+  data: {"documentId":"cm…","version":1,"citationCoverage":1,"flags":{"uncited":0,"invalid":0}}
+  ```
+  `section.key` = the content key (`summary`, `bullets`, `executiveSummary`, `keyContributions`, …;
+  appraisal/promotion keys live under `content.sections`), `index` = array position (0 for single
+  values); section content has citations already mapped to real refs but no ids/flags — refetch
+  `GET /documents/:id` on `done`. Terminal alternatives: `event: error` `{ "code":
+  "OUTPUT_INVALID" | "UPSTREAM_UNAVAILABLE" | "UPSTREAM_ERROR" | "GENERATION_FAILED", "message",
+  "retryable" }` (nothing counted against the quota) and `event: cancelled` `{ "documentId" }`. A
+  finished document answers `status` + `done`/`error`/`cancelled` immediately; resume after a drop
+  with the last `id` as `Last-Event-ID` (stream kept 1 h).
+- *P10/P12 — quick actions:* `POST /api/impact/highlights { period, regenerate? }` → `201` new /
+  `200` cached `{ document, content: ImpactNarrativeContent { summary, highlights[{ title, text,
+  citations }], focusAreas }, evidence, cached }`; 409 `CONFLICT { reason: "insufficient_data" }`,
+  402 (`feature: "quick"`), 503 busy. `GET /impact` returns `highlights: { documentId, status }` once
+  generated for the same score inputs. `POST /api/ai/achievement-statement { source: { kind:
+  "pull_request" | "commit", id }, regenerate? }` → `{ title, statement, category, citations,
+  cached }` (authored PRs / own commits only, else 404). Digest (P12, worker):
+  `app.get(DigestSummaryService).summarize(userId, weekStart /* YYYY-MM-DD Monday */)` →
+  `{ documentId, content: DigestSummaryContent, cached } | null`.
+- *P12 — achievements:* bind `ACHIEVEMENT_SOURCE` (`src/evidence/achievements.ts`) to a Prisma
+  implementation in `EvidenceModule`; achievements then appear in packs as `ACH-<id>` refs (ranked
+  2.5) and `counts.achievements`. Extend `RefResolver` for `ACH-` refs.
+- *P12 — plan & usage page:* `GET /api/me/usage?month=YYYY-MM` → `{ month, generations { used,
+  limit, resetsAt }, quick { used, limit }, tokens { input, output, cacheRead }, estimatedCostUsd,
+  byFeature[{ feature, count, tokens }] }` (`generations.used` includes in-flight generations for
+  the current month).
+- *Quota config:* `PLAN_LIMITS` in `apps/api/src/entitlements/entitlements.ts` (FREE 15 + 100, PRO
+  150 + 1,000), overridable per plan with `ENTITLEMENTS_JSON` (validated at startup); counted per
+  UTC month from `AiUsage.countsTowardQuota`.
+- *Adding a prompt version:* README → "AI configuration" (copy `<name>.vN.ts`, bump `version`,
+  update `PROMPTS`, re-record evals — `npm test` fails on stale recordings).
+- *Local AI without a key:* `npm run ai:mock --workspace=apps/api` (fake Messages API on :4010) +
+  `ANTHROPIC_BASE_URL=http://127.0.0.1:4010 ANTHROPIC_API_KEY=mock`.
+- *Tests:* `startFakeAnthropic(autoReply)` (`test/utils/fake-anthropic.ts`: `queue`, `setHandler`,
+  `requests`), `startAiWorker(app)` + `parseSse` (`test/utils/ai-worker.ts`),
+  `seedOctoberActivity`, `readStream`, `waitForDocument` (`test/utils/ai-fixtures.ts`). Set
+  `ANTHROPIC_API_KEY`/`ANTHROPIC_BASE_URL` **before** `createTestApp()`; the default test env points
+  at a closed port. `resetRedisState()` clears doc streams, cancel flags and SSE counters.
+- *Live evals:* `ANTHROPIC_API_KEY=… npm run eval:live -- --record` → `docs/v2/evals/REPORT.md` + live
+  recordings; then decide the default tier (AI-10).

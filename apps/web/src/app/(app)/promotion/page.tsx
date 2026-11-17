@@ -5,32 +5,15 @@ import { useState } from 'react';
 import { DocumentPreview } from '@/components/document-preview';
 import { GenerateButton } from '@/components/generate-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/lib/auth-context';
+import { useGenerateDocument } from '@/lib/documents';
 
+/** Interim promotion page on `POST /documents` (last 12 months); the studio is P11 (S15). */
 export default function PromotionPage() {
-  const { apiFetch } = useAuth();
+  const { generate, loading, error, detail } = useGenerateDocument();
   const [currentRole, setCurrentRole] = useState('Senior Engineer');
   const [targetRole, setTargetRole] = useState('Staff Engineer');
-  const [loading, setLoading] = useState(false);
-  const [packet, setPacket] = useState<Record<string, unknown> | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = async () => {
-    setLoading(true);
-    setError(null);
-
-    const res = await apiFetch<{ packet: Record<string, unknown> }>('/generate/promotion', {
-      method: 'POST',
-      body: JSON.stringify({ currentRole, targetRole }),
-    });
-
-    if (res.success && res.data?.packet) {
-      setPacket(res.data.packet);
-    } else {
-      setError(res.error || 'Generation failed. Is the ANTHROPIC_API_KEY configured?');
-    }
-    setLoading(false);
-  };
+  const handleGenerate = () => generate({ type: 'promotion', currentRole, targetRole });
 
   return (
     <div className="space-y-6">
@@ -79,7 +62,12 @@ export default function PromotionPage() {
         </CardContent>
       </Card>
 
-      {packet && <DocumentPreview content={packet} type="PROMOTION" />}
+      {detail?.version && (
+        <DocumentPreview
+          content={detail.version.content as Record<string, unknown>}
+          type="PROMOTION"
+        />
+      )}
     </div>
   );
 }

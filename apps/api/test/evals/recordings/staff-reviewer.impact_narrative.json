@@ -1,0 +1,10 @@
+{
+  "persona": "staff-reviewer",
+  "generator": "impact_narrative",
+  "promptId": "impact-narrative",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"summary\":{\"text\":\"Work in October 2026 centred on \\\"Fix N+1 query in activity feed\\\".\",\"citations\":[\"PR-acme/mobile#106\"]},\"highlights\":[{\"text\":\"Improved performance with the change to fix N+1 query in activity feed in acme/mobile.\",\"citations\":[\"PR-acme/mobile#106\"],\"title\":\"Fix N+1 query in activity feed\"},{\"text\":\"Delivered the change to introduce API versioning guidelines in acme/web.\",\"citations\":[\"PR-acme/web#103\"],\"title\":\"Introduce API versioning guidelines\"},{\"text\":\"Delivered the change to write RFC template and review process docs in acme/api.\",\"citations\":[\"PR-acme/api#100\"],\"title\":\"Write RFC template and review process docs\"}],\"focusAreas\":[{\"text\":\"Spread reviews across more repositories.\"}]}"
+}

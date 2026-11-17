@@ -1,46 +1,44 @@
 'use client';
 
-import { Download } from 'lucide-react';
 import { useState } from 'react';
 
 import { DocumentPreview } from '@/components/document-preview';
 import { GenerateButton } from '@/components/generate-button';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/lib/auth-context';
+import { useGenerateDocument } from '@/lib/documents';
 
+type PeriodType = 'month' | 'quarter' | 'half' | 'year';
+
+function periodSpec(type: PeriodType, year: number, month: number): string {
+  switch (type) {
+    case 'month':
+      return `month:${year}-${String(month).padStart(2, '0')}`;
+    case 'quarter':
+      return `quarter:${year}-Q${Math.ceil(month / 3)}`;
+    case 'half':
+      return `half:${year}-H${month <= 6 ? 1 : 2}`;
+    case 'year':
+      return `year:${year}`;
+  }
+}
+
+/** Interim appraisal page on `POST /documents` (P08); the designed studio is P11 (S14). */
 export default function AppraisalPage() {
-  const { apiFetch } = useAuth();
-  const [period, setPeriod] = useState('quarterly');
+  const { generate, loading, error, detail } = useGenerateDocument();
+  const [type, setType] = useState<PeriodType>('quarter');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
-  const [loading, setLoading] = useState(false);
-  const [report, setReport] = useState<Record<string, unknown> | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = async () => {
-    setLoading(true);
-    setError(null);
+  const handleGenerate = () =>
+    generate({ type: 'appraisal', period: periodSpec(type, year, month) });
 
-    const res = await apiFetch<{ report: Record<string, unknown> }>('/generate/appraisal', {
-      method: 'POST',
-      body: JSON.stringify({ period, month, year }),
-    });
-
-    if (res.success && res.data?.report) {
-      setReport(res.data.report);
-    } else {
-      setError(res.error || 'Generation failed. Is the ANTHROPIC_API_KEY configured?');
-    }
-    setLoading(false);
-  };
-
+  const select = 'w-full rounded-md border border-input px-3 py-2 text-sm';
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Appraisal Report</h1>
         <p className="text-muted-foreground">
-          Generate performance appraisal documents from your activity data
+          Performance appraisal from your activity; the metrics table is computed, not written by AI
         </p>
       </div>
 
@@ -50,28 +48,29 @@ export default function AppraisalPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Period</label>
+            <label className="space-y-2 text-sm font-medium">
+              Period
               <select
-                value={period}
+                value={type}
                 onChange={(e) => {
-                  setPeriod(e.target.value);
+                  setType(e.target.value as PeriodType);
                 }}
-                className="w-full rounded-md border border-input px-3 py-2 text-sm"
+                className={select}
               >
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="yearly">Yearly</option>
+                <option value="month">Month</option>
+                <option value="quarter">Quarter</option>
+                <option value="half">Half year</option>
+                <option value="year">Year</option>
               </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Month</label>
+            </label>
+            <label className="space-y-2 text-sm font-medium">
+              Containing month
               <select
                 value={month}
                 onChange={(e) => {
                   setMonth(parseInt(e.target.value));
                 }}
-                className="w-full rounded-md border border-input px-3 py-2 text-sm"
+                className={select}
               >
                 {Array.from({ length: 12 }, (_, i) => (
                   <option key={i + 1} value={i + 1}>
@@ -79,9 +78,9 @@ export default function AppraisalPage() {
                   </option>
                 ))}
               </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Year</label>
+            </label>
+            <label className="space-y-2 text-sm font-medium">
+              Year
               <input
                 type="number"
                 value={year}
@@ -90,9 +89,9 @@ export default function AppraisalPage() {
                 }}
                 min={2020}
                 max={2030}
-                className="w-full rounded-md border border-input px-3 py-2 text-sm"
+                className={select}
               />
-            </div>
+            </label>
           </div>
           <GenerateButton loading={loading} onClick={handleGenerate}>
             Generate Appraisal
@@ -101,16 +100,11 @@ export default function AppraisalPage() {
         </CardContent>
       </Card>
 
-      {report && (
-        <div className="space-y-4">
-          <div className="flex justify-end">
-            <Button variant="outline" className="gap-2">
-              <Download className="h-4 w-4" />
-              Export Document
-            </Button>
-          </div>
-          <DocumentPreview content={report} type="APPRAISAL" />
-        </div>
+      {detail?.version && (
+        <DocumentPreview
+          content={detail.version.content as Record<string, unknown>}
+          type="APPRAISAL"
+        />
       )}
     </div>
   );

@@ -12,6 +12,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "jest --config jest.config.ts",
     "test:int": "jest --config jest.int.config.ts --runInBand",
+    "eval": "jest --config jest.config.ts test/evals",
+    "eval:live": "tsx test/evals/run.ts --live",
+    "eval:record": "tsx test/evals/run.ts --record",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
@@ -20,10 +23,11 @@
     "db:push": "prisma db push",
     "db:seed:heavy": "tsx prisma/scripts/seed-heavy.ts",
     "metrics:recompute": "tsx prisma/scripts/recompute-metrics.ts",
-    "perf:metrics": "tsx prisma/scripts/measure-metrics-perf.ts"
+    "perf:metrics": "tsx prisma/scripts/measure-metrics-perf.ts",
+    "ai:mock": "tsx test/utils/serve-fake-anthropic.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.24.0",
+    "@anthropic-ai/sdk": "1.9.0",
     "@devimpact/shared": "*",
     "@nestjs/bullmq": "^11.0.5",
     "@nestjs/common": "^11.1.0",

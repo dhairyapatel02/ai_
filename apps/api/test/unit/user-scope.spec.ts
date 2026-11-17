@@ -20,6 +20,9 @@ const USER_OWNED = [
   'impactScoreLegacy',
   'metricSnapshot',
   'userSettings',
+  'aiUsage',
+  // No userId column: every access must follow a `{ id, userId }` document lookup (justified).
+  'documentVersion',
 ];
 const SRC = path.resolve(__dirname, '../../src');
 

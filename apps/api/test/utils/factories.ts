@@ -73,7 +73,7 @@ export function buildFactories(prisma: PrismaClient) {
           userId,
           integrationId,
           repositoryId: repository.id,
-          sha: `sha${n.toString().padStart(8, '0')}`,
+          sha: `${n.toString(16).padStart(7, '0')}${'f'.repeat(33)}`,
           messageHeadline: message ?? `feat: change ${n}`,
           branch: 'main',
           additions: 10,
@@ -138,17 +138,27 @@ export function buildFactories(prisma: PrismaClient) {
       });
     },
 
+    /** A ready v2 document with one version (default: an imported legacy version). */
     document(
       userId: string,
       overrides: Partial<Prisma.GeneratedDocumentUncheckedCreateInput> = {},
+      content: Prisma.InputJsonValue = { legacy: true, raw: { bullets: [] } },
     ) {
+      const n = next();
       return prisma.generatedDocument.create({
         data: {
           userId,
           type: DocumentType.RESUME,
-          content: { bullets: [] },
-          dateRange: { from: '2026-01-01', to: '2026-06-30' },
+          title: `Document ${n}`,
+          status: 'READY',
+          currentVersion: 1,
+          options: {},
+          promptId: 'legacy',
+          promptVersion: 0,
+          model: 'unknown',
+          inputHash: `hash-${n}`,
           ...overrides,
+          versions: { create: { version: 1, source: 'AI', content } },
         },
       });
     },

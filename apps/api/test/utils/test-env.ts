@@ -40,5 +40,11 @@ export function useTestDatabase(): string {
   process.env.GITHUB_REQUEST_RETRIES = '0';
   process.env.GITHUB_THROTTLING = 'false'; // no 1 s pacing between fake GraphQL calls
   delete process.env.QUEUE_PREFIX; // NODE_ENV=test → "devimpact-test" (OPS-17)
+  // AI: never the real Anthropic. Tests that generate start the in-process fake
+  // (`startFakeAnthropic`) and set ANTHROPIC_BASE_URL/KEY before creating the app.
+  delete process.env.ANTHROPIC_API_KEY;
+  process.env.ANTHROPIC_BASE_URL = 'http://127.0.0.1:9';
+  process.env.AI_RETRY_BASE_MS = '0';
+  delete process.env.ENTITLEMENTS_JSON;
   return testUrl;
 }

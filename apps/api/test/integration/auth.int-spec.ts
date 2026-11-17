@@ -58,7 +58,11 @@ describe('Authentication on every route (integration, generated from the router)
         'POST /api/integrations/github/callback',
         'DELETE /api/integrations/:id',
         'GET /api/documents/:id',
-        'POST /api/generate/resume',
+        'POST /api/documents',
+        'GET /api/documents/:id/stream',
+        'POST /api/ai/achievement-statement',
+        'POST /api/impact/highlights',
+        'GET /api/me/usage',
         'GET /api/health',
       ]),
     );

@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { parseEntitlementsOverride } from '../entitlements/entitlements';
+import { loadModelPrices } from './ai-pricing';
+
 const booleanString = z
   .enum(['true', 'false', '1', '0'])
   .transform((value) => value === 'true' || value === '1');
@@ -99,9 +102,34 @@ export const envSchema = z
     // Worker liveness file touched every few seconds (used by the compose healthcheck).
     WORKER_HEARTBEAT_FILE: optionalString,
 
-    // Optional so the app can be developed with seed data only. AI calls fail without it.
+    // ── AI (ADR-0009). Optional so the app runs on seed data; without a key, generation
+    // requests fail with 503 UPSTREAM_UNAVAILABLE { reason: 'not_configured' }.
     ANTHROPIC_API_KEY: optionalString,
+    // Override the API base URL (test mode: an in-process fake or a local mock server, OPS-15).
     ANTHROPIC_BASE_URL: z.url().optional(),
+    // Model ids live ONLY here (never in services): documents/highlights tier and fast tier.
+    ANTHROPIC_MODEL_DEFAULT: z.string().min(1).default('claude-opus-5-5'),
+    ANTHROPIC_MODEL_FAST: z.string().min(1).default('claude-haiku-5-5'),
+    // Server-side refusal fallback (beta `server-side-fallback-2026-07-01`) on the default tier.
+    AI_FALLBACKS_ENABLED: booleanString.default(true),
+    // Thinking depth (`output_config.effort`) per tier.
+    AI_EFFORT_DEFAULT: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).default('medium'),
+    AI_EFFORT_FAST: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).default('low'),
+    // Per-attempt timeout of a document generation / a quick action (ms).
+    AI_TIMEOUT_MS: z.coerce.number().int().min(1000).default(180_000),
+    AI_QUICK_TIMEOUT_MS: z.coerce.number().int().min(1000).default(20_000),
+    // Retries for retryable Anthropic errors (429, 5xx, overloaded, connection) with backoff+jitter.
+    AI_MAX_RETRIES: z.coerce.number().int().min(0).max(5).default(2),
+    AI_RETRY_BASE_MS: z.coerce.number().int().min(0).default(1_000),
+    // Concurrent `ai` jobs per worker process (caps spend and Anthropic concurrency).
+    AI_WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(32).default(4),
+    // Retention of document event streams in Redis (SSE resume window).
+    AI_STREAM_TTL_SECONDS: z.coerce.number().int().min(60).default(3600),
+    // Optional JSON overrides: plan limits (PRD §6) and the price table (US$ per 1M tokens).
+    // e.g. ENTITLEMENTS_JSON='{"FREE":{"aiGenerationsPerMonth":30}}'
+    //      AI_PRICES_JSON='{"my-model":{"input":3,"output":15,"cacheRead":0.3,"cacheWrite":3.75}}'
+    ENTITLEMENTS_JSON: optionalString,
+    AI_PRICES_JSON: optionalString,
 
     // GitHub App (data source, ADR-0004). Optional so the app runs on seed data; connect fails
     // with a clear error until they are set.
@@ -129,6 +157,15 @@ export const envSchema = z
     OAUTH_STATE_SECRET: z.string().min(32, 'OAUTH_STATE_SECRET must be at least 32 characters'),
   })
   .superRefine((env, ctx) => {
+    const entitlements = parseEntitlementsOverride(env.ENTITLEMENTS_JSON);
+    if (!entitlements.ok) {
+      ctx.addIssue({ code: 'custom', path: ['ENTITLEMENTS_JSON'], message: entitlements.error });
+    }
+    try {
+      loadModelPrices(env.AI_PRICES_JSON);
+    } catch (error) {
+      ctx.addIssue({ code: 'custom', path: ['AI_PRICES_JSON'], message: (error as Error).message });
+    }
     if (!env.TOKEN_ENCRYPTION_KEYS.has(env.TOKEN_ENCRYPTION_ACTIVE_KEY)) {
       ctx.addIssue({
         code: 'custom',

@@ -13,3 +13,4 @@ export * from './providers/activity';
 export * from './periods';
 export * from './metrics/catalogue';
 export * from './api/metrics';
+export * from './api/documents';

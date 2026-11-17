@@ -47,7 +47,38 @@ enum DocumentType {
   RESUME
   APPRAISAL
   PROMOTION
-  KPI
+  IMPACT_NARRATIVE
+  ACHIEVEMENT_STATEMENT
+  DIGEST_SUMMARY
+}
+
+enum DocumentStatus {
+  PENDING
+  STREAMING
+  READY
+  FAILED
+  CANCELLED
+}
+
+enum VersionSource {
+  AI
+  USER_EDIT
+  RESTORE
+}
+
+enum AiFeature {
+  RESUME
+  APPRAISAL
+  PROMOTION
+  IMPACT_NARRATIVE
+  ACHIEVEMENT_STATEMENT
+  DIGEST_SUMMARY
+}
+
+enum AiCallStatus {
+  SUCCEEDED
+  FAILED
+  CANCELLED
 }
 
 enum PRState {
@@ -144,6 +175,7 @@ model User {
   issues       Issue[]
   syncRuns     SyncRun[]
   documents    GeneratedDocument[]
+  aiUsage      AiUsage[]
   impactScores ImpactScore[]
   snapshots    MetricSnapshot[]
   legacyScores ImpactScoreLegacy[]
@@ -512,18 +544,80 @@ model WebhookDelivery {
   @@map("webhook_deliveries")
 }
 
+/// AI documents v2 (ADR-0009, migration P08-1). Content lives in `DocumentVersion` rows; v0.1
+/// documents were imported as read-only `{ legacy: true, raw }` versions.
 model GeneratedDocument {
-  id        String       @id @default(cuid())
-  userId    String
-  type      DocumentType
-  content   Json
-  dateRange Json
-  createdAt DateTime     @default(now())
+  id                  String         @id @default(cuid())
+  userId              String
+  type                DocumentType
+  title               String         @db.VarChar(200)
+  status              DocumentStatus @default(PENDING)
+  currentVersion      Int            @default(0) @map("current_version") // 0 until the first version is saved
+  options             Json // validated per type (shared DocumentOptions)
+  periodStart         DateTime?      @map("period_start") @db.Date
+  periodEnd           DateTime?      @map("period_end") @db.Date
+  timezone            String?
+  promptId            String         @map("prompt_id")
+  promptVersion       Int            @map("prompt_version")
+  model               String
+  inputHash           String         @map("input_hash") // sha256 (ADR-0009)
+  evidenceRefs        String[]       @default([]) @map("evidence_refs")
+  citationCoverage    Float?         @map("citation_coverage")
+  flagsUncited        Int?           @map("flags_uncited")
+  flagsInvalid        Int?           @map("flags_invalid")
+  errorCode           String?        @map("error_code")
+  sourceImpactScoreId String?        @map("source_impact_score_id") // IMPACT_NARRATIVE
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @default(now()) @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions DocumentVersion[]
+  aiUsage  AiUsage[]
 
-  @@index([userId, type])
+  @@index([userId, type, createdAt(sort: Desc)])
+  @@index([userId, inputHash])
   @@map("generated_documents")
+}
+
+model DocumentVersion {
+  id         String            @id @default(cuid())
+  documentId String            @map("document_id")
+  version    Int
+  content    Json // Zod-validated per DocumentType (shared CONTENT_SCHEMAS)
+  source     VersionSource
+  createdAt  DateTime          @default(now()) @map("created_at")
+  document   GeneratedDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, version])
+  @@map("document_versions")
+}
+
+/// One row per Anthropic call (tokens, cost estimate, latency, status); quotas count rows with
+/// `countsTowardQuota` (successful primary calls) per UTC month (PRD §6).
+model AiUsage {
+  id                String             @id @default(cuid())
+  userId            String             @map("user_id")
+  documentId        String?            @map("document_id")
+  feature           AiFeature
+  promptId          String             @map("prompt_id")
+  promptVersion     Int                @map("prompt_version")
+  model             String
+  inputTokens       Int                @default(0) @map("input_tokens")
+  outputTokens      Int                @default(0) @map("output_tokens")
+  cacheReadTokens   Int                @default(0) @map("cache_read_tokens")
+  cacheWriteTokens  Int                @default(0) @map("cache_write_tokens")
+  costMicroUsd      BigInt             @default(0) @map("cost_micro_usd")
+  latencyMs         Int                @map("latency_ms")
+  status            AiCallStatus
+  countsTowardQuota Boolean            @default(true) @map("counts_toward_quota")
+  errorCode         String?            @map("error_code")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document          GeneratedDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([userId, feature, createdAt])
+  @@map("ai_usage")
 }
 
 /// v0.1 LLM-generated scores (AI-01), renamed by migration P07-1. Never displayed; dropped in P15.

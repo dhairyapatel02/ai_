@@ -1,0 +1,10 @@
+{
+  "persona": "frontend-design-system",
+  "generator": "resume",
+  "promptId": "resume",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"summary\":{\"text\":\"Engineer who merged 8 pull requests across 2 repositories in October 2026.\",\"citations\":[\"PR-acme/web#106\"]},\"bullets\":[{\"text\":\"Improved performance with the change to lazy-load dashboard charts to speed up first paint in acme/web.\",\"citations\":[\"PR-acme/web#106\"],\"theme\":\"Performance\"},{\"text\":\"Resolved a defect: add visual regression tests for buttons in acme/ui-kit.\",\"citations\":[\"PR-acme/ui-kit#115\"],\"theme\":\"Testing\"},{\"text\":\"Improved performance with the change to reduce bundle size by removing moment.js in acme/ui-kit.\",\"citations\":[\"PR-acme/ui-kit#121\"],\"theme\":\"Performance\"},{\"text\":\"Delivered the change to migrate settings pages to the new form primitives in acme/web.\",\"citations\":[\"PR-acme/web#112\"],\"theme\":\"acme/web\"},{\"text\":\"Resolved a defect: fix focus trap in modal dialogs in acme/ui-kit.\",\"citations\":[\"PR-acme/ui-kit#109\"],\"theme\":\"Bugfix\"},{\"text\":\"Delivered the change to document component usage guidelines in acme/web.\",\"citations\":[\"PR-acme/web#118\"],\"theme\":\"Docs\"}]}"
+}

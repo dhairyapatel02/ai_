@@ -1,16 +1,9 @@
 import request from 'supertest';
 
-import { AIService } from '../../src/ai/ai.service';
 import { createTestApp, type TestApp } from '../utils/app';
 import { bearer } from '../utils/auth';
 import { resetDatabase, resetRedisState } from '../utils/db';
 import { buildFactories, type Factories } from '../utils/factories';
-
-const aiMock = {
-  generateResumeBullets: jest.fn().mockResolvedValue({ bullets: [{ text: 'Shipped' }] }),
-  generateAppraisalReport: jest.fn().mockResolvedValue({ summary: 'ok' }),
-  generatePromotionPacket: jest.fn().mockResolvedValue({ summary: 'ok' }),
-};
 
 describe('API conventions: validation, errors, envelope, headers, rate limits (integration)', () => {
   let t: TestApp;
@@ -19,7 +12,7 @@ describe('API conventions: validation, errors, envelope, headers, rate limits (i
   let userId: string;
 
   beforeAll(async () => {
-    t = await createTestApp((b) => b.overrideProvider(AIService).useValue(aiMock));
+    t = await createTestApp();
     f = buildFactories(t.prisma);
   });
 
@@ -60,14 +53,16 @@ describe('API conventions: validation, errors, envelope, headers, rate limits (i
     });
 
     it.each([
-      ['/api/generate/resume', {}],
+      ['/api/documents', {}],
+      ['/api/documents', { type: 'resume', period: 'month:2026-10', role: 'x'.repeat(100_000) }],
+      ['/api/documents', { type: 'appraisal', period: 'weird' }],
+      ['/api/documents', { type: 'promotion' }],
       [
-        '/api/generate/resume',
-        { dateRange: { from: '2026-01-01', to: '2026-02-01' }, role: 'x'.repeat(100_000) },
+        '/api/documents',
+        { type: 'promotion', currentRole: 'IC', targetRole: 'Senior', injected: true },
       ],
-      ['/api/generate/appraisal', { period: 'weird', month: 13, year: 1900 }],
-      ['/api/generate/promotion', {}],
-      ['/api/generate/promotion', { currentRole: 'IC', targetRole: 'Senior', injected: true }],
+      ['/api/ai/achievement-statement', { source: { kind: 'issue', id: 'x' } }],
+      ['/api/impact/highlights', { period: 'month:2026-13' }],
       ['/api/integrations/github/callback', { code: 12345 }],
     ])('POST %s with invalid body → 400 before any AI/GitHub call', async (path, body) => {
       const res = await request(server())
@@ -76,13 +71,12 @@ describe('API conventions: validation, errors, envelope, headers, rate limits (i
         .send(body)
         .expect(400);
       expect(res.body.error.code).toBe('VALIDATION_FAILED');
-      expect(aiMock.generateResumeBullets).not.toHaveBeenCalled();
-      expect(aiMock.generatePromotionPacket).not.toHaveBeenCalled();
+      expect(await t.prisma.generatedDocument.count()).toBe(0);
     });
 
     it('malformed JSON → 400 with the envelope', async () => {
       const res = await request(server())
-        .post('/api/generate/promotion')
+        .post('/api/documents')
         .set('authorization', as)
         .set('content-type', 'application/json')
         .send('{"currentRole": ')
@@ -95,9 +89,9 @@ describe('API conventions: validation, errors, envelope, headers, rate limits (i
 
     it('bodies over 256 KB → 413 PAYLOAD_TOO_LARGE', async () => {
       const res = await request(server())
-        .post('/api/generate/promotion')
+        .post('/api/documents')
         .set('authorization', as)
-        .send({ currentRole: 'a'.repeat(300 * 1024), targetRole: 'b' })
+        .send({ type: 'promotion', currentRole: 'a'.repeat(300 * 1024), targetRole: 'b' })
         .expect(413);
       expect(res.body.error.code).toBe('PAYLOAD_TOO_LARGE');
     });
@@ -115,19 +109,20 @@ describe('API conventions: validation, errors, envelope, headers, rate limits (i
       });
     });
 
-    it('upstream AI failures → 502 UPSTREAM_ERROR with no provider payload', async () => {
-      aiMock.generatePromotionPacket.mockRejectedValueOnce(
-        new Error(
-          '401 {"type":"error","error":{"message":"invalid x-api-key"},"request_id":"req_123"}',
-        ),
-      );
+    it('AI without ANTHROPIC_API_KEY → 503 UPSTREAM_UNAVAILABLE with no internals', async () => {
+      const gh = await f.integration(userId);
+      await f.pullRequest(userId, gh.id, { mergedAt: new Date('2026-10-16T12:00:00Z') });
       const res = await request(server())
-        .post('/api/generate/promotion')
+        .post('/api/documents')
         .set('authorization', as)
-        .send({ currentRole: 'Engineer', targetRole: 'Senior Engineer' })
-        .expect(502);
-      expect(res.body.error.code).toBe('UPSTREAM_ERROR');
-      expect(JSON.stringify(res.body)).not.toMatch(/x-api-key|req_123/);
+        .send({ type: 'appraisal', period: 'month:2026-10' })
+        .expect(503);
+      expect(res.body.error).toMatchObject({
+        code: 'UPSTREAM_UNAVAILABLE',
+        details: { provider: 'anthropic', reason: 'not_configured' },
+      });
+      expect(JSON.stringify(res.body)).not.toMatch(/ANTHROPIC_API_KEY|stack/);
+      expect(await t.prisma.generatedDocument.count()).toBe(0);
     });
   });
 
@@ -214,45 +209,46 @@ describe('API conventions: validation, errors, envelope, headers, rate limits (i
 
   describe('rate limits (SEC-07, API_CONTRACT_V2 §1.1)', () => {
     it('AI endpoints allow 10 per minute per user, then 429 RATE_LIMITED with Retry-After', async () => {
-      const body = { currentRole: 'Engineer', targetRole: 'Senior Engineer' };
+      // No activity: each request reaches the handler and answers 409 no_evidence (no AI call).
+      const body = { type: 'appraisal', period: 'month:2026-10' };
       for (let i = 0; i < 10; i++) {
         const res = await request(server())
-          .post('/api/generate/promotion')
+          .post('/api/documents')
           .set('authorization', as)
           .send(body);
-        expect(res.status).toBe(201);
+        expect(res.status).toBe(409);
+        expect(res.body.error.details).toEqual({ reason: 'no_evidence' });
         expect(res.headers['ratelimit-limit']).toBe('10');
       }
       const blocked = await request(server())
-        .post('/api/generate/promotion')
+        .post('/api/documents')
         .set('authorization', as)
         .send(body)
         .expect(429);
       expect(blocked.body.error).toMatchObject({ code: 'RATE_LIMITED', details: { class: 'ai' } });
       expect(Number(blocked.headers['retry-after'])).toBeGreaterThan(0);
-      expect(aiMock.generatePromotionPacket).toHaveBeenCalledTimes(10);
 
       // Limits are per user: another user is unaffected.
       const other = await f.user();
       await request(server())
-        .post('/api/generate/promotion')
+        .post('/api/documents')
         .set('authorization', bearer(other.id))
         .send(body)
-        .expect(201);
+        .expect(409);
     });
 
     it('the AI class shares one budget across AI endpoints', async () => {
       for (let i = 0; i < 10; i++) {
         await request(server())
-          .post('/api/generate/promotion')
+          .post('/api/documents')
           .set('authorization', as)
-          .send({ currentRole: 'a', targetRole: 'b' })
-          .expect(201);
+          .send({ type: 'appraisal', period: 'month:2026-10' })
+          .expect(409);
       }
       const res = await request(server())
-        .post('/api/generate/appraisal')
+        .post('/api/impact/highlights')
         .set('authorization', as)
-        .send({ period: 'monthly', month: 10, year: 2026 });
+        .send({ period: 'month:2026-10' });
       expect(res.status).toBe(429);
     });
 
@@ -281,7 +277,8 @@ describe('API conventions: validation, errors, envelope, headers, rate limits (i
         'state',
       );
       expect(res.body.paths['/api/health'].get.security).toEqual([]);
-      expect(res.body.paths['/api/generate/resume'].post['x-rate-limit-class']).toBe('ai');
+      expect(res.body.paths['/api/documents'].post['x-rate-limit-class']).toBe('ai');
+      expect(res.body.paths['/api/documents/{id}/stream'].get['x-rate-limit-class']).toBe('sse');
       const ui = await request(server()).get('/api/docs').expect(200);
       expect(ui.text).toContain('swagger-ui');
     });

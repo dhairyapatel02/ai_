@@ -2,11 +2,10 @@ import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_GUARD, DiscoveryModule } from '@nestjs/core';
 
 import { ActivityModule } from './activity/activity.module';
-import { AIModule } from './ai/ai.module';
 import { AuthGuard } from './auth/auth.guard';
 import { AuthModule } from './auth/auth.module';
+import { AiWorkerModule } from './documents/ai-worker.module';
 import { DocumentsModule } from './documents/documents.module';
-import { GenerateModule } from './generate/generate.module';
 import { HealthModule } from './health/health.module';
 import { infrastructureImports } from './infrastructure';
 import { IntegrationsModule } from './integrations/integrations.module';
@@ -43,12 +42,10 @@ export class AppModule {
         SyncModule,
         ReposModule,
         WebhooksModule,
-        ...(options.runWorker ? [SyncWorkerModule] : []),
+        ...(options.runWorker ? [SyncWorkerModule, AiWorkerModule] : []),
         ActivityModule,
         MetricsModule,
-        GenerateModule,
         DocumentsModule,
-        AIModule,
       ],
       // Guard order matters: authentication first, so the rate limiter can key on the user.
       providers: [{ provide: APP_GUARD, useExisting: AuthGuard }, rateLimitGuardProvider],

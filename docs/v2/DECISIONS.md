@@ -422,3 +422,71 @@ thresholds, anchors, weights and rounding unchanged), Phase 07 chose:
 `POST /impact/highlights`; P10 builds S6–S10 on these endpoints and removes `/activity/summary`;
 P12 fills `achievements` in snapshots, feed and timeline; P14 adds retention for old/in-progress
 score rows and the fixes logged as DATA-12/PERF-06.
+
+### D-024 · P08 implementation choices (AI layer) · APPLIED (P08)
+Within D-009/D-007/D-019 and ADR-0009 (models, structured output, worker + Redis Streams, quotas
+unchanged), Phase 08 chose:
+- **SDK & client:** `@anthropic-ai/sdk` **1.9.0** (exact pin, DEBT-10). One `AiClient` on
+  `client.beta.messages.stream(...).finalMessage()` (the beta surface carries the server-side
+  refusal `fallbacks: "default"` + beta `server-side-fallback-2026-07-01`, sent on the default tier
+  only — Haiku has no server-side fallback). `thinking: { type: 'adaptive' }`, explicit
+  `output_config.effort` (`AI_EFFORT_DEFAULT=medium`, `AI_EFFORT_FAST=low`) and
+  `output_config.format` from `zodOutputFormat(schema)`. SDK `maxRetries: 0`; our loop retries
+  only 429/5xx/529/connection/408/409, with full-jitter exponential backoff, honouring
+  `retry-after`, and **never after text has streamed** (no duplicated output). HTTP status decides
+  the class; error `type` only for mid-stream errors without a status.
+- **Model tiers:** documents on `ANTHROPIC_MODEL_DEFAULT` (`claude-opus-5-5`); impact highlights,
+  achievement statements, digest summaries **and the repair call** on `ANTHROPIC_MODEL_FAST`
+  (`claude-haiku-5-5`) — API_CONTRACT_V2 §10 / ARCHITECTURE_V2 §8 (fast highlights) win over the
+  ADR line listing highlights under the default tier. No Opus/Sonnet switch without a live eval (AI-10).
+- **Prompts:** model outputs are small, flat schemas (no ids, flags or metrics); `toContent` adds
+  item ids (`b1`, `kc1`…) and engine sections; stored content schemas live in
+  `packages/shared/src/api/documents.ts` (`CONTENT_SCHEMAS`). Evidence goes to the model as JSON in
+  `<evidence>` with `<`, `>`, `&` \u-escaped (the closing tag can never appear inside), control/bidi
+  characters stripped, per-field caps. The repair prompt is `repair.v1`.
+- **Evidence:** pure `buildEvidencePack` (ranking: merged, size band capped above 1,000 lines,
+  reviewers, changes requested, commits, tags such as incident/performance/security, description;
+  reverted −3) with caps 40 PRs / 15 reviews (one per reviewed PR) / 10 commits (not already
+  covered by a selected PR) / 20 achievements; smaller caps for quick actions. Evidence versions for
+  `inputHash` use stable fields (`updatedAtRemote`/`mergedAt`, review `submittedAt`, commit
+  `authoredAt`), not `syncedAt`, so a sync without changes keeps the cache. Metric lists use catalogue
+  order (JSONB round-trips reorder keys). Redaction (F-76): private repos become `private/repo-N`
+  in names **and refs** sent to the model; the verifier maps alias refs back to real refs.
+- **Documents:** `POST /documents` returns `200 { cached: true }` for an existing READY *or
+  in-flight* document with the same hash (no duplicate parallel generations); 409 `no_evidence`
+  when the pack is empty. Regenerate keeps the document id and writes the next version; a section
+  regenerate runs the full prompt and merges one section (AI-12). User edits keep engine sections
+  from the base version, re-verify citations against `evidenceRefs`, and update the last
+  `user_edit` version in place within 30 s (autosave). Legacy imports are read-only (409
+  `legacy_document`). Library default lists studio types + impact narratives; achievement and
+  digest documents only with `?type=`. Additive contract fields: `DocumentSummary.errorCode`,
+  `HighlightsResponse.evidence`, `CreateDocumentResponse.cached/streamUrl` on both 200 and 201.
+- **Schema (P08-1):** as DATA_MODEL_V2 plus `flags_uncited` / `flags_invalid` columns (A-5 badges
+  without loading content); legacy rows imported as `{ legacy: true, raw }` v1 versions
+  (`prompt_id = 'legacy'`, `input_hash = 'legacy:'||id`, period from `dateRange`). A `KPI` row would
+  make the enum cast fail loudly rather than be dropped.
+- **Streams & SSE:** stream key `devimpact:doc-events:<QUEUE_PREFIX>:<id>` (MAXLEN ~2000, TTL
+  `AI_STREAM_TTL_SECONDS`), cancel flag `devimpact:doc-cancel:…` polled every 500 ms by the worker;
+  dedicated ioredis connections without `keyPrefix` (blocking XREAD). The API writes the first
+  `status: pending` event at creation; deltas are coalesced (≥ 250 ms) to stay under MAXLEN.
+  A finished document (or an expired stream) is answered with `status` + its terminal event from
+  the database. `sse` rate class = Redis counter (10 concurrent per user) in the stream service; a
+  connection is capped at 15 minutes (clients resume with `Last-Event-ID`).
+- **Queue:** `ai` queue, job ids `ai-<documentId>-<version>`, attempts 1 (retries live in the client);
+  quick actions are `ai.quick` jobs awaited with `QueueEvents` (quick timeout + 2 s) — the same
+  `DocumentGenerationService` runs both, without stream events for quick types. Digest summaries
+  are generated in-process by `DigestSummaryService.summarize(userId, weekStart)` (worker-only,
+  returns `null` instead of failing the digest).
+- **Quotas:** counted from `AiUsage.countsTowardQuota` (successful primary call of a successful
+  generation) per UTC month, plus generations currently pending/streaming. `ENTITLEMENTS_JSON` is
+  validated at startup and merged per plan by `limitsFor()`.
+- **Tests & evals:** an in-process fake Messages API (`test/utils/fake-anthropic.ts`, SSE like the
+  real API) behind `ANTHROPIC_BASE_URL`, so the real SDK path is exercised; integration tests run an
+  in-process BullMQ worker. Evals (7 personas × 6 generators) run in `npm test` from committed
+  recordings; without a key in P08 the recordings are **synthetic** (deterministic reference writer)
+  and negative controls prove each check fails on bad output. `npm run eval:live` writes
+  `docs/v2/evals/REPORT.md`.
+*Consequences:* P11 consumes the SSE contract and document endpoints (PROGRESS P08 handoff); P12
+binds `ACHIEVEMENT_SOURCE`, calls `DigestSummaryService` and builds the plan/usage page on
+`/me/usage`; P14 runs the live eval (AI-10/11), adds `AiUsage`/stream retention (OPS-18) and cost
+dashboards.

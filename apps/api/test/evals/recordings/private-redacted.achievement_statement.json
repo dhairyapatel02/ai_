@@ -1,0 +1,10 @@
+{
+  "persona": "private-redacted",
+  "generator": "achievement_statement",
+  "promptId": "achievement-statement",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"title\":\"Harden file type validation\",\"statement\":\"Strengthened security: harden file type validation in private/repo-1.\",\"category\":\"delivery\",\"citations\":[\"PR-private/repo-1#106\"]}"
+}

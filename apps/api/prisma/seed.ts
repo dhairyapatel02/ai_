@@ -599,75 +599,92 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
 
   const sixMonthsAgo = new Date(anchor.getTime() - 182 * DAY_MS).toISOString();
   const now = anchor.toISOString();
-  await prisma.generatedDocument.createMany({
-    data: [
-      {
-        userId: demo.id,
-        type: DocumentType.RESUME,
-        dateRange: { from: sixMonthsAgo, to: now },
-        content: {
-          bullets: [
-            {
-              text: 'Led the redesign of payment intent creation with idempotency keys, eliminating duplicate charges across 3 client apps',
-              category: 'reliability',
-              impact: 'Zero duplicate-charge incidents since launch',
-            },
-            {
-              text: 'Shipped partial refunds and invoice PDF export end-to-end across API and web',
-              category: 'features',
-              impact: 'Closed the top two support-ticket drivers',
-            },
-            {
-              text: 'Batched ledger writes and added composite indexes, cutting p95 invoice lookup latency by ~40%',
-              category: 'performance',
-              impact: 'Faster month-end reporting',
-            },
-            {
-              text: 'Reviewed teammates’ pull requests weekly, focusing on API design and test coverage',
-              category: 'collaboration',
-              impact: 'Consistent review turnaround under one day',
-            },
-          ],
-        },
-      },
-      {
-        userId: demo.id,
-        type: DocumentType.APPRAISAL,
-        dateRange: { from: sixMonthsAgo, to: now },
-        content: {
-          executiveSummary:
-            'Dana delivered the payments reliability roadmap and became the go-to reviewer for API changes.',
-          keyContributions: [
-            { title: 'Idempotent payments', evidence: 'Payments: idempotent intent creation' },
-            { title: 'Refunds API', evidence: 'Refunds API (partial + full)' },
-          ],
-          metrics: {
-            prCount: authoredCount,
-            reviewCount,
-            featuresShipped: 6,
-            commitsCount: commits.length,
+  // v0.1-style documents, stored as migration P08-1 imports them: read-only legacy versions.
+  const legacyDocuments = [
+    {
+      type: DocumentType.RESUME,
+      dateRange: { from: sixMonthsAgo, to: now },
+      content: {
+        bullets: [
+          {
+            text: 'Led the redesign of payment intent creation with idempotency keys, eliminating duplicate charges across 3 client apps',
+            category: 'reliability',
+            impact: 'Zero duplicate-charge incidents since launch',
           },
-          areasOfImpact: ['Reliability', 'Developer experience'],
-          growthAndLearning: ['Led first incident review'],
-          goalsForNextPeriod: ['Own the billing platform roadmap'],
-        },
+          {
+            text: 'Shipped partial refunds and invoice PDF export end-to-end across API and web',
+            category: 'features',
+            impact: 'Closed the top two support-ticket drivers',
+          },
+          {
+            text: 'Batched ledger writes and added composite indexes, cutting p95 invoice lookup latency by ~40%',
+            category: 'performance',
+            impact: 'Faster month-end reporting',
+          },
+          {
+            text: 'Reviewed teammates’ pull requests weekly, focusing on API design and test coverage',
+            category: 'collaboration',
+            impact: 'Consistent review turnaround under one day',
+          },
+        ],
       },
-      {
+    },
+    {
+      type: DocumentType.APPRAISAL,
+      dateRange: { from: sixMonthsAgo, to: now },
+      content: {
+        executiveSummary:
+          'Dana delivered the payments reliability roadmap and became the go-to reviewer for API changes.',
+        keyContributions: [
+          { title: 'Idempotent payments', evidence: 'Payments: idempotent intent creation' },
+          { title: 'Refunds API', evidence: 'Refunds API (partial + full)' },
+        ],
+        metrics: {
+          prCount: authoredCount,
+          reviewCount,
+          featuresShipped: 6,
+          commitsCount: commits.length,
+        },
+        areasOfImpact: ['Reliability', 'Developer experience'],
+        growthAndLearning: ['Led first incident review'],
+        goalsForNextPeriod: ['Own the billing platform roadmap'],
+      },
+    },
+    {
+      type: DocumentType.PROMOTION,
+      dateRange: { from: sixMonthsAgo, to: now },
+      content: {
+        whyReady:
+          'Consistently operates at senior scope: drives cross-team projects and raises the review bar.',
+        leadershipEvidence: ['Led checkout v2 rollout across two teams'],
+        technicalImpact: ['Ledger write batching', 'Idempotent payment intents'],
+        businessValue: ['Reduced refund-related support load'],
+        mentorship: ['Onboarded two engineers to the payments codebase'],
+        supportingData: { commits: commits.length, prs: authoredCount, reviews: reviewCount },
+      },
+    },
+  ];
+  for (const doc of legacyDocuments) {
+    await prisma.generatedDocument.create({
+      data: {
         userId: demo.id,
-        type: DocumentType.PROMOTION,
-        dateRange: { from: sixMonthsAgo, to: now },
-        content: {
-          whyReady:
-            'Consistently operates at senior scope: drives cross-team projects and raises the review bar.',
-          leadershipEvidence: ['Led checkout v2 rollout across two teams'],
-          technicalImpact: ['Ledger write batching', 'Idempotent payment intents'],
-          businessValue: ['Reduced refund-related support load'],
-          mentorship: ['Onboarded two engineers to the payments codebase'],
-          supportingData: { commits: commits.length, prs: authoredCount, reviews: reviewCount },
+        type: doc.type,
+        title: `${doc.type.charAt(0)}${doc.type.slice(1).toLowerCase()} (imported)`,
+        status: 'READY',
+        currentVersion: 1,
+        options: { dateRange: doc.dateRange },
+        periodStart: new Date(`${doc.dateRange.from.slice(0, 10)}T00:00:00Z`),
+        periodEnd: new Date(`${doc.dateRange.to.slice(0, 10)}T00:00:00Z`),
+        promptId: 'legacy',
+        promptVersion: 0,
+        model: 'unknown',
+        inputHash: `legacy:${doc.type}`,
+        versions: {
+          create: { version: 1, source: 'AI', content: { legacy: true, raw: doc.content } },
         },
       },
-    ],
-  });
+    });
+  }
 
   return {
     user: demo.email,

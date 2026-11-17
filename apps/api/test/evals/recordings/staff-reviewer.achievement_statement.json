@@ -1,0 +1,10 @@
+{
+  "persona": "staff-reviewer",
+  "generator": "achievement_statement",
+  "promptId": "achievement-statement",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"title\":\"Fix N+1 query in activity feed\",\"statement\":\"Improved performance with the change to fix N+1 query in activity feed in acme/mobile.\",\"category\":\"quality\",\"citations\":[\"PR-acme/mobile#106\"]}"
+}

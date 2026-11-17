@@ -1,0 +1,10 @@
+{
+  "persona": "private-redacted",
+  "generator": "impact_narrative",
+  "promptId": "impact-narrative",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"summary\":{\"text\":\"Work in October 2026 centred on \\\"Harden file type validation\\\".\",\"citations\":[\"PR-private/repo-1#106\"]},\"highlights\":[{\"text\":\"Strengthened security: harden file type validation in private/repo-1.\",\"citations\":[\"PR-private/repo-1#106\"],\"title\":\"Harden file type validation\"},{\"text\":\"Delivered the change to build deal-room document upload in private/repo-1.\",\"citations\":[\"PR-private/repo-1#100\"],\"title\":\"Build deal-room document upload\"},{\"text\":\"Delivered the change to add SDK pagination helpers in acme/public-sdk.\",\"citations\":[\"PR-acme/public-sdk#103\"],\"title\":\"Add SDK pagination helpers\"}],\"focusAreas\":[{\"text\":\"Spread reviews across more repositories.\"}]}"
+}

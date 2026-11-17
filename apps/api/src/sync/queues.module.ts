@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import { AI_QUEUE } from '../ai/ai.constants';
 import { METRICS_QUEUE, SYNC_QUEUE } from './sync.constants';
 
 import type { Env } from '../config/env';
@@ -15,10 +16,10 @@ const prefixed = (name: string) =>
     }),
   });
 
-/** The `sync` and `metrics` queues with the per-environment prefix (OPS-17). */
+/** The `sync`, `metrics` and `ai` queues with the per-environment prefix (OPS-17). */
 @Global()
 @Module({
-  imports: [prefixed(SYNC_QUEUE), prefixed(METRICS_QUEUE)],
+  imports: [prefixed(SYNC_QUEUE), prefixed(METRICS_QUEUE), prefixed(AI_QUEUE)],
   exports: [BullModule],
 })
 export class QueuesModule {}

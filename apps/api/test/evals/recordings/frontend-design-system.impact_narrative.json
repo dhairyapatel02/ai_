@@ -1,0 +1,10 @@
+{
+  "persona": "frontend-design-system",
+  "generator": "impact_narrative",
+  "promptId": "impact-narrative",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-17",
+  "text": "{\"summary\":{\"text\":\"Work in October 2026 centred on \\\"Lazy-load dashboard charts to speed up first paint\\\".\",\"citations\":[\"PR-acme/web#106\"]},\"highlights\":[{\"text\":\"Improved performance with the change to lazy-load dashboard charts to speed up first paint in acme/web.\",\"citations\":[\"PR-acme/web#106\"],\"title\":\"Lazy-load dashboard charts to speed up first paint\"},{\"text\":\"Resolved a defect: add visual regression tests for buttons in acme/ui-kit.\",\"citations\":[\"PR-acme/ui-kit#115\"],\"title\":\"Add visual regression tests for buttons\"},{\"text\":\"Improved performance with the change to reduce bundle size by removing moment.js in acme/ui-kit.\",\"citations\":[\"PR-acme/ui-kit#121\"],\"title\":\"Reduce bundle size by removing moment.js\"}],\"focusAreas\":[{\"text\":\"Spread reviews across more repositories.\"}]}"
+}
