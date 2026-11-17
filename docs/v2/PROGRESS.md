@@ -640,7 +640,11 @@ script. No commit is lost and all reviews are preserved on their owner's PR rows
   overview month cold 28 ms / warm 3.5 ms, overview **year cold 99.9 ms**, timeseries ≤ 47 ms
   (snapshot-backed ≤ 4.4 ms); EXPLAIN ANALYZE plans and method in
   [`blueprint/PERF_NOTES.md`](blueprint/PERF_NOTES.md). No new activity index needed.
-- **Security review** (`security-review` skill): see below.
+- **Security review** (`security-review` skill): no HIGH/MEDIUM findings. Verified: all runtime raw
+  SQL is parameterised `$queryRaw` (incl. `AT TIME ZONE ${timezone}`, and the time zone is IANA-validated);
+  evidence ids, detail endpoints, `repoIds`, career and repo lookups are all scoped by `userId`;
+  cursors are validated and ANDed with `userId`; fixed Lua scripts with keys/args only; no `@Public`
+  on new routes; URLs pass `safeUrl` (http/https only); reviewed PRs never expose bodies.
 
 **Acceptance criteria:** all met —
 - Every metric of KPI_METHODOLOGY §3.1–§3.5 is implemented under its exact key and label
