@@ -33,26 +33,26 @@ test.describe('dashboard smoke (dev login as the seeded demo user)', () => {
   test('sign in from /sign-in and see stat cards with seeded data', async ({ page }) => {
     await page.goto('/sign-in?callbackUrl=/dashboard');
     // `next dev` compiles routes on first hit, so allow time for the first API round trip.
-    const summary = page.waitForResponse((r) => r.url().includes('/activity/summary'), {
+    const overview = page.waitForResponse((r) => r.url().includes('/metrics/overview'), {
       timeout: 90_000,
     });
     await page.getByRole('button', { name: /Sign in as demo user/ }).click();
     await expect(page).toHaveURL(/\/dashboard$/, { timeout: 60_000 });
-    expect((await summary).status()).toBe(200);
+    expect((await overview).status()).toBe(200);
 
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
 
-    const commitsCard = page.locator('div.rounded-lg', { hasText: 'Commits This Month' }).last();
-    await expect(commitsCard).toBeVisible();
-    await expect(commitsCard.locator('.text-2xl')).not.toHaveText('0');
-    const commits = Number(await commitsCard.locator('.text-2xl').innerText());
-    expect(commits).toBeGreaterThan(0);
-
-    for (const label of ['PRs Merged', 'Reviews Done']) {
-      await expect(page.getByText(label, { exact: true })).toBeVisible();
+    // Deterministic metrics API (P07): correctly labelled cards, no AI call on page load.
+    const commits = page.getByTestId('stat-commits');
+    await expect(commits).toBeVisible();
+    expect(Number(await commits.innerText())).toBeGreaterThan(0);
+    for (const label of ['Commits', 'PRs merged', 'PRs reviewed', 'Impact score']) {
+      await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
     }
-    await expect(page.getByText('No activity data yet')).toHaveCount(0);
+    await expect(page.getByTestId('stat-prs_merged')).toHaveText(/^\d+$/);
+    await expect(page.getByText('No activity in this period')).toHaveCount(0);
     await expect(page.getByText('Impact Score').first()).toBeVisible();
+    await expect(page.getByText('Delivery').first()).toBeVisible();
   });
 
   test('API calls carry a Bearer JWT, never x-user-id; sign-out ends the session', async ({
