@@ -203,3 +203,26 @@ raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
   no AI call on page load. The designed pages are P10.
 - **No env changes.** Seed: demo user now in Europe/London with KPI edge cases and snapshots;
   `npm run db:seed:heavy` adds a perf fixture.
+
+### After Phase 08 (2026-11-17)
+- **AI layer v2 (ADR-0009, D-024):** `@anthropic-ai/sdk` 1.9.0 behind `AiClient`; models only from
+  config (`ANTHROPIC_MODEL_DEFAULT=claude-opus-5-5` documents, `ANTHROPIC_MODEL_FAST=claude-haiku-5-5`
+  quick actions + repair); structured output from Zod with one repair; versioned prompts in
+  `apps/api/src/prompts/`; deterministic `EvidenceBuilder` + citation verification (uncited /
+  invalid flags, coverage); untrusted text delimited and escaped; private repos redacted on request.
+- **Execution:** generation runs in the worker (`ai` queue: `ai.generate`, `ai.quick`); events go to
+  Redis Streams and `GET /documents/:id/stream` relays SSE with `Last-Event-ID`; `inputHash` cache;
+  cancel; versions + user edits + restore + regenerate (whole or one section).
+- **Schema:** migration P08-1 — documents v2, `document_versions`, `ai_usage`; v0.1 documents are
+  read-only imported versions.
+- **API:** `/documents` (+ preview-evidence, stream, cancel, versions, restore, regenerate),
+  `POST /impact/highlights` (and `GET /impact.highlights`), `POST /ai/achievement-statement`,
+  `GET /me/usage`; `/generate/*` and the v1 `AIService` are gone. Monthly AI quotas (FREE 15 + 100,
+  PRO 150 + 1,000; `402 QUOTA_EXCEEDED`).
+- **Evals:** 7 personas × 6 generators in `npm test` (recorded, synthetic until a live run);
+  `npm run eval:live` with a key (not run yet, AI-10).
+- **New env (all optional):** `ANTHROPIC_MODEL_DEFAULT/FAST`, `AI_FALLBACKS_ENABLED`,
+  `AI_EFFORT_DEFAULT/FAST`, `AI_TIMEOUT_MS`, `AI_QUICK_TIMEOUT_MS`, `AI_MAX_RETRIES`,
+  `AI_RETRY_BASE_MS`, `AI_WORKER_CONCURRENCY`, `AI_STREAM_TTL_SECONDS`, `ENTITLEMENTS_JSON`,
+  `AI_PRICES_JSON`. Local mock: `npm run ai:mock --workspace=apps/api`.
+- **Web (interim):** studio pages call `POST /documents` and poll; P11 builds the studio + SSE.

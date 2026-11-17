@@ -241,7 +241,7 @@ Implementation: `apps/api/src/metrics/`; spec: [`KPI_METHODOLOGY.md`](docs/v2/bl
 
 - **Deterministic, no AI.** Every number is a pure function of stored rows, the period and the
   user's time zone (`metric-definitions.ts`, `impact.ts`). No metrics/impact endpoint calls
-  Anthropic or enqueues work; AI highlights (`POST /impact/highlights`) are P08.
+  Anthropic or enqueues work; AI highlights are an explicit `POST /impact/highlights` (see below).
 - **What counts:** included repositories only; authored PRs (`isAuthoredByUser`, no v0.1 stubs);
   your reviews on others' PRs; default-branch commits without merge commits. Durations are
   business hours in your time zone (weekends excluded).
@@ -258,6 +258,54 @@ custom:2026-10-01..2026-11-15` (7–366 days), inclusive local dates in `UserSet
   rewrites the affected snapshot days in one transaction and deletes cached scores whose period
   overlaps. `metrics.nightly` (02:30 UTC) recomputes the last 35 days of every active user and the
   full history of users without snapshots. Manual: `npm run metrics:recompute [-- <email>]`.
+
+### AI configuration
+
+Implementation: `apps/api/src/ai/` (client, structured output, event streams, queue),
+`src/prompts/` (versioned prompts), `src/evidence/` (deterministic evidence + citation verifier),
+`src/documents/` (API, worker generation, quick actions), `src/usage/` (usage + quotas). Spec:
+[ADR-0009](docs/v2/blueprint/adr/ADR-0009-ai-generation.md), KPI_METHODOLOGY §7–§8.
+
+| Variable                                           | Default                                | Purpose                                                                                                                                              |
+| -------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`                                | —                                      | Without it the app runs; generation answers `503 UPSTREAM_UNAVAILABLE { reason: 'not_configured' }` (cache hits still work)                          |
+| `ANTHROPIC_BASE_URL`                               | Anthropic                              | Test mode: point at a mock (`npm run ai:mock --workspace=apps/api`, port 4010)                                                                       |
+| `ANTHROPIC_MODEL_DEFAULT` / `ANTHROPIC_MODEL_FAST` | `claude-opus-5-5` / `claude-haiku-5-5` | Documents (resume, appraisal, promotion) / quick actions (highlights, achievement statements, digest summary, repair). Model ids live only in config |
+| `AI_EFFORT_DEFAULT` / `AI_EFFORT_FAST`             | `medium` / `low`                       | `output_config.effort` (thinking is adaptive)                                                                                                        |
+| `AI_FALLBACKS_ENABLED`                             | `true`                                 | Server-side refusal fallback on the default tier                                                                                                     |
+| `AI_TIMEOUT_MS` / `AI_QUICK_TIMEOUT_MS`            | 180000 / 20000                         | Per-attempt timeouts (documents / quick actions)                                                                                                     |
+| `AI_MAX_RETRIES` / `AI_RETRY_BASE_MS`              | 2 / 1000                               | Retries for 429/5xx/overloaded/connection only, exponential backoff + jitter, never after output streamed                                            |
+| `AI_WORKER_CONCURRENCY`                            | 4                                      | Parallel `ai` jobs per worker process                                                                                                                |
+| `AI_STREAM_TTL_SECONDS`                            | 3600                                   | Retention of a document's Redis event stream (SSE resume window)                                                                                     |
+| `ENTITLEMENTS_JSON`                                | —                                      | Plan-limit overrides, e.g. `{"FREE":{"aiGenerationsPerMonth":30}}`                                                                                   |
+| `AI_PRICES_JSON`                                   | —                                      | Price-table overrides (US$/1M tokens) for cost estimates                                                                                             |
+
+- **How a document is made:** `POST /api/documents` validates the options, resolves the period in
+  your time zone, builds a deterministic evidence pack (ranked PRs, reviews, commits, engine
+  metrics; private repo names replaced when `aiRedactPrivateRepos` is on) and computes `inputHash`.
+  Same hash → the existing document (`200`, no quota). Otherwise a `pending` document is created and
+  an `ai.generate` job runs in the worker: streamed structured output (`output_config.format` from
+  the Zod schema) → Zod validation → at most one repair call → citation verification (refs outside
+  your evidence are removed and flagged, uncited claims flagged) → engine sections merged (metrics
+  are never written by the model) → `DocumentVersion` + `AiUsage`. Events go to a Redis Stream that
+  `GET /api/documents/:id/stream` relays as SSE (`status`, `section`, `delta`, `done`/`error`/
+  `cancelled`, resumable with `Last-Event-ID`). Quick actions (`ai.quick`) are awaited ≤ 20 s.
+- **Queue:** `ai` under `QUEUE_PREFIX` (job ids `ai-<documentId>-<version>`), consumed by the worker
+  (`npm run dev:worker`) or by the API when `RUN_WORKER_IN_API=true`.
+- **Quotas (PRD §6):** per UTC month — FREE 15 generations (create + regenerate) and 100 quick
+  actions; PRO 150 / 1,000. Cache hits, failures, cancellations and repair calls never count;
+  generations in flight do. Exceeded → `402 QUOTA_EXCEEDED { feature, used, limit, resetsAt }`.
+  `GET /api/me/usage?month=YYYY-MM` reports usage, tokens and estimated cost.
+- **Adding a prompt version:** copy `apps/api/src/prompts/<name>.vN.ts` to `<name>.v(N+1).ts`, bump
+  `version`, edit, point `PROMPTS` in `src/prompts/index.ts` at it, then refresh the eval
+  recordings (`npm run eval:live -- --record` with a key, or `npm run eval:record --workspace=apps/api`)
+  — `npm test` fails while recordings are for an older version. The version is part of `inputHash`,
+  so new requests miss the cache; existing documents keep their stored `promptVersion`.
+- **Evals:** `apps/api/test/evals/` — 7 personas × 6 generators replay recorded responses through the
+  real pipeline in `npm test` (schema, citations resolve to the user's records, numbers traceable,
+  sections, lengths, banned phrases, prompt-injection and redaction checks, plus negative controls).
+  `npm run eval:live` (needs `ANTHROPIC_API_KEY`) runs them against the real API and writes
+  [`docs/v2/evals/REPORT.md`](docs/v2/evals/REPORT.md).
 
 ### Local webhook forwarding
 
@@ -322,6 +370,7 @@ or Google sign-in to log in. Seed the containerised database from your machine w
 | `npm test`          | Unit tests: API (Jest), web (Vitest + Testing Library), shared (Vitest)    |
 | `npm run test:int`  | API integration tests against a real Postgres + Redis                      |
 | `npm run test:e2e`  | Playwright smoke tests against the built apps                              |
+| `npm run eval`      | Mocked AI evals only (also part of `npm test`); `eval:live` = real API     |
 
 **Integration tests** use the separate database in `DATABASE_URL_TEST` (default
 `devimpact_test`; it is truncated between tests and migrated automatically). Create it once:
@@ -355,7 +404,9 @@ Traces are off by default; re-run a failing test with `npx playwright test --tra
 
 Tests never call the real GitHub or Anthropic APIs: `octokit` is stubbed in Jest, GitHub OAuth/REST
 calls go to unroutable `*.github.invalid` hosts answered by a fake (`test/utils/fake-github.ts`),
-and AI calls are mocked. **Authenticated API tests** use `bearer(userId)` from
+and AI calls go to an in-process fake Messages API (`test/utils/fake-anthropic.ts`, via
+`ANTHROPIC_BASE_URL`; the test env points at a closed port by default) consumed by an in-process `ai`
+worker (`test/utils/ai-worker.ts`). **Authenticated API tests** use `bearer(userId)` from
 `apps/api/test/utils/auth.ts`: `createTestApp()` starts a local JWKS server with a test key pair,
 so the real JWT verification path runs. E2E tests sign in through `POST /api/dev-login`. Known v0.1 bugs are captured as `it.skip` / `it.todo` tests tagged with their issue ID from
 [`docs/v2/audit/ISSUES.md`](docs/v2/audit/ISSUES.md); the phase that fixes a bug un-skips its test.
@@ -379,37 +430,46 @@ message, details?, requestId } }` with real HTTP status codes; the full contract
 rate-limit classes, pagination) is [`docs/v2/blueprint/API_CONTRACT_V2.md`](docs/v2/blueprint/API_CONTRACT_V2.md)
 and the live schema is at `/api/docs` outside production.
 
-| Method | Path                                            | Description                                           |
-| ------ | ----------------------------------------------- | ----------------------------------------------------- |
-| GET    | /api/health · /api/health/live                  | Readiness (Postgres + Redis) · liveness (public)      |
-| GET    | /api/me · /api/auth/me (deprecated)             | User, settings, entitlements, integrations            |
-| PATCH  | /api/me · /api/me/settings                      | Update name · settings (IANA time zone, …)            |
-| GET    | /api/me/settings · /api/me/entitlements         | Settings · plan limits                                |
-| DELETE | /api/me                                         | Delete account and all data (`{ confirmEmail }`)      |
-| GET    | /api/integrations · /:id                        | Integrations (never tokens)                           |
-| POST   | /api/integrations/github/connect                | GitHub App install/authorize URL with signed state    |
-| POST   | /api/integrations/github/callback               | Verify state, exchange code, store encrypted tokens   |
-| POST   | /api/integrations/:id/reconnect                 | Authorize again                                       |
-| DELETE | /api/integrations/:id?purgeData=                | Disconnect (revoke token; keep or purge data)         |
-| POST   | /api/sync                                       | Queue a sync (202; 409 in progress / needs reauth)    |
-| GET    | /api/sync/status · /sync/runs · /runs/:id       | DB-backed state, progress, history                    |
-| GET    | /api/repos · PATCH /repos · /repos/:id          | Repositories; include/exclude (recomputes KPIs)       |
-| POST   | /api/repos/:id/purge                            | Delete a repository's synced activity                 |
-| POST   | /api/webhooks/github                            | GitHub App webhook (public, HMAC, idempotent, 202)    |
-| GET    | /api/metrics/definitions                        | Metric catalogue, versions, score bands (cacheable)   |
-| GET    | /api/metrics/overview?period=                   | Stat cards with deltas, impact summary, freshness     |
-| GET    | /api/metrics/kpis?period=                       | Five KPI sections (value, n, status, delta, evidence) |
-| GET    | /api/metrics/timeseries?metric=&interval=       | One metric per day/week/month (`period` or `from/to`) |
-| GET    | /api/metrics/heatmap?from=&to=                  | Daily activity counts (≤ 366 days)                    |
-| GET    | /api/metrics/repos · /trends · /evidence        | Per-repo contributions · N-period trends · evidence   |
-| GET    | /api/impact?period= · /impact/history           | Deterministic impact score `impact@2.0.0` + history   |
-| GET    | /api/career/timeline?year=                      | The year by quarter (merged PRs, reviews, milestones) |
-| GET    | /api/activity/feed                              | Unified feed (commits, PR events, reviews)            |
-| GET    | /api/activity/prs?role= · /prs/:id              | Authored or reviewed PRs (cycle time, my reviews)     |
-| GET    | /api/activity/reviews · /commits · /commits/:id | Reviews (turnaround) · commits                        |
-| GET    | /api/activity/summary                           | Deprecated v1 summary (`Sunset`, removed in P10)      |
-| POST   | /api/generate/{resume,appraisal,promotion}      | v1 generators (AI rate limit; P08 → /documents)       |
-| GET    | /api/documents · /:id, DELETE /:id              | Generated documents                                   |
+| Method | Path                                            | Description                                            |
+| ------ | ----------------------------------------------- | ------------------------------------------------------ |
+| GET    | /api/health · /api/health/live                  | Readiness (Postgres + Redis) · liveness (public)       |
+| GET    | /api/me · /api/auth/me (deprecated)             | User, settings, entitlements, integrations             |
+| PATCH  | /api/me · /api/me/settings                      | Update name · settings (IANA time zone, …)             |
+| GET    | /api/me/settings · /api/me/entitlements         | Settings · plan limits                                 |
+| DELETE | /api/me                                         | Delete account and all data (`{ confirmEmail }`)       |
+| GET    | /api/integrations · /:id                        | Integrations (never tokens)                            |
+| POST   | /api/integrations/github/connect                | GitHub App install/authorize URL with signed state     |
+| POST   | /api/integrations/github/callback               | Verify state, exchange code, store encrypted tokens    |
+| POST   | /api/integrations/:id/reconnect                 | Authorize again                                        |
+| DELETE | /api/integrations/:id?purgeData=                | Disconnect (revoke token; keep or purge data)          |
+| POST   | /api/sync                                       | Queue a sync (202; 409 in progress / needs reauth)     |
+| GET    | /api/sync/status · /sync/runs · /runs/:id       | DB-backed state, progress, history                     |
+| GET    | /api/repos · PATCH /repos · /repos/:id          | Repositories; include/exclude (recomputes KPIs)        |
+| POST   | /api/repos/:id/purge                            | Delete a repository's synced activity                  |
+| POST   | /api/webhooks/github                            | GitHub App webhook (public, HMAC, idempotent, 202)     |
+| GET    | /api/metrics/definitions                        | Metric catalogue, versions, score bands (cacheable)    |
+| GET    | /api/metrics/overview?period=                   | Stat cards with deltas, impact summary, freshness      |
+| GET    | /api/metrics/kpis?period=                       | Five KPI sections (value, n, status, delta, evidence)  |
+| GET    | /api/metrics/timeseries?metric=&interval=       | One metric per day/week/month (`period` or `from/to`)  |
+| GET    | /api/metrics/heatmap?from=&to=                  | Daily activity counts (≤ 366 days)                     |
+| GET    | /api/metrics/repos · /trends · /evidence        | Per-repo contributions · N-period trends · evidence    |
+| GET    | /api/impact?period= · /impact/history           | Deterministic impact score `impact@2.0.0` + history    |
+| GET    | /api/career/timeline?year=                      | The year by quarter (merged PRs, reviews, milestones)  |
+| GET    | /api/activity/feed                              | Unified feed (commits, PR events, reviews)             |
+| GET    | /api/activity/prs?role= · /prs/:id              | Authored or reviewed PRs (cycle time, my reviews)      |
+| GET    | /api/activity/reviews · /commits · /commits/:id | Reviews (turnaround) · commits                         |
+| GET    | /api/activity/summary                           | Deprecated v1 summary (`Sunset`, removed in P10)       |
+| GET    | /api/me/usage?month=                            | AI usage vs monthly quota, tokens, estimated cost      |
+| POST   | /api/impact/highlights                          | AI narrative for a period's score (fast, cached; ai)   |
+| GET    | /api/documents?type=&q=&sort=                   | Document library (cursor pagination)                   |
+| POST   | /api/documents/preview-evidence                 | Evidence + engine metrics a document would use (no AI) |
+| POST   | /api/documents                                  | Create (200 cache hit / 201 pending + streamUrl; ai)   |
+| GET    | /api/documents/:id?version= · /:id/stream       | Document + version + cited evidence · SSE events       |
+| PATCH  | /api/documents/:id                              | Edit title/content (new version; 409 stale)            |
+| POST   | /api/documents/:id/regenerate · /cancel         | Next version or one section (ai) · cancel              |
+| GET    | /api/documents/:id/versions · POST …/:n/restore | Version history · restore                              |
+| DELETE | /api/documents/:id                              | Delete document and versions                           |
+| POST   | /api/ai/achievement-statement                   | Statement for one of your PRs/commits (fast; ai)       |
 
 Web routes: `/api/auth/*` (Better Auth), `POST /api/dev-login` (development only), `GET /api/health`.
 

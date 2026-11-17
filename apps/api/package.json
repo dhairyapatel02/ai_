@@ -23,7 +23,8 @@
     "db:push": "prisma db push",
     "db:seed:heavy": "tsx prisma/scripts/seed-heavy.ts",
     "metrics:recompute": "tsx prisma/scripts/recompute-metrics.ts",
-    "perf:metrics": "tsx prisma/scripts/measure-metrics-perf.ts"
+    "perf:metrics": "tsx prisma/scripts/measure-metrics-perf.ts",
+    "ai:mock": "tsx test/utils/serve-fake-anthropic.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.9.0",

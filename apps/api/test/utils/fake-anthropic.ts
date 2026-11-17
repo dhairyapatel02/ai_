@@ -52,7 +52,10 @@ const sse = (res: ServerResponse, event: string, data: unknown) => {
 };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export async function startFakeAnthropic(defaultHandler?: FakeHandler): Promise<FakeAnthropic> {
+export async function startFakeAnthropic(
+  defaultHandler?: FakeHandler,
+  port = 0,
+): Promise<FakeAnthropic> {
   const requests: FakeRequest[] = [];
   const queue: FakeReply[] = [];
   let handler: FakeHandler = defaultHandler ?? (() => ({ text: '{}' }));
@@ -149,11 +152,11 @@ export async function startFakeAnthropic(defaultHandler?: FakeHandler): Promise<
       })();
     });
   });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  await new Promise<void>((resolve) => server.listen(port, '127.0.0.1', resolve));
   const address = server.address();
-  const port = typeof address === 'object' && address ? address.port : 0;
+  const bound = typeof address === 'object' && address ? address.port : 0;
   return {
-    url: `http://127.0.0.1:${port}`,
+    url: `http://127.0.0.1:${bound}`,
     requests,
     queue,
     setHandler: (h) => {

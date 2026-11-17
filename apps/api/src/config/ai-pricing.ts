@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 /**
  * Cost-estimate price table, US$ per 1M tokens (claude-api skill, cached 2026-11-03). Model ids
- * appear only in `src/config/` (P08 acceptance). Unknown models cost 0 in estimates and log once;
- * override or extend with `AI_PRICES_JSON`. Estimates only — billing is Anthropic's invoice.
+ * appear only in `src/config/` (P08 acceptance). Unknown models cost 0 in estimates; override or
+ * extend with `AI_PRICES_JSON`. Estimates only — billing is Anthropic's invoice.
  */
 export interface ModelPrice {
   input: number;

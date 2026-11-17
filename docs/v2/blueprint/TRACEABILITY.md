@@ -87,7 +87,7 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | SEC-04 | 🟠 | F-10, ADR-0004 | P05 | signed single-use state |
 | SEC-05 | 🟠 | F-10, ADR-0004 | P05 (flow), P06 | GitHub App read-only permissions — decided |
 | SEC-06 | 🟠 | ADR-0006 | P05 | cursor pagination, limit ≤ 100 |
-| SEC-07 | 🟠 | ADR-0006 (rate classes), F-06 | P05, P08 | |
+| SEC-07 | 🟠 | ADR-0006 (rate classes), F-06 | P05, P08 | ✅ P05 rate classes + P08 monthly quotas |
 | SEC-08 | 🟠 | ADR-0006 | P05, P14 (web CSP) | |
 | SEC-09 | 🟠 | ADR-0002, ADR-0003 | P02 (patch), P09 (major) | next-auth removed in P05 |
 | BUG-04 | 🟠 | ADR-0006 (Zod pipe + exception filter) | P05 | invalid query → 400, never 500 |
@@ -96,8 +96,8 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | DATA-04 | 🟠 | F-15, ADR-0007 | P06 | |
 | DATA-05 | 🟠 | ADR-0007 | P06 | non-default-branch commits not counted (documented caveat) |
 | AI-01 | 🟠 | F-28, ADR-0008 | P07 | ✅ fixed in P07 |
-| AI-02 | 🟠 | ADR-0009 | P08 | |
-| AI-03 | 🟠 | F-44, F-50, ADR-0009 | P08 | |
+| AI-02 | 🟠 | ADR-0009 | P08 | ✅ fixed in P08 (SDK 1.9.0, models from config) |
+| AI-03 | 🟠 | F-44, F-50, ADR-0009 | P08 | ✅ fixed in P08 |
 | API-01 | 🟠 | ADR-0006 | P05 | |
 | API-02 | 🟠 | ADR-0006 | P05 | |
 | PERF-01 | 🟠 | ADR-0007 (budget ≤ 250) | P06 | |
@@ -111,7 +111,7 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | GAP-04 | 🟠 | F-49 | P11 | |
 | GAP-05 | 🟠 | F-48 | P11 | |
 | GAP-06 | 🟠 | F-01 | P05, P09 | |
-| SEC-11 | 🟡 | ADR-0009 | P08 | evidence delimiting + eval |
+| SEC-11 | 🟡 | ADR-0009 | P08 | ✅ fixed in P08 (evidence delimiting + injection eval) |
 | SEC-12 | 🟡 | ADR-0006 | P05 | |
 | SEC-13 | 🟡 | F-17, ADR-0004 | P05/P06 | token revoke on disconnect |
 | SEC-14 | 🟡 | ADR-0013 | P15 | non-root images |
@@ -129,11 +129,11 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | DATA-09 | 🟡 | ADR-0008 (recompute flow) | P07 | ✅ fixed in P07 |
 | DATA-10 | ⚪ | DATA_MODEL_V2 (designed in P03) | P06 (implement) | |
 | OPS-13 | 🟡 | ARCHITECTURE §11 | P14, P15 | |
-| AI-04 | 🟡 | ADR-0009 | P08 | |
-| AI-05 | 🟡 | ADR-0009 | P08 | |
-| AI-06 | 🟡 | F-45, ADR-0009 | P08 | |
-| AI-07 | 🟡 | KPI §8, ADR-0009 | P08 | |
-| AI-08 | 🟡 | F-06, F-07 | P08, P12 | |
+| AI-04 | 🟡 | ADR-0009 | P08 | ✅ fixed in P08 |
+| AI-05 | 🟡 | ADR-0009 | P08 | ✅ fixed in P08 |
+| AI-06 | 🟡 | F-45, ADR-0009 | P08 | ✅ fixed in P08 |
+| AI-07 | 🟡 | KPI §8, ADR-0009 | P08 | ✅ fixed in P08 |
+| AI-08 | 🟡 | F-06, F-07 | P08, P12 | ✅ fixed in P08 (usage + quotas; plan page P12) |
 | API-03 | 🟡 | F-01 | P05 | stubs removed |
 | API-04 | 🟡 | F-28 | P05 (contract), P07 | ✅ fixed in P07 |
 | API-05 | 🟡 | ADR-0006 | P05 | |
@@ -149,15 +149,15 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | UX-11 | 🟡 | F-71 | P04, P09 | |
 | UX-12 | 🟡 | F-44, F-48 | P11 | |
 | GAP-07 | 🟡 | F-05, F-06, F-07, F-65 | P12 | |
-| GAP-08 | 🟡 | F-40 | P08, P11 | `format` option honoured |
+| GAP-08 | 🟡 | F-40 | P08, P11 | API ✅ P08 (`format` honoured); UI P11 |
 | GAP-09 | 🟡 | ADR-0006, ADR-0010 | P02, P05, P09 | |
 | DEBT-06 | 🟡 | ADR-0010 | P09 | |
 | DEBT-07 | ⚪ | ADR-0002 | P02, P09 | |
-| DEBT-10 | ⚪ | ADR-0002 (end-state versions) | P05 (Prisma major with auth migrations), P06, P08 (SDK 1.x), P09 (Next/ESLint), P14 (TS 7 evaluation) | added by P02; P06 adopted Prisma 7.10.1 (D-022) |
+| DEBT-10 | ⚪ | ADR-0002 (end-state versions) | P05 (Prisma major with auth migrations), P06, P08 (SDK 1.x), P09 (Next/ESLint), P14 (TS 7 evaluation) | added by P02; P06 adopted Prisma 7.10.1 (D-022); P08 adopted `@anthropic-ai/sdk` 1.9.0 (D-024) |
 | SEC-15 | ⚪ | ADR-0003 | P05, P09 | NextAuth route removed |
 | BUG-13 | ⚪ | F-20 (formatting helpers) | P10 | |
-| OPS-15 | ⚪ | ADR-0009 | P08 | |
-| AI-09 | ⚪ | F-51 | P08 | `enhanceCommitMessage` → achievement statement |
+| OPS-15 | ⚪ | ADR-0009 | P08 | ✅ fixed in P08 |
+| AI-09 | ⚪ | F-51 | P08 | ✅ fixed in P08 (`POST /ai/achievement-statement`) |
 | API-06 | ⚪ | ADR-0006 | P05 | `/health`, `/docs` |
 | UX-13 | ⚪ | F-15, F-16 | P10 | |
 | GAP-10 | ⚪ | — | **WF (v2.1)** | GitLab/Jira/Linear out of v2.0 scope (ADR-0014, D-018); integrations page shows "planned" cards without connect buttons |
@@ -172,5 +172,8 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | DEBT-12 | ⚪ | ADR-0002 | P09, P14 | added by P06: ESM `prisma-client` generator, drop root Prisma devDependencies |
 | DATA-12 | 🟡 | F-26, F-28, KPI §3.2 (revert rate) | P14 | added by P07: late reverts refresh the merge period’s cached score |
 | PERF-06 | ⚪ | ADR-0008, ARCHITECTURE_V2 §9 | P14 | added by P07: per-user data version against the score cache-write race |
+| AI-10 | 🟡 | F-40–F-42, ADR-0009 (model tier revisit) | P14 | added by P08: live eval + Opus/Sonnet comparison need a key |
+| AI-11 | ⚪ | ADR-0009 (prompt caching) | P14 | added by P08: verify cache reads live |
+| AI-12 | ⚪ | F-47 | P11/P14 | added by P08: section regenerate costs a full generation |
 
 Every open ISSUES row with a target of P05 or later is mapped above; one (GAP-10) is won't-fix for v2.0.
