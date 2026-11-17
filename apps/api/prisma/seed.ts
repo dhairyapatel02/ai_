@@ -599,10 +599,9 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
 
   const sixMonthsAgo = new Date(anchor.getTime() - 182 * DAY_MS).toISOString();
   const now = anchor.toISOString();
-  await prisma.generatedDocument.createMany({
-    data: [
+  // v0.1-style documents, stored as migration P08-1 imports them: read-only legacy versions.
+  const legacyDocuments = [
       {
-        userId: demo.id,
         type: DocumentType.RESUME,
         dateRange: { from: sixMonthsAgo, to: now },
         content: {
@@ -631,7 +630,6 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
         },
       },
       {
-        userId: demo.id,
         type: DocumentType.APPRAISAL,
         dateRange: { from: sixMonthsAgo, to: now },
         content: {
@@ -653,7 +651,6 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
         },
       },
       {
-        userId: demo.id,
         type: DocumentType.PROMOTION,
         dateRange: { from: sixMonthsAgo, to: now },
         content: {
@@ -666,8 +663,28 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
           supportingData: { commits: commits.length, prs: authoredCount, reviews: reviewCount },
         },
       },
-    ],
-  });
+  ];
+  for (const doc of legacyDocuments) {
+    await prisma.generatedDocument.create({
+      data: {
+        userId: demo.id,
+        type: doc.type,
+        title: `${doc.type.charAt(0)}${doc.type.slice(1).toLowerCase()} (imported)`,
+        status: 'READY',
+        currentVersion: 1,
+        options: { dateRange: doc.dateRange },
+        periodStart: new Date(`${doc.dateRange.from.slice(0, 10)}T00:00:00Z`),
+        periodEnd: new Date(`${doc.dateRange.to.slice(0, 10)}T00:00:00Z`),
+        promptId: 'legacy',
+        promptVersion: 0,
+        model: 'unknown',
+        inputHash: `legacy:${doc.type}`,
+        versions: {
+          create: { version: 1, source: 'AI', content: { legacy: true, raw: doc.content } },
+        },
+      },
+    });
+  }
 
   return {
     user: demo.email,

@@ -24,7 +24,7 @@ const DAY = 24 * HOUR;
 /**
  * Rate-limit classes (API_CONTRACT_V2 §1.1). A route belongs to exactly one class; a class is
  * enforced by one or more named windows. Keys are per user (authenticated) or per IP (public).
- * `export` and `sse` arrive with the endpoints that need them (P08/P11/P12).
+ * `export` arrives with the export endpoints (P11/P12).
  */
 export const RATE_LIMIT_WINDOWS = {
   default: { ttl: MINUTE, limit: 300 },
@@ -46,6 +46,8 @@ export const RATE_LIMIT_CLASSES = {
   destructive: ['destructive'],
   // Signature-gated and answered fast; never throttled (API_CONTRACT_V2 §1.1).
   webhook: [],
+  // Concurrent SSE streams per user, enforced by DocumentStreamService (a counter, not a window).
+  sse: [],
 } as const satisfies Record<string, readonly WindowName[]>;
 export type RateLimitClass = keyof typeof RATE_LIMIT_CLASSES;
 

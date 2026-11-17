@@ -1,5 +1,6 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 
+import { AiWorkerModule } from './documents/ai-worker.module';
 import { infrastructureImports } from './infrastructure';
 import { SyncWorkerModule } from './sync/sync-worker.module';
 
@@ -10,6 +11,6 @@ import { SyncWorkerModule } from './sync/sync-worker.module';
 @Module({})
 export class WorkerModule {
   static register(): DynamicModule {
-    return { module: WorkerModule, imports: [...infrastructureImports(), SyncWorkerModule] };
+    return { module: WorkerModule, imports: [...infrastructureImports(), SyncWorkerModule, AiWorkerModule] };
   }
 }

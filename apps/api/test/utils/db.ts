@@ -13,7 +13,7 @@ export async function resetDatabase(prisma: PrismaClient): Promise<void> {
   await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE`);
 }
 
-/** Clears rate-limit counters, OAuth state nonces and test queues so tests don't affect each other. */
+/** Clears rate-limit counters, OAuth state nonces, AI event streams and test queues so tests don't affect each other. */
 export async function resetRedisState(): Promise<void> {
   const redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', { lazyConnect: true });
   try {
@@ -23,6 +23,9 @@ export async function resetRedisState(): Promise<void> {
       'devimpact:rl:*',
       'devimpact:oauth-state:*',
       'devimpact:metrics-pending:*',
+      'devimpact:doc-events:*',
+      'devimpact:doc-cancel:*',
+      'devimpact:sse:*',
       'devimpact-test:*',
     ]) {
       const keys = await redis.keys(pattern);

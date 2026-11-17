@@ -5,6 +5,8 @@ import {
   SettingsDto,
   UpdateMeInput,
   UpdateSettingsInput,
+  UsageQuery,
+  UsageResponse,
   UserDto,
 } from '@devimpact/shared';
 import { Controller, Delete, Get, Header, HttpCode, Patch } from '@nestjs/common';
@@ -12,13 +14,27 @@ import { z } from 'zod';
 
 import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
 import { withMeta } from '../common/envelope.interceptor';
-import { ApiDoc, ZodBody } from '../common/zod-validation';
+import { ApiDoc, ZodBody, ZodQuery } from '../common/zod-validation';
 import { RateLimit } from '../throttle/rate-limit';
+import { UsageService } from '../usage/usage.service';
 import { MeService } from './me.service';
 
 @Controller('me')
 export class MeController {
-  constructor(private readonly me: MeService) {}
+  constructor(
+    private readonly me: MeService,
+    private readonly usageService: UsageService,
+  ) {}
+
+  @Get('usage')
+  @ApiDoc({
+    summary: 'AI usage vs monthly plan quota (UTC month; default current)',
+    tags: ['me'],
+    response: UsageResponse,
+  })
+  usage(@CurrentUser() user: AuthUser, @ZodQuery(UsageQuery) query: UsageQuery) {
+    return this.usageService.usage(user.id, query.month);
+  }
 
   @Get()
   @ApiDoc({

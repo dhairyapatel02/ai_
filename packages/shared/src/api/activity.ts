@@ -170,5 +170,3 @@ export type CommitItem = z.infer<typeof CommitItem>;
 export const CommitDetail = CommitItem.extend({ messageBody: z.string().nullable() });
 export type CommitDetail = z.infer<typeof CommitDetail>;
 
-export const DocumentListQuery = PageQuery;
-export type DocumentListQuery = z.infer<typeof DocumentListQuery>;

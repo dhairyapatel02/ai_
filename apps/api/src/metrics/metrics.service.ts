@@ -43,6 +43,7 @@ import {
 } from '@devimpact/shared';
 import { Injectable } from '@nestjs/common';
 
+import { inputsHashOf } from '../ai/hash';
 import { AppException } from '../common/app-exception';
 import { decodeOffsetCursor, encodeOffsetCursor } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
@@ -284,7 +285,26 @@ export class MetricsService {
 
   async impact(userId: string, spec?: string): Promise<ImpactDto> {
     const { period } = await this.resolve(userId, spec);
-    return this.toImpactDto(await this.scores.scoreFor(userId, period));
+    const score = await this.scores.scoreFor(userId, period);
+    return { ...this.toImpactDto(score), highlights: await this.highlightsFor(userId, score) };
+  }
+
+  /**
+   * The impact narrative (F-29) generated for exactly these score inputs, if one exists. A plain
+   * database lookup — GET /impact never calls the AI (P07/P08 acceptance).
+   */
+  private async highlightsFor(userId: string, score: PeriodScore): Promise<ImpactDto['highlights']> {
+    const doc = await this.prisma.generatedDocument.findFirst({
+      where: {
+        userId,
+        type: 'IMPACT_NARRATIVE',
+        status: { in: ['READY', 'PENDING', 'STREAMING'] },
+        options: { path: ['inputsHash'], equals: inputsHashOf(score.inputs) },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, status: true },
+    });
+    return doc ? { documentId: doc.id, status: doc.status.toLowerCase() } : null;
   }
 
   async impactHistory(userId: string, query: ImpactHistoryQuery): Promise<ImpactHistoryResponse> {
