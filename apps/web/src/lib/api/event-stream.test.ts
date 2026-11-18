@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { errJson } from '../../../test/fixtures';
-
 import { parseDocumentEvent, readEventStream, SseParser, type SseMessage } from './event-stream';
 
 /** The P08 contract example (PROGRESS.md, Phase 08 handoff), split at awkward places. */
@@ -29,11 +28,17 @@ describe('SseParser', () => {
     const parser = new SseParser();
     const out = STREAM.flatMap((c) => parser.feed(c));
     expect(out.map((m) => m.event)).toEqual(['status', 'delta', 'section', 'done']);
-    expect(out[1]).toEqual({ id: '1794914003112-0', event: 'delta', data: '{"key":"summary","text":"Backend engineer"}' });
+    expect(out[1]).toEqual({
+      id: '1794914003112-0',
+      event: 'delta',
+      data: '{"key":"summary","text":"Backend engineer"}',
+    });
   });
 
   it('joins multi-line data', () => {
-    expect(new SseParser().feed('data: a\ndata: b\n\n')).toEqual([{ id: null, event: 'message', data: 'a\nb' }]);
+    expect(new SseParser().feed('data: a\ndata: b\n\n')).toEqual([
+      { id: null, event: 'message', data: 'a\nb' },
+    ]);
   });
 });
 
@@ -44,7 +49,9 @@ describe('parseDocumentEvent', () => {
       event: 'status',
       data: { status: 'streaming', version: 2 },
     });
-    expect(parseDocumentEvent(msg('error', '{"code":"OUTPUT_INVALID","message":"x","retryable":false}'))).toMatchObject({ event: 'error' });
+    expect(
+      parseDocumentEvent(msg('error', '{"code":"OUTPUT_INVALID","message":"x","retryable":false}')),
+    ).toMatchObject({ event: 'error' });
     expect(parseDocumentEvent(msg('status', '{"status":"nope"}'))).toBeNull();
     expect(parseDocumentEvent(msg('toString', '{}'))).toBeNull();
     expect(parseDocumentEvent(msg('delta', 'not json'))).toBeNull();
@@ -66,7 +73,11 @@ describe('readEventStream', () => {
     expect(seen).toEqual(['status', 'delta', 'section', 'done']);
     const [url, init] = fetchImpl.mock.calls[0] ?? [];
     expect(url).toBe('https://api.test/api/documents/cm1/stream');
-    expect(init?.headers).toMatchObject({ Authorization: 'Bearer jwt', 'Last-Event-ID': '1794914000000-0', Accept: 'text/event-stream' });
+    expect(init?.headers).toMatchObject({
+      Authorization: 'Bearer jwt',
+      'Last-Event-ID': '1794914000000-0',
+      Accept: 'text/event-stream',
+    });
   });
 
   it('refreshes the token once on 401 and surfaces HTTP errors as ApiError', async () => {

@@ -2,7 +2,6 @@
 
 import { CalendarX } from 'lucide-react';
 
-
 import { EmptyState } from '@/components/states';
 import { Button } from '@/components/ui/button';
 import { isApiError } from '@/lib/api/errors';

@@ -38,8 +38,7 @@ export default defineConfig({
       command: 'node apps/api/dist/main.js',
       url: `${API_URL}/health`,
       reuseExistingServer: !process.env.CI,
-      timeout: 90_000,
-  expect: { timeout: 15_000 },
+      timeout: 60_000,
       stdout: 'pipe',
     },
     {

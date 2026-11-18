@@ -3,7 +3,6 @@ import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-
 /**
  * Designed empty state (DESIGN_SYSTEM §5.2, §9): icon tile, title, one-sentence reason, primary +
  * secondary action. "What's missing + why it matters + one action".

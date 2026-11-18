@@ -52,7 +52,9 @@ test.describe('app shell', () => {
     await context.close();
   });
 
-  test('tablet (768): sidebar hidden, menu button opens the navigation drawer', async ({ page }) => {
+  test('tablet (768): sidebar hidden, menu button opens the navigation drawer', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto('/dashboard');
     await hideDevOverlay(page);
@@ -76,7 +78,10 @@ test.describe('app shell', () => {
     const bottom = page.getByRole('navigation', { name: 'Primary' });
     await expect(bottom).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden();
-    await expect(bottom.getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
+    await expect(bottom.getByRole('link', { name: 'Home' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - window.innerWidth,
     );
@@ -113,9 +118,9 @@ test.describe('app shell', () => {
     await page.reload();
     await expect(page.locator('html')).toHaveClass(/\bdark\b/);
     // The class is set before the page is parsed (next-themes inline script) → no flash.
-    expect(await page.evaluate(() => (window as unknown as { themeAtDcl: string }).themeAtDcl)).toMatch(
-      /\bdark\b/,
-    );
+    expect(
+      await page.evaluate(() => (window as unknown as { themeAtDcl: string }).themeAtDcl),
+    ).toMatch(/\bdark\b/);
     await expect(page.getByTestId('theme-toggle')).toHaveAttribute('data-theme-choice', 'dark');
     await page.getByTestId('theme-toggle').click(); // back to system
     await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);

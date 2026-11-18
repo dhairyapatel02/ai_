@@ -45,7 +45,9 @@ test('shell (dashboard)', async ({ page }) => {
   await signIn(page);
   await setOnboarding(page, true);
   await page.goto('/dashboard');
-  await shoot(page, 'shell-dashboard', () => expect(page.getByTestId('stat-commits')).toBeVisible());
+  await shoot(page, 'shell-dashboard', () =>
+    expect(page.getByTestId('stat-commits')).toBeVisible(),
+  );
 });
 
 test('onboarding', async ({ page }) => {

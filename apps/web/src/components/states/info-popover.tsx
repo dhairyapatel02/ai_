@@ -6,7 +6,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 
 import type { ReactNode } from 'react';
 
-
 /**
  * "How is this calculated?" (DESIGN_SYSTEM §5.2, F-27): a 28 px info button that opens a popover
  * with the definition. Lives in the same place on every metric (consistent help, WCAG 3.2.6).

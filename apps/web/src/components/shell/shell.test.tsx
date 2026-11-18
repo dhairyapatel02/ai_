@@ -1,16 +1,16 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { syncRun, syncStatus } from '../../../test/fixtures';
-
 import { hrefWithPeriod, isNavItemActive, routeMeta } from './nav-config';
 import { NavLinks } from './nav-links';
 import { isTypingTarget } from './shortcuts';
 import { describeSync } from './sync-status';
 import { nextTheme } from './theme-toggle';
 import { initials } from './user-menu';
+
+import type { ReactNode } from 'react';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/kpis/impact',
@@ -41,7 +41,11 @@ describe('navigation', () => {
   });
 
   it('resolves titles, parents and period pages', () => {
-    expect(routeMeta('/kpis/impact')).toMatchObject({ title: 'Impact score', parent: { href: '/kpis' }, period: true });
+    expect(routeMeta('/kpis/impact')).toMatchObject({
+      title: 'Impact score',
+      parent: { href: '/kpis' },
+      period: true,
+    });
     expect(routeMeta('/documents/cm123')).toMatchObject({ title: 'Document' });
     expect(routeMeta('/settings/profile').period).toBeUndefined();
     expect(isNavItemActive('/documents', '/documents/new/resume')).toBe(true);
@@ -55,10 +59,22 @@ describe('sync status copy', () => {
     expect(describeSync(null).text).toBe('Not connected');
     expect(describeSync(undefined, { loading: true }).text).toBe('Checking sync…');
     expect(describeSync(undefined, { error: true }).text).toBe('Status unavailable');
-    expect(describeSync(syncStatus({ lastSuccessfulAt: '2026-11-18T11:48:00Z' }), { now })).toMatchObject({ tone: 'ok', text: 'Synced 12 min ago' });
-    expect(describeSync(syncStatus({ state: 'running', currentRun: syncRun({ progress: 64, recentWindowCompletedAt: '2026-11-18T11:00:00Z' }) })).text).toBe('Importing history · 64%');
+    expect(
+      describeSync(syncStatus({ lastSuccessfulAt: '2026-11-18T11:48:00Z' }), { now }),
+    ).toMatchObject({ tone: 'ok', text: 'Synced 12 min ago' });
+    expect(
+      describeSync(
+        syncStatus({
+          state: 'running',
+          currentRun: syncRun({ progress: 64, recentWindowCompletedAt: '2026-11-18T11:00:00Z' }),
+        }),
+      ).text,
+    ).toBe('Importing history · 64%');
     expect(describeSync(syncStatus({ state: 'queued' })).text).toBe('Sync queued');
-    expect(describeSync(syncStatus({ state: 'failed' }))).toMatchObject({ tone: 'danger', attention: true });
+    expect(describeSync(syncStatus({ state: 'failed' }))).toMatchObject({
+      tone: 'danger',
+      attention: true,
+    });
   });
 });
 

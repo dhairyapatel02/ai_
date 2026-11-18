@@ -1,6 +1,5 @@
 'use client';
 
-
 import { DocumentPreview } from '@/components/document-preview';
 import { Banner, PageHeader } from '@/components/states';
 import { Card, CardContent } from '@/components/ui/card';

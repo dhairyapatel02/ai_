@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 
 import type { ReactNode } from 'react';
 
-
 type Tone = 'info' | 'warning' | 'danger' | 'success' | 'neutral';
 
 const TONES: Record<Tone, { box: string; icon: string; Icon: LucideIcon }> = {

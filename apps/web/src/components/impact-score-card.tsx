@@ -62,7 +62,10 @@ export function DimensionBars({ dimensions }: { dimensions: ImpactDimensionView[
             <span className="text-muted-foreground">{d.label}</span>
             <span className="font-medium tabular-nums">{d.score ?? '—'}</span>
           </span>
-          <span className="block h-1.5 overflow-hidden rounded-full bg-surface-3" aria-hidden="true">
+          <span
+            className="block h-1.5 overflow-hidden rounded-full bg-surface-3"
+            aria-hidden="true"
+          >
             <span
               className="block h-full rounded-full bg-chart-5"
               style={{ width: `${d.score ?? 0}%` }}

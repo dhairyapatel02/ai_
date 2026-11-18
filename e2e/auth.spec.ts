@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { API_URL, setOnboarding, signIn, WEB_PROD_URL } from './helpers';
+import { API_URL, hideDevOverlay, setOnboarding, signIn, WEB_PROD_URL } from './helpers';
 
 test.describe.configure({ timeout: 120_000 });
 
@@ -80,6 +80,7 @@ test.describe('dashboard in the shell (dev login as the seeded demo user)', () =
     const headers = await sent.allHeaders();
     expect(headers.authorization).toMatch(/^Bearer [\w-]+\.[\w-]+\.[\w-]+$/);
     expect(headers['x-user-id']).toBeUndefined();
+    await hideDevOverlay(page);
 
     await page.getByRole('button', { name: /Dana Demo/ }).click();
     await page.getByRole('menuitem', { name: 'Sign out' }).click();

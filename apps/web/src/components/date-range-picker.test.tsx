@@ -7,7 +7,13 @@ import { DateRangePicker } from './date-range-picker';
 describe('DateRangePicker', () => {
   it('validates the range inline and applies only on submit', async () => {
     const onApply = vi.fn();
-    render(<DateRangePicker today="2026-11-18" value={{ from: '2026-11-15', to: '2026-11-18' }} onApply={onApply} />);
+    render(
+      <DateRangePicker
+        today="2026-11-18"
+        value={{ from: '2026-11-15', to: '2026-11-18' }}
+        onApply={onApply}
+      />,
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Apply range' }));
     expect(onApply).not.toHaveBeenCalled();
     expect(screen.getByRole('alert')).toHaveTextContent('Choose at least 7 days.');

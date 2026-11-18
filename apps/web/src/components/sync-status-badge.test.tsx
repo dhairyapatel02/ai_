@@ -2,13 +2,16 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { syncRun, syncStatus } from '../../test/fixtures';
-
 import { SyncStatusBadge } from './sync-status-badge';
 
 describe('SyncStatusBadge', () => {
   it.each([
     ['not connected', null, 'Not connected'],
-    ['syncing', syncStatus({ state: 'running', currentRun: syncRun({ kind: 'incremental', progress: 64 }) }), 'Syncing · 64%'],
+    [
+      'syncing',
+      syncStatus({ state: 'running', currentRun: syncRun({ kind: 'incremental', progress: 64 }) }),
+      'Syncing · 64%',
+    ],
     ['needs reconnection', syncStatus({ state: 'needs_reauth' }), 'Needs reconnection'],
     ['failed', syncStatus({ state: 'failed' }), 'Last sync failed'],
     ['never synced', syncStatus(), 'Not synced yet'],

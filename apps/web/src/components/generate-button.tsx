@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 
 import type { ReactNode } from 'react';
 
-
 /**
  * Primary AI action (DESIGN_SYSTEM §7: `sparkles` only on buttons that call Claude). While
  * generating, the label stays legible ("Generating…"), the button is `aria-busy`, and an optional

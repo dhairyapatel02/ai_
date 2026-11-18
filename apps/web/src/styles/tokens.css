@@ -112,8 +112,8 @@
   --heat-4: #2b358f;
 
   /* Typography */
-  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --text-caption: 0.75rem; /* 12px / 16 — captions, axis ticks, badges */
   --text-sm: 0.8125rem; /* 13px / 18 — dense tables, secondary text */
   --text-base: 0.875rem; /* 14px / 20 — UI default */

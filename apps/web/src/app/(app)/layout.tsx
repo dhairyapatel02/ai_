@@ -2,7 +2,6 @@ import { MeDto } from '@devimpact/shared';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { redirect } from 'next/navigation';
 
-
 import { AppShell } from '@/components/shell/app-shell';
 import { isApiError } from '@/lib/api/errors';
 import { makeQueryClient } from '@/lib/api/query-client';

@@ -25,7 +25,13 @@ describe('GenerateButton', () => {
   });
 
   it('shows why it is disabled', () => {
-    render(<GenerateButton loading={false} onClick={vi.fn()} disabledReason="You've used all 15 generations." />);
+    render(
+      <GenerateButton
+        loading={false}
+        onClick={vi.fn()}
+        disabledReason="You've used all 15 generations."
+      />,
+    );
     expect(screen.getByRole('button')).toBeDisabled();
     expect(screen.getByText("You've used all 15 generations.")).toBeInTheDocument();
   });

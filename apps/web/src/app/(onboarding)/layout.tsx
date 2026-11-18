@@ -1,6 +1,5 @@
 import Link from 'next/link';
 
-
 import { Wordmark } from '@/components/brand';
 import { ThemeToggle } from '@/components/shell/theme-toggle';
 import { Button } from '@/components/ui/button';

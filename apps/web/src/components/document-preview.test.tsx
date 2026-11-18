@@ -13,9 +13,24 @@ describe('DocumentPreview', () => {
           sections: {
             executiveSummary: { id: 'es1', text: 'Great quarter', citations: ['PR-acme/api#12'] },
             keyContributions: [
-              { id: 'kc1', title: 'Refunds', text: 'Shipped refunds', citations: [], flags: ['uncited'] },
+              {
+                id: 'kc1',
+                title: 'Refunds',
+                text: 'Shipped refunds',
+                citations: [],
+                flags: ['uncited'],
+              },
             ],
-            metrics: [{ key: 'prs_merged', label: 'PRs merged', unit: 'count', value: 7, n: 7, status: 'ok' }],
+            metrics: [
+              {
+                key: 'prs_merged',
+                label: 'PRs merged',
+                unit: 'count',
+                value: 7,
+                n: 7,
+                status: 'ok',
+              },
+            ],
           },
         }}
       />,

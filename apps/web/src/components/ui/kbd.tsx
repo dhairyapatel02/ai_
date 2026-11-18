@@ -2,7 +2,6 @@ import { cn } from '@/lib/utils';
 
 import type { ComponentProps } from 'react';
 
-
 /** Keyboard key hint (radius 4 px, caption size). */
 export function Kbd({ className, ...props }: ComponentProps<'kbd'>) {
   return (

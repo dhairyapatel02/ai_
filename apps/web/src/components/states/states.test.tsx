@@ -4,18 +4,40 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '@/lib/api/errors';
 
-import { Banner, ConfirmDialog, DataTable, DeltaText, EmptyState, ErrorState, StatCard } from './index';
+import {
+  Banner,
+  ConfirmDialog,
+  DataTable,
+  DeltaText,
+  EmptyState,
+  ErrorState,
+  StatCard,
+} from './index';
 
 describe('state components', () => {
   it('EmptyState: icon tile, heading, reason and actions', () => {
-    render(<EmptyState title="No activity in Q3 2026" description="Try a longer period." actions={<button type="button">Change period</button>} />);
-    expect(screen.getByRole('heading', { level: 2, name: 'No activity in Q3 2026' })).toBeInTheDocument();
+    render(
+      <EmptyState
+        title="No activity in Q3 2026"
+        description="Try a longer period."
+        actions={<button type="button">Change period</button>}
+      />,
+    );
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'No activity in Q3 2026' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Change period' })).toBeInTheDocument();
   });
 
   it('ErrorState: friendly copy, retry and the request ID', async () => {
     const onRetry = vi.fn();
-    render(<ErrorState error={new ApiError({ code: 'INTERNAL', message: 'raw', status: 500, requestId: 'req-42' })} what="your KPIs" onRetry={onRetry} />);
+    render(
+      <ErrorState
+        error={new ApiError({ code: 'INTERNAL', message: 'raw', status: 500, requestId: 'req-42' })}
+        what="your KPIs"
+        onRetry={onRetry}
+      />,
+    );
     expect(screen.getByRole('heading', { name: "Couldn't load your KPIs" })).toBeInTheDocument();
     expect(screen.getByText(/Something went wrong on our side/)).toBeInTheDocument();
     expect(screen.getByText('req-42')).toBeInTheDocument();
@@ -24,19 +46,33 @@ describe('state components', () => {
   });
 
   it('StatCard: insufficient data is a dash with a reason, never 0', () => {
-    render(<StatCard label="PRs merged" value={0} state="insufficient" insufficientNote="Not enough data · n = 2" testId="s" />);
+    render(
+      <StatCard
+        label="PRs merged"
+        value={0}
+        state="insufficient"
+        insufficientNote="Not enough data · n = 2"
+        testId="s"
+      />,
+    );
     expect(screen.getByTestId('s')).toHaveTextContent('—');
     expect(screen.getByText('Not enough data · n = 2')).toBeInTheDocument();
   });
 
   it('DeltaText: neutral arrow with hidden direction and units', () => {
-    const { container } = render(<DeltaText delta={-0.09} unit="ratio" comparison="vs same point last month" />);
+    const { container } = render(
+      <DeltaText delta={-0.09} unit="ratio" comparison="vs same point last month" />,
+    );
     expect(container).toHaveTextContent('down9 ptsvs same point last month');
     expect(container.innerHTML).not.toMatch(/destructive|success/);
   });
 
   it('Banner: status role with icon + text', () => {
-    render(<Banner tone="warning" title="GitHub needs to be reconnected">Your data is kept.</Banner>);
+    render(
+      <Banner tone="warning" title="GitHub needs to be reconnected">
+        Your data is kept.
+      </Banner>,
+    );
     const banner = screen.getByRole('status');
     expect(banner).toHaveTextContent('GitHub needs to be reconnected');
     expect(banner.querySelector('svg')).not.toBeNull();
@@ -73,7 +109,15 @@ describe('state components', () => {
   it('ConfirmDialog: typed confirmation gates destructive actions', async () => {
     const onConfirm = vi.fn();
     render(
-      <ConfirmDialog open onOpenChange={vi.fn()} title="Delete your account?" confirmLabel="Delete account" destructive typedConfirmation="delete" onConfirm={onConfirm} />,
+      <ConfirmDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Delete your account?"
+        confirmLabel="Delete account"
+        destructive
+        typedConfirmation="delete"
+        onConfirm={onConfirm}
+      />,
     );
     const confirm = screen.getByRole('button', { name: 'Delete account' });
     expect(confirm).toBeDisabled();

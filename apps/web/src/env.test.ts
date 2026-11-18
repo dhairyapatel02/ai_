@@ -84,11 +84,11 @@ describe('API_INTERNAL_URL (server-side API calls)', () => {
   it('defaults to NEXT_PUBLIC_API_URL and strips trailing slashes', () => {
     expect(parseServerEnv({ ...server }).API_INTERNAL_URL).toBe('http://localhost:4000/api');
     expect(
-      parseServerEnv({ ...server, NEXT_PUBLIC_API_URL: 'https://api.example.com/api/' }).API_INTERNAL_URL,
+      parseServerEnv({ ...server, NEXT_PUBLIC_API_URL: 'https://api.example.com/api/' })
+        .API_INTERNAL_URL,
     ).toBe('https://api.example.com/api');
-    expect(parseServerEnv({ ...server, API_INTERNAL_URL: 'http://api:4000/api' }).API_INTERNAL_URL).toBe(
-      'http://api:4000/api',
-    );
+    expect(
+      parseServerEnv({ ...server, API_INTERNAL_URL: 'http://api:4000/api' }).API_INTERNAL_URL,
+    ).toBe('http://api:4000/api');
   });
 });
-

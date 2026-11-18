@@ -12,7 +12,14 @@ const dimensions = [
 
 describe('ImpactScoreCard', () => {
   it('shows the score out of 100, band and the four v2 dimensions', () => {
-    render(<ImpactScoreCard score={78} band="Strong" dimensions={dimensions} scoreVersion="impact@2.0.0" />);
+    render(
+      <ImpactScoreCard
+        score={78}
+        band="Strong"
+        dimensions={dimensions}
+        scoreVersion="impact@2.0.0"
+      />,
+    );
     expect(screen.getByRole('heading', { name: 'Impact score' })).toBeInTheDocument();
     expect(screen.getByTestId('impact-score-value')).toHaveTextContent('78');
     expect(screen.getByText('/ 100')).toBeInTheDocument();
@@ -25,7 +32,9 @@ describe('ImpactScoreCard', () => {
   });
 
   it('says "not enough data" instead of a number (AI-01)', () => {
-    render(<ImpactScoreCard score={null} dimensions={dimensions.map((d) => ({ ...d, score: null }))} />);
+    render(
+      <ImpactScoreCard score={null} dimensions={dimensions.map((d) => ({ ...d, score: null }))} />,
+    );
     expect(screen.getByText(/Not enough activity in this period/)).toBeInTheDocument();
     expect(screen.getByTestId('impact-score-value')).toHaveTextContent('—');
   });

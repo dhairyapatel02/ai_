@@ -17,7 +17,8 @@ describe('sync polling contract (API_CONTRACT_V2 §8)', () => {
     expect(syncPollInterval('queued')).toBe(2000);
     expect(syncPollInterval('running')).toBe(2000);
     expect(syncPollInterval('waiting_rate_limit')).toBe(30_000);
-    for (const s of ['idle', 'failed', 'needs_reauth', null, undefined] as const) expect(syncPollInterval(s)).toBe(false);
+    for (const s of ['idle', 'failed', 'needs_reauth', null, undefined] as const)
+      expect(syncPollInterval(s)).toBe(false);
   });
 
   it('treats queued/running/rate-limited as active', () => {

@@ -80,7 +80,11 @@ async function mockConnect(page: Page, callback: { status: number; body: string 
     }),
   );
   await page.route(`${API_URL}/integrations/github/callback`, (route) =>
-    route.fulfill({ status: callback.status, contentType: 'application/json', body: callback.body }),
+    route.fulfill({
+      status: callback.status,
+      contentType: 'application/json',
+      body: callback.body,
+    }),
   );
 }
 
@@ -119,7 +123,10 @@ test('first visit goes to onboarding and completes end-to-end to the dashboard',
   await expect(page.getByRole('heading', { name: /\d+ of \d+ selected/ })).toBeVisible();
   await expectNoSeriousA11yViolations(page, 'onboarding/repositories');
   const patch = page.waitForRequest(
-    (r) => r.url().endsWith('/me/settings') && r.method() === 'PATCH' && /"sync"/.test(r.postData() ?? ''),
+    (r) =>
+      r.url().endsWith('/me/settings') &&
+      r.method() === 'PATCH' &&
+      (r.postData() ?? '').includes('"sync"'),
   );
   await page.getByRole('button', { name: 'Start import' }).click();
   await patch;

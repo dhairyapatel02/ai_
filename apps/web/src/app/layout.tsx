@@ -5,7 +5,6 @@ import { Providers } from './providers';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
-
 import './globals.css';
 
 // DESIGN_SYSTEM §4.2: Instrument Sans (UI) + JetBrains Mono (evidence refs, SHAs, formulas).

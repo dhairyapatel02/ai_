@@ -2,7 +2,6 @@ import { cn } from '@/lib/utils';
 
 import type { ReactNode } from 'react';
 
-
 /** Page title row (one `h1` per page) with an optional lede and actions that wrap on mobile (UX-02). */
 export function PageHeader({
   title,
