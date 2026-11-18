@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 
 import { ChartCard } from '@/components/states/chart-card';
 import { formatCount } from '@/lib/format';
@@ -72,7 +72,7 @@ const HATCH = {
  * 5 levels by quartile of active days, month labels, a tooltip per cell (`title`, supplementary),
  * scrolled to the newest week on small screens, and a "View as table" of monthly totals.
  */
-export function ActivityHeatmap({
+export const ActivityHeatmap = memo(function ActivityHeatmap({
   days,
   title = 'Contributions',
   className,
@@ -198,4 +198,4 @@ export function ActivityHeatmap({
       </div>
     </ChartCard>
   );
-}
+});

@@ -22,7 +22,12 @@ const nextConfig = {
   // Trace files from the monorepo root so workspace packages end up in the standalone output.
   outputFileTracingRoot: monorepoRoot,
   // Turbopack (default bundler in Next 16) resolves hoisted workspace packages from the root.
-  turbopack: { root: monorepoRoot },
+  // `@devimpact/shared` is bundled from its ESM TypeScript source (not the CommonJS dist/ the API
+  // uses), so unused schemas tree-shake out of the client bundles (P10 performance).
+  turbopack: {
+    root: monorepoRoot,
+    resolveAlias: { '@devimpact/shared': '../../packages/shared/src/index.ts' },
+  },
   // Transitional v0.1 routes → IA routes (design/IA.md §2). Removed once nothing links to them.
   async redirects() {
     return [

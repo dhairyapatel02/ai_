@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { memo } from 'react';
 
 import { ChartTable } from '@/components/charts/chart-table';
 import { ChartCard } from '@/components/states/chart-card';
@@ -48,7 +49,7 @@ export function SeriesLegend() {
  * legend above, hover tooltip, `aria-label` summary and "View as table". `empty` replaces the plot
  * with an empty-plot message (no zero-height chart).
  */
-export function ActivityChart({
+export const ActivityChart = memo(function ActivityChart({
   rows,
   interval,
   periodLabel,
@@ -113,4 +114,4 @@ export function ActivityChart({
       </div>
     </ChartCard>
   );
-}
+});

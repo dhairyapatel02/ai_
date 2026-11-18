@@ -56,6 +56,7 @@ import {
 import { bucketActivity, chooseInterval, daysBetween } from '@/lib/charts';
 import { formatRelative } from '@/lib/format';
 import { formatMetric } from '@/lib/metrics-format';
+import { DASHBOARD_FEED } from '@/lib/dashboard';
 import { appraisalTarget, pickNextStep, readDismissed, type NextStepRule } from '@/lib/next-step';
 import { longerPeriod, startsBeforeRecentWindow, usePeriod } from '@/lib/period';
 import { useSearchParamsState } from '@/lib/url-state';
@@ -233,25 +234,37 @@ function DashboardBody() {
   return <DashboardPanels />;
 }
 
-function DashboardPanels() {
+/** "Show Q4 2026" — the next longer period (no-data state). */
+function useLongerPeriodChip() {
   const period = usePeriod();
   const me = useMe();
-  const sync = useSyncStatus();
   const timezone = me.data?.settings.timezone;
+  const resolved = period.resolved;
+  const longer =
+    resolved && timezone && period.today ? longerPeriod(resolved, timezone, period.today) : null;
+  return longer ? (
+    <Button
+      size="sm"
+      variant="secondary"
+      className="self-start"
+      onClick={() => {
+        period.setPeriod(longer.spec);
+      }}
+    >
+      Show {longer.label}
+    </Button>
+  ) : null;
+}
+
+/**
+ * Each panel subscribes to its own query, so a resolving query re-renders only that panel
+ * (TanStack tracked properties); the parent only reads error flags for the whole-page error.
+ */
+function DashboardPanels() {
+  const period = usePeriod();
   const overview = useOverview(period.apiParam);
   const impact = useImpact(period.apiParam);
   const heatmap = useHeatmap();
-  const definitions = useDefinitions();
-  const resolved = period.resolved;
-
-  // The activity chart reuses the 12-month heatmap days when the period lies inside it;
-  // an older period (e.g. last year) fetches its own range (≤ 366 days).
-  const needsOwnRange = !!resolved && !!heatmap.data && resolved.startDate < heatmap.data.from;
-  const periodHeatmap = useHeatmap(
-    needsOwnRange ? resolved.startDate : undefined,
-    needsOwnRange ? resolved.endDate : undefined,
-    { enabled: needsOwnRange },
-  );
 
   if (isInvalidPeriodError(overview.error)) return <InvalidPeriodState />;
   if (overview.isError && impact.isError && heatmap.isError) {
@@ -270,190 +283,15 @@ function DashboardPanels() {
       </Card>
     );
   }
-
-  const comparison = comparisonLabel(overview.data);
-  const noActivity = overview.data ? overview.data.cards.every((c) => (c.value ?? 0) === 0) : false;
-  const longer =
-    resolved && timezone && period.today ? longerPeriod(resolved, timezone, period.today) : null;
-  const longerChip = longer ? (
-    <Button
-      size="sm"
-      variant="secondary"
-      className="self-start"
-      onClick={() => {
-        period.setPeriod(longer.spec);
-      }}
-    >
-      Show {longer.label}
-    </Button>
-  ) : null;
-  const backfilling = isBackfilling(sync.data);
-  const importingBefore =
-    backfilling && sync.data?.currentRun?.recentWindowCompletedAt && period.today
-      ? new Date(Date.parse(`${period.today}T00:00:00Z`) - 29 * 86_400_000)
-          .toISOString()
-          .slice(0, 10)
-      : undefined;
-
-  const chartDays = needsOwnRange ? periodHeatmap.data?.days : heatmap.data?.days;
-  const interval = resolved
-    ? chooseInterval(daysBetween(resolved.startDate, resolved.endDate))
-    : 'day';
-  const rows =
-    resolved && chartDays
-      ? bucketActivity(
-          chartDays,
-          resolved.startDate,
-          resolved.endDate,
-          interval,
-          Number(period.today?.slice(0, 4)),
-        )
-      : null;
-  const chartError = needsOwnRange ? periodHeatmap.error : heatmap.error;
-
-  const definitionOf = (key: string) => definitions.data?.metrics.find((m) => m.key === key);
-  const qs = period.urlSpec ? `&period=${encodeURIComponent(period.urlSpec)}` : '';
-
   return (
     <div className="flex flex-col gap-4">
       <SyncBanner />
-      {overview.isError ? (
-        <Card>
-          <ErrorState
-            error={overview.error}
-            what="your key numbers"
-            onRetry={() => void overview.refetch()}
-            retrying={overview.isFetching}
-          />
-        </Card>
-      ) : (
-        <section aria-label="Key numbers" className="flex flex-col gap-2">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {overview.data
-              ? overview.data.cards.map((card) => (
-                  <MetricCard
-                    key={card.key}
-                    card={card}
-                    comparison={comparison}
-                    definition={definitionOf(card.key)?.definition}
-                    explainHref={`/kpis?metric=${card.key}${qs}`}
-                  />
-                ))
-              : [0, 1, 2].map((i) => <StatCardSkeleton key={i} />)}
-            {overview.data ? (
-              <StatCard
-                label="Impact score"
-                icon={<Gauge className="size-4" aria-hidden="true" />}
-                value={
-                  <>
-                    {overview.data.impact.overall}
-                    <span className="ml-1 text-base font-normal text-subtle-foreground">
-                      / 100 · {overview.data.impact.band}
-                    </span>
-                  </>
-                }
-                delta={overview.data.impact.delta}
-                unit="score"
-                comparison={comparison}
-                compactComparison
-                state={overview.data.impact.overall === null ? 'insufficient' : 'ok'}
-                insufficientNote="Not enough activity yet to compute a fair score."
-                info={
-                  <>
-                    A weighted summary of Delivery, Quality, Collaboration and Ownership, computed
-                    from your GitHub activity. Signal, not a judgement of your performance.{' '}
-                    <Link href="/kpis/impact" className="text-link underline underline-offset-2">
-                      See details
-                    </Link>
-                  </>
-                }
-                testId="stat-impact"
-              />
-            ) : (
-              <StatCardSkeleton />
-            )}
-          </div>
-          {comparison ? (
-            <p className="text-caption text-subtle-foreground md:hidden">
-              Changes are {comparison}.
-            </p>
-          ) : null}
-          {noActivity && overview.data ? (
-            <p className="text-sm text-muted-foreground" role="status">
-              No activity in {overview.data.period.label}.
-            </p>
-          ) : null}
-        </section>
-      )}
-
+      <KeyNumbers />
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr] [&>*]:min-w-0">
-        {chartError ? (
-          <Card>
-            <ErrorState
-              error={chartError}
-              what="your activity chart"
-              headingLevel={2}
-              onRetry={() => void (needsOwnRange ? periodHeatmap.refetch() : heatmap.refetch())}
-            />
-          </Card>
-        ) : rows && resolved ? (
-          <ActivityChart
-            rows={rows}
-            interval={interval}
-            periodLabel={resolved.label}
-            height={268}
-            fetching={overview.isPlaceholderData}
-            empty={
-              <span className="flex flex-col items-center gap-2 px-4">
-                No activity in {resolved.label}.{longerChip}
-              </span>
-            }
-          />
-        ) : (
-          <CardSkeleton height={268} />
-        )}
-        {impact.isError ? (
-          <Card>
-            <ErrorState
-              error={impact.error}
-              what="your impact score"
-              onRetry={() => void impact.refetch()}
-            />
-          </Card>
-        ) : (
-          <ImpactScoreCard
-            loading={impact.isPending}
-            fetching={impact.isPlaceholderData}
-            score={impact.data?.overall ?? null}
-            band={impact.data?.band ?? null}
-            periodLabel={impact.data?.period.label ?? resolved?.label}
-            explanation={impact.data?.explanation}
-            detailHref={`/kpis/impact${period.urlSpec ? `?period=${encodeURIComponent(period.urlSpec)}` : ''}`}
-            insufficientAction={longerChip}
-            dimensions={(impact.data?.dimensions ?? []).map((d) => ({
-              key: d.key,
-              label: d.label,
-              score: d.score,
-              available: d.available,
-            }))}
-          />
-        )}
+        <ActivityPanel />
+        <ImpactPanel />
       </div>
-
-      {heatmap.isPending ? (
-        <CardSkeleton height={120} />
-      ) : heatmap.isError ? (
-        <Card>
-          <ErrorState
-            error={heatmap.error}
-            what="your contributions"
-            onRetry={() => void heatmap.refetch()}
-          />
-        </Card>
-      ) : (
-        <ActivityHeatmap days={heatmap.data.days} importingBefore={importingBefore} />
-      )}
-
+      <HeatmapPanel />
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr] [&>*]:min-w-0">
         <RecentActivity />
         <div className="flex flex-col gap-4">
@@ -465,15 +303,212 @@ function DashboardPanels() {
   );
 }
 
+function KeyNumbers() {
+  const period = usePeriod();
+  const overview = useOverview(period.apiParam);
+  const comparison = comparisonLabel(overview.data);
+  const noActivity = overview.data ? overview.data.cards.every((c) => (c.value ?? 0) === 0) : false;
+  const qs = period.urlSpec ? `&period=${encodeURIComponent(period.urlSpec)}` : '';
+  if (overview.isError) {
+    return (
+      <Card>
+        <ErrorState
+          error={overview.error}
+          what="your key numbers"
+          onRetry={() => void overview.refetch()}
+          retrying={overview.isFetching}
+        />
+      </Card>
+    );
+  }
+  return (
+    <section aria-label="Key numbers" className="flex flex-col gap-2">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {overview.data
+          ? overview.data.cards.map((card) => (
+              <MetricCard
+                key={card.key}
+                card={card}
+                comparison={comparison}
+                explainHref={`/kpis?metric=${card.key}${qs}`}
+              />
+            ))
+          : [0, 1, 2].map((i) => <StatCardSkeleton key={i} />)}
+        {overview.data ? (
+          <StatCard
+            label="Impact score"
+            icon={<Gauge className="size-4" aria-hidden="true" />}
+            value={
+              <>
+                {overview.data.impact.overall}
+                <span className="ml-1 text-base font-normal text-subtle-foreground">
+                  / 100 · {overview.data.impact.band}
+                </span>
+              </>
+            }
+            delta={overview.data.impact.delta}
+            unit="score"
+            comparison={comparison}
+            compactComparison
+            state={overview.data.impact.overall === null ? 'insufficient' : 'ok'}
+            insufficientNote="Not enough activity yet to compute a fair score."
+            info={
+              <>
+                A weighted summary of Delivery, Quality, Collaboration and Ownership, computed from
+                your GitHub activity. Signal, not a judgement of your performance.{' '}
+                <Link href="/kpis/impact" className="text-link underline underline-offset-2">
+                  See details
+                </Link>
+              </>
+            }
+            testId="stat-impact"
+          />
+        ) : (
+          <StatCardSkeleton />
+        )}
+      </div>
+      {comparison ? (
+        <p className="text-caption text-subtle-foreground md:hidden">Changes are {comparison}.</p>
+      ) : null}
+      {noActivity && overview.data ? (
+        <p className="text-sm text-muted-foreground" role="status">
+          No activity in {overview.data.period.label}.
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+function ActivityPanel() {
+  const period = usePeriod();
+  const heatmap = useHeatmap();
+  const longerChip = useLongerPeriodChip();
+  const resolved = period.resolved;
+  // The activity chart reuses the 12-month heatmap days when the period lies inside it;
+  // an older period (e.g. last year) fetches its own range (≤ 366 days).
+  const needsOwnRange = !!resolved && !!heatmap.data && resolved.startDate < heatmap.data.from;
+  const periodHeatmap = useHeatmap(
+    needsOwnRange ? resolved.startDate : undefined,
+    needsOwnRange ? resolved.endDate : undefined,
+    { enabled: needsOwnRange },
+  );
+  const chartDays = needsOwnRange ? periodHeatmap.data?.days : heatmap.data?.days;
+  const interval = resolved
+    ? chooseInterval(daysBetween(resolved.startDate, resolved.endDate))
+    : 'day';
+  const startDate = resolved?.startDate;
+  const endDate = resolved?.endDate;
+  const year = period.today ? Number(period.today.slice(0, 4)) : undefined;
+  const rows = useMemo(
+    () =>
+      startDate && endDate && chartDays
+        ? bucketActivity(chartDays, startDate, endDate, interval, year)
+        : null,
+    [chartDays, startDate, endDate, interval, year],
+  );
+  const chartError = needsOwnRange ? periodHeatmap.error : heatmap.error;
+  if (chartError) {
+    return (
+      <Card>
+        <ErrorState
+          error={chartError}
+          what="your activity chart"
+          onRetry={() => void (needsOwnRange ? periodHeatmap.refetch() : heatmap.refetch())}
+        />
+      </Card>
+    );
+  }
+  if (!rows || !resolved) return <CardSkeleton height={268} />;
+  return (
+    <ActivityChart
+      rows={rows}
+      interval={interval}
+      periodLabel={resolved.label}
+      height={268}
+      fetching={periodHeatmap.isFetching}
+      empty={
+        <span className="flex flex-col items-center gap-2 px-4">
+          No activity in {resolved.label}.{longerChip}
+        </span>
+      }
+    />
+  );
+}
+
+function ImpactPanel() {
+  const period = usePeriod();
+  const impact = useImpact(period.apiParam);
+  const longerChip = useLongerPeriodChip();
+  if (impact.isError) {
+    return (
+      <Card>
+        <ErrorState
+          error={impact.error}
+          what="your impact score"
+          onRetry={() => void impact.refetch()}
+        />
+      </Card>
+    );
+  }
+  return (
+    <ImpactScoreCard
+      loading={impact.isPending}
+      fetching={impact.isPlaceholderData}
+      score={impact.data?.overall ?? null}
+      band={impact.data?.band ?? null}
+      periodLabel={impact.data?.period.label ?? period.resolved?.label}
+      explanation={impact.data?.explanation}
+      detailHref={`/kpis/impact${period.urlSpec ? `?period=${encodeURIComponent(period.urlSpec)}` : ''}`}
+      insufficientAction={longerChip}
+      dimensions={(impact.data?.dimensions ?? []).map((d) => ({
+        key: d.key,
+        label: d.label,
+        score: d.score,
+        available: d.available,
+      }))}
+    />
+  );
+}
+
+function HeatmapPanel() {
+  const period = usePeriod();
+  const sync = useSyncStatus();
+  const heatmap = useHeatmap();
+  const importingBefore =
+    isBackfilling(sync.data) && sync.data?.currentRun?.recentWindowCompletedAt && period.today
+      ? new Date(Date.parse(`${period.today}T00:00:00Z`) - 29 * 86_400_000)
+          .toISOString()
+          .slice(0, 10)
+      : undefined;
+  if (heatmap.isPending) return <CardSkeleton height={120} />;
+  if (heatmap.isError) {
+    return (
+      <Card>
+        <ErrorState
+          error={heatmap.error}
+          what="your contributions"
+          onRetry={() => void heatmap.refetch()}
+        />
+      </Card>
+    );
+  }
+  return <ActivityHeatmap days={heatmap.data.days} importingBefore={importingBefore} />;
+}
+
+/** Popover body: the catalogue definition, fetched only when the popover opens (cached 1 h). */
+function MetricDefinitionText({ metricKey }: { metricKey: string }) {
+  const definitions = useDefinitions();
+  const definition = definitions.data?.metrics.find((m) => m.key === metricKey)?.definition;
+  return <>{definition ?? 'Computed from your GitHub activity in included repositories.'}</>;
+}
+
 function MetricCard({
   card,
   comparison,
-  definition,
   explainHref,
 }: {
   card: MetricValue;
   comparison: string;
-  definition?: string;
   explainHref: string;
 }) {
   const Icon = CARD_ICON[card.key];
@@ -490,7 +525,7 @@ function MetricCard({
       insufficientNote={`Not enough data · n = ${card.n}`}
       info={
         <>
-          {definition ?? 'Computed from your GitHub activity in included repositories.'}{' '}
+          <MetricDefinitionText metricKey={card.key} />{' '}
           <Link href={explainHref} className="text-link underline underline-offset-2">
             Explain
           </Link>
@@ -501,13 +536,11 @@ function MetricCard({
   );
 }
 
-const FEED_TYPES = ['pr_merged', 'pr_closed', 'review', 'achievement'] as const;
-
 function RecentActivity() {
   const me = useMe();
   const period = usePeriod();
   const url = useSearchParamsState();
-  const feed = useActivityFeed({ types: [...FEED_TYPES], limit: 7 });
+  const feed = useActivityFeed(DASHBOARD_FEED);
   const items = feed.data?.pages[0]?.items ?? [];
   const qs = period.urlSpec ? `?period=${encodeURIComponent(period.urlSpec)}` : '';
   return (
