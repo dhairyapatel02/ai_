@@ -3,6 +3,7 @@
 import { CircleDashed } from 'lucide-react';
 import Link from 'next/link';
 
+import { useHydrated } from '@/hooks/use-hydrated';
 import { useMe, useSyncStatus } from '@/lib/api/hooks';
 import { formatRelative, formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -92,8 +93,9 @@ export function StatusDot({ tone, className }: { tone: SyncTone; className?: str
 export function useSyncDescriptor(): SyncDescriptor {
   const me = useMe();
   const sync = useSyncStatus();
+  const hydrated = useHydrated();
   return describeSync(sync.data, {
-    loading: sync.isPending,
+    loading: sync.isPending || !hydrated,
     error: sync.isError,
     timezone: me.data?.settings.timezone,
   });

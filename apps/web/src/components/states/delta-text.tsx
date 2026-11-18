@@ -23,11 +23,14 @@ export function DeltaText({
   unit = 'count',
   comparison,
   className,
+  comparisonClassName,
 }: {
   delta: number | null | undefined;
   unit?: DeltaUnit;
   comparison?: string;
   className?: string;
+  /** e.g. `max-md:sr-only`: phones show arrow + amount and one shared caption (S6 M). */
+  comparisonClassName?: string;
 }) {
   if (delta === null || delta === undefined) {
     return (
@@ -49,8 +52,10 @@ export function DeltaText({
         <b className="font-semibold text-foreground tabular-nums">
           {formatDeltaAmount(delta, unit)}
         </b>
-      ) : null}
-      {comparison ? <span>{comparison}</span> : null}
+      ) : (
+        <span className="text-foreground">No change</span>
+      )}
+      {comparison ? <span className={comparisonClassName}>{comparison}</span> : null}
     </span>
   );
 }

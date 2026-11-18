@@ -20,7 +20,9 @@ export function PageHeader({
         <h1 className="text-xl font-semibold tracking-tight md:text-2xl">{title}</h1>
         {lede ? <p className="mt-1 max-w-[70ch] text-base text-muted-foreground">{lede}</p> : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex flex-wrap items-center gap-2 max-sm:w-full">{actions}</div>
+      ) : null}
     </div>
   );
 }

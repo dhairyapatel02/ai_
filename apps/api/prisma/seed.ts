@@ -568,6 +568,98 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
       },
     },
   });
+  // Realistic repository state for the repository manager and onboarding (P10): last activity =
+  // newest authored PR, review or commit in the repository; GitHub App installations.
+  await prisma.$executeRaw`
+    UPDATE repositories r SET last_activity_at = a.last
+    FROM (
+      SELECT repository_id, MAX(t) AS last FROM (
+        SELECT repository_id, COALESCE("mergedAt", created_at_remote) AS t
+          FROM pull_requests WHERE "userId" = ${demo.id}
+        UNION ALL
+        SELECT pr.repository_id, rv.submitted_at FROM pull_request_reviews rv
+          JOIN pull_requests pr ON pr.id = rv.pull_request_id WHERE rv.user_id = ${demo.id}
+        UNION ALL
+        SELECT repository_id, authored_at FROM commits WHERE "userId" = ${demo.id}
+      ) x WHERE repository_id IS NOT NULL GROUP BY repository_id
+    ) a
+    WHERE r.id = a.repository_id`;
+  await prisma.gitHubInstallation.createMany({
+    data: [
+      {
+        integrationId: demoGh.id,
+        installationId: 70000001n,
+        accountLogin: 'dana-demo',
+        accountType: 'User',
+        repositorySelection: 'selected',
+      },
+      {
+        integrationId: demoGh.id,
+        installationId: 70000002n,
+        accountLogin: 'acme',
+        accountType: 'Organization',
+        repositorySelection: 'all',
+      },
+    ],
+  });
+  // Sync history (S19): two earlier scheduled runs, one partial with a per-repository error.
+  await prisma.syncRun.createMany({
+    data: [
+      {
+        userId: demo.id,
+        integrationId: demoGh.id,
+        trigger: 'SCHEDULED',
+        kind: 'INCREMENTAL',
+        status: 'PARTIAL',
+        stage: 'DONE',
+        progress: 100,
+        windowFrom: at(3, 2, 20),
+        windowTo: at(2, 3, 40),
+        counts: {
+          repos: REPOS.length,
+          prsAuthored: 1,
+          prsReviewed: 2,
+          reviews: 2,
+          commits: 4,
+          created: 7,
+        },
+        errors: [
+          {
+            stage: 'commits',
+            repo: 'oss/fast-json',
+            code: 'UPSTREAM_ERROR',
+            message: 'GitHub returned 502 while listing commits. Retried 3 times.',
+            at: at(2, 3, 41).toISOString(),
+          },
+        ],
+        queuedAt: at(2, 3, 40),
+        startedAt: at(2, 3, 40),
+        finishedAt: at(2, 3, 41),
+      },
+      {
+        userId: demo.id,
+        integrationId: demoGh.id,
+        trigger: 'SCHEDULED',
+        kind: 'INCREMENTAL',
+        status: 'SUCCEEDED',
+        stage: 'DONE',
+        progress: 100,
+        windowFrom: at(2, 3, 40),
+        windowTo: anchor,
+        counts: {
+          repos: REPOS.length,
+          prsAuthored: 0,
+          prsReviewed: 1,
+          reviews: 1,
+          commits: 3,
+          created: 4,
+        },
+        queuedAt: anchor,
+        startedAt: anchor,
+        finishedAt: anchor,
+      },
+    ],
+  });
   await prisma.syncRun.create({
     data: {
       userId: demo.id,
@@ -578,7 +670,7 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
       stage: 'DONE',
       progress: 100,
       windowFrom: at(DAYS, 0),
-      windowTo: anchor,
+      windowTo: at(3, 2),
       counts: {
         repos: REPOS.length,
         prsAuthored: authoredCount,
@@ -586,10 +678,10 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
         reviews: reviewCount,
         commits: commits.length,
       },
-      queuedAt: anchor,
-      startedAt: anchor,
-      finishedAt: anchor,
-      recentWindowCompletedAt: anchor,
+      queuedAt: at(3, 2),
+      startedAt: at(3, 2),
+      finishedAt: at(3, 2, 20),
+      recentWindowCompletedAt: at(3, 2, 5),
     },
   });
 

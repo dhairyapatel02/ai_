@@ -83,3 +83,27 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Career print view (S10): black on white in every theme, one quarter per page. */
+.print-sheet {
+  --background: #ffffff;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --foreground: #111318;
+  --muted-foreground: #3a3f4a;
+  --subtle-foreground: #4b515c;
+  --border: #c9ced6;
+  --border-strong: #9aa0aa;
+  background: #ffffff;
+  color: #111318;
+  color-scheme: light;
+  min-height: 100dvh;
+}
+@media print {
+  .print-sheet .print-quarter {
+    break-before: page;
+  }
+  .print-sheet .print-quarter:first-of-type {
+    break-before: auto;
+  }
+}

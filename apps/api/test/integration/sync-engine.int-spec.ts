@@ -167,15 +167,13 @@ describe('Sync engine v2 (integration, fake GitHub)', () => {
       .get('/api/activity/prs?role=reviewed&limit=100')
       .set('authorization', as)
       .expect(200);
-    const summary = await request(server)
-      .get('/api/activity/summary')
+    const reviews = await request(server)
+      .get('/api/activity/reviews?limit=100')
       .set('authorization', as)
       .expect(200);
     expect(authored.body.data).toHaveLength(4);
     expect(reviewed.body.data).toHaveLength(3);
-    // DATA-02: the deprecated summary's `totalPRs` counts merged authored PRs only.
-    const merged = authored.body.data.filter((p: { state: string }) => p.state === 'merged').length;
-    expect(summary.body.data).toMatchObject({ totalPRs: merged, totalReviews: 4 });
+    expect(reviews.body.data).toHaveLength(4);
 
     // A new review on another PR adds a review, never an authored PR.
     const pr60 = gh.dataset.pullRequests.find((p) => p.number === 60);
@@ -188,11 +186,16 @@ describe('Sync engine v2 (integration, fake GitHub)', () => {
     });
     pr60.updatedAt = new Date().toISOString();
     await runSync(t, user.id, integration.id);
-    const again = await request(server)
-      .get('/api/activity/summary')
+    const authoredAgain = await request(server)
+      .get('/api/activity/prs?role=authored&limit=100')
       .set('authorization', as)
       .expect(200);
-    expect(again.body.data).toMatchObject({ totalPRs: merged, totalReviews: 5 });
+    const reviewsAgain = await request(server)
+      .get('/api/activity/reviews?limit=100')
+      .set('authorization', as)
+      .expect(200);
+    expect(authoredAgain.body.data).toHaveLength(4);
+    expect(reviewsAgain.body.data).toHaveLength(5);
   });
 
   it('re-running the same sync produces zero new rows (idempotent)', async () => {

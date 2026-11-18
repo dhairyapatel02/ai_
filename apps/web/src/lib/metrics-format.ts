@@ -12,16 +12,3 @@ export function formatMetric(m: Pick<MetricValue, 'value' | 'unit' | 'status' | 
       return String(Math.round(m.value * 10) / 10);
   }
 }
-
-export function formatDelta(m: Pick<MetricValue, 'delta' | 'unit'>): string | null {
-  if (m.delta === null) return null;
-  const sign = m.delta > 0 ? '+' : m.delta < 0 ? '−' : '±';
-  const abs = Math.abs(m.delta);
-  const value =
-    m.unit === 'ratio'
-      ? `${Math.round(abs * 100)} pts`
-      : m.unit === 'hours'
-        ? `${abs.toFixed(1)} h`
-        : String(Math.round(abs * 10) / 10);
-  return `${sign}${value}`;
-}

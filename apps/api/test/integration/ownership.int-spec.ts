@@ -119,7 +119,7 @@ describe('Cross-user isolation (integration)', () => {
     expect(list.body.data).toEqual([]);
   });
 
-  it('activity: lists and summaries never include another user’s rows', async () => {
+  it('activity: lists and the feed never include another user’s rows', async () => {
     const { server, as } = await twoTenants();
     const commits = await request(server)
       .get('/api/activity/commits')
@@ -129,13 +129,18 @@ describe('Cross-user isolation (integration)', () => {
       .get('/api/activity/prs?role=authored')
       .set('authorization', as)
       .expect(200);
-    const summary = await request(server)
-      .get('/api/activity/summary')
+    const feed = await request(server)
+      .get('/api/activity/feed')
+      .set('authorization', as)
+      .expect(200);
+    const reviews = await request(server)
+      .get('/api/activity/reviews')
       .set('authorization', as)
       .expect(200);
     expect(commits.body.data).toEqual([]);
     expect(prs.body.data).toEqual([]);
-    expect(summary.body.data).toMatchObject({ totalCommits: 0, totalPRs: 0, totalReviews: 0 });
+    expect(feed.body.data).toEqual([]);
+    expect(reviews.body.data).toEqual([]);
   });
 
   it('evidence preview and AI utilities read only the caller’s activity', async () => {

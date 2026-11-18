@@ -21,12 +21,6 @@ const rangeRefinement = (value: { from?: string; to?: string }) =>
 const periodOrRange = (value: { period?: string; from?: string; to?: string }) =>
   value.period === undefined || (value.from === undefined && value.to === undefined);
 
-/** Deprecated `/activity/summary` range (removed in P10). */
-export const DateRangeQuery = z
-  .strictObject({ from: DateBound.optional(), to: DateBound.optional() })
-  .refine(rangeRefinement, { message: '`from` must not be after `to`', path: ['from'] });
-export type DateRangeQuery = z.infer<typeof DateRangeQuery>;
-
 export const ActivityType = z.enum([
   'commit',
   'pr_opened',

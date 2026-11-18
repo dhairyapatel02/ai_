@@ -38,7 +38,7 @@ describe('API conventions: validation, errors, envelope, headers, rate limits (i
       ['/api/activity/commits?from=garbage', 'query.from'],
       ['/api/activity/commits?page=0', 'query'],
       ['/api/activity/commits?from=2026-10-10&to=2026-10-01', 'query.from'],
-      ['/api/activity/summary?to=2026-13-01', 'query.to'],
+      ['/api/activity/commits?to=2026-13-01', 'query.to'],
       ['/api/documents?cursor=%25%25', 'query.cursor'],
       ['/api/metrics/overview?period=month:2026-13', 'query.period'],
       ['/api/metrics/timeseries?metric=nope', 'query.metric'],
@@ -161,10 +161,10 @@ describe('API conventions: validation, errors, envelope, headers, rate limits (i
         await f.commit(userId, gh.id, { timestamp: new Date(Date.UTC(2026, 9, 23, hour, 30)) });
       }
       const res = await request(server())
-        .get('/api/activity/summary?from=2026-10-23&to=2026-10-23')
+        .get('/api/activity/commits?from=2026-10-23&to=2026-10-23')
         .set('authorization', as)
         .expect(200);
-      expect(res.body.data.totalCommits).toBe(4);
+      expect(res.body.data).toHaveLength(4);
     });
   });
 

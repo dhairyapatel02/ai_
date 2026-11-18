@@ -21,7 +21,12 @@ export function StatCard({
   insufficientNote,
   testId,
   className,
+  icon,
+  compactComparison = false,
 }: {
+  icon?: ReactNode;
+  /** Hide the comparison label below 768 px (one shared caption instead, S6 M). */
+  compactComparison?: boolean;
   label: string;
   value: ReactNode;
   delta?: number | null;
@@ -36,7 +41,10 @@ export function StatCard({
   return (
     <div className={cn('flex min-w-0 flex-col gap-1.5 rounded-md border bg-card p-4', className)}>
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-medium text-muted-foreground">{label}</span>
+        <span className="flex min-w-0 items-center gap-1.5 truncate text-sm font-medium text-muted-foreground">
+          {icon}
+          {label}
+        </span>
         {info ? <InfoPopover label={`How is ${label} calculated?`}>{info}</InfoPopover> : null}
       </div>
       {state === 'loading' ? (
@@ -56,14 +64,16 @@ export function StatCard({
         </>
       ) : (
         <>
-          <span
-            className="text-xl font-semibold tracking-tight tabular-nums md:text-2xl"
-            data-testid={testId}
-          >
+          <span className="text-xl font-semibold tracking-tight md:text-2xl" data-testid={testId}>
             {value}
           </span>
           {delta !== undefined ? (
-            <DeltaText delta={delta} unit={unit} comparison={comparison} />
+            <DeltaText
+              delta={delta}
+              unit={unit}
+              comparison={comparison}
+              comparisonClassName={compactComparison ? 'max-md:sr-only' : undefined}
+            />
           ) : null}
         </>
       )}

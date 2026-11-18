@@ -2,7 +2,6 @@ import {
   ActivityListQuery,
   CommitDetail,
   CommitItem,
-  DateRangeQuery,
   FeedItem,
   FeedQuery,
   IdParams,
@@ -12,16 +11,13 @@ import {
   ReviewItem,
   ReviewListQuery,
 } from '@devimpact/shared';
-import { Controller, Get, Header } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { z } from 'zod';
 
 import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
 import { withMeta } from '../common/envelope.interceptor';
 import { ApiDoc, ZodParams, ZodQuery } from '../common/zod-validation';
 import { ActivityService } from './activity.service';
-
-/** Removal date of the deprecated `/activity/summary` (P10 replaces its last callers). */
-export const SUMMARY_SUNSET = 'Mon, 01 Mar 2027 00:00:00 GMT';
 
 /** API_CONTRACT_V2 §11 — activity feed and explorer (F-23, F-25). */
 @Controller('activity')
@@ -91,18 +87,5 @@ export class ActivityController {
   @ApiDoc({ summary: 'Commit detail', tags: ['activity'], response: CommitDetail })
   getCommit(@CurrentUser() user: AuthUser, @ZodParams(IdParams) params: { id: string }) {
     return this.activityService.commit(user.id, params.id);
-  }
-
-  @Get('summary')
-  @Header('Deprecation', 'true')
-  @Header('Sunset', SUMMARY_SUNSET)
-  @Header('Link', '</api/metrics/overview>; rel="successor-version"')
-  @ApiDoc({
-    summary: 'Deprecated v1 summary — use /metrics/overview and /metrics/kpis (removed in P10)',
-    tags: ['activity'],
-    deprecated: true,
-  })
-  getSummary(@CurrentUser() user: AuthUser, @ZodQuery(DateRangeQuery) query: DateRangeQuery) {
-    return this.activityService.getSummary(user.id, query);
   }
 }

@@ -9,7 +9,6 @@ import {
   type ActivityType,
   type CommitDetail,
   type CommitItem,
-  type DateRangeQuery,
   type FeedItem,
   type FeedQuery,
   type PageMeta,
@@ -569,72 +568,5 @@ export class ActivityService {
     });
     if (!row) throw AppException.notFound('Commit');
     return { ...this.commitItem(row), messageBody: row.messageBody };
-  }
-
-  // ── Deprecated v1 summary (removed in P10) ─────────────────────────────────────────────
-
-  /**
-   * v1-compatible shape computed from v2 data. DATA-02: `totalPRs` is the number of authored PRs
-   * **merged** in the range (the dashboard labelled it "PRs Merged"). No impact score here: the
-   * deterministic score lives at `GET /impact` (AI-01).
-   */
-  async getSummary(userId: string, query: DateRangeQuery) {
-    const range = await this.range(userId, query);
-    const included = { repository: { included: true } };
-    const [totalCommits, totalPRs, totalReviews, totalIssues, topReposRaw] = await Promise.all([
-      this.prisma.commit.count({
-        where: {
-          userId,
-          parentsCount: { lte: 1 },
-          ...included,
-          ...(range ? { authoredAt: range } : {}),
-        },
-      }),
-      this.prisma.pullRequest.count({
-        where: {
-          userId,
-          isAuthoredByUser: true,
-          legacyStub: false,
-          ...included,
-          mergedAt: range ?? { not: null },
-        },
-      }),
-      this.prisma.pullRequestReview.count({
-        where: {
-          userId,
-          pullRequest: { isAuthoredByUser: false, legacyStub: false, ...included },
-          ...(range ? { submittedAt: range } : {}),
-        },
-      }),
-      this.prisma.issue.count({ where: { userId, ...(range ? { timestamp: range } : {}) } }),
-      this.prisma.commit.groupBy({
-        by: ['repositoryId'],
-        where: {
-          userId,
-          parentsCount: { lte: 1 },
-          ...included,
-          ...(range ? { authoredAt: range } : {}),
-        },
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-        take: 5,
-      }),
-    ]);
-    const repos = await this.prisma.repository.findMany({
-      where: { userId, id: { in: topReposRaw.map((r) => r.repositoryId) } },
-      select: { id: true, fullName: true },
-    });
-    const nameOf = new Map(repos.map((r) => [r.id, r.fullName]));
-    return {
-      totalCommits,
-      totalPRs,
-      totalReviews,
-      totalIssues,
-      topRepos: topReposRaw.map((r) => ({
-        repo: nameOf.get(r.repositoryId) ?? 'unknown',
-        commits: r._count.id,
-      })),
-      impactScore: null,
-    };
   }
 }

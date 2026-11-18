@@ -2,125 +2,49 @@ import { ActivityService } from './activity.service';
 
 import type { PrismaService } from '../prisma/prisma.service';
 
-function createPrismaMock(timezone = 'UTC') {
-  return {
-    userSettings: { findUnique: jest.fn().mockResolvedValue({ timezone }) },
-    commit: { count: jest.fn().mockResolvedValue(12), groupBy: jest.fn().mockResolvedValue([]) },
-    pullRequest: { count: jest.fn().mockResolvedValue(4) },
-    pullRequestReview: { count: jest.fn().mockResolvedValue(7) },
-    issue: { count: jest.fn().mockResolvedValue(0) },
-    repository: { findMany: jest.fn().mockResolvedValue([]) },
-  };
+/**
+ * Range handling shared by every activity list (the deprecated `/activity/summary` that used to
+ * exercise it was removed in P10; API_CONTRACT_V2 §20).
+ */
+type RangeFn = (
+  userId: string,
+  filter: { period?: string; from?: string; to?: string },
+) => Promise<{ gte: Date; lt: Date } | undefined>;
+
+function serviceIn(timezone: string) {
+  const prisma = { userSettings: { findUnique: jest.fn().mockResolvedValue({ timezone }) } };
+  const service = new ActivityService(prisma as unknown as PrismaService);
+  return (service as unknown as { range: RangeFn }).range.bind(service);
 }
 
-const included = { repository: { included: true } };
-const nonMerge = { parentsCount: { lte: 1 } };
-
-describe('ActivityService.getSummary (Prisma mocked)', () => {
-  it('returns counts, top repos and never an (AI) impact score', async () => {
-    const prisma = createPrismaMock();
-    prisma.commit.groupBy.mockResolvedValue([
-      { repositoryId: 'r1', _count: { id: 9 } },
-      { repositoryId: 'r2', _count: { id: 3 } },
-    ]);
-    prisma.repository.findMany.mockResolvedValue([
-      { id: 'r1', fullName: 'acme/api' },
-      { id: 'r2', fullName: 'acme/web' },
-    ]);
-    const service = new ActivityService(prisma as unknown as PrismaService);
-
-    await expect(service.getSummary('u1', {})).resolves.toEqual({
-      totalCommits: 12,
-      totalPRs: 4,
-      totalReviews: 7,
-      totalIssues: 0,
-      topRepos: [
-        { repo: 'acme/api', commits: 9 },
-        { repo: 'acme/web', commits: 3 },
-      ],
-      impactScore: null,
-    });
-    // No date filter when from/to are omitted; excluded repositories never count (F-11).
-    // Merge commits never count (KPI §2.2 `CM`).
-    expect(prisma.commit.count).toHaveBeenCalledWith({
-      where: { userId: 'u1', ...nonMerge, ...included },
-    });
-    expect(prisma.commit.groupBy).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId: 'u1', ...nonMerge, ...included }, take: 5 }),
-    );
+describe('ActivityService range (Prisma mocked)', () => {
+  it('no filter → no range', async () => {
+    await expect(serviceIn('UTC')('u1', {})).resolves.toBeUndefined();
   });
 
-  it('DATA-01: counts only authored, non-stub PRs and reviews from pull_request_reviews', async () => {
-    const prisma = createPrismaMock();
-    const service = new ActivityService(prisma as unknown as PrismaService);
-
-    await service.getSummary('u1', {});
-
-    expect(prisma.pullRequest.count).toHaveBeenCalledWith({
-      where: {
-        userId: 'u1',
-        isAuthoredByUser: true,
-        legacyStub: false,
-        ...included,
-        mergedAt: { not: null },
-      },
-    });
-    expect(prisma.pullRequestReview.count).toHaveBeenCalledWith({
-      where: {
-        userId: 'u1',
-        pullRequest: { isAuthoredByUser: false, legacyStub: false, ...included },
-      },
-    });
-  });
-
-  it('applies the range (inclusive `to`) to each fact table’s own timestamp', async () => {
-    const prisma = createPrismaMock();
-    const service = new ActivityService(prisma as unknown as PrismaService);
-
-    await service.getSummary('u1', { from: '2026-10-01T00:00:00Z', to: '2026-10-31T23:59:59Z' });
-
-    const range = {
+  it('applies an instant range with an inclusive `to`', async () => {
+    await expect(
+      serviceIn('UTC')('u1', { from: '2026-10-01T00:00:00Z', to: '2026-10-31T23:59:59Z' }),
+    ).resolves.toEqual({
       gte: new Date('2026-10-01T00:00:00Z'),
       lt: new Date('2026-10-31T23:59:59.001Z'),
-    };
-    expect(prisma.commit.count).toHaveBeenCalledWith({
-      where: { userId: 'u1', ...nonMerge, ...included, authoredAt: range },
     });
-    // DATA-02: PRs are counted by merge date, i.e. "PRs merged" in the range.
-    expect(prisma.pullRequest.count).toHaveBeenCalledWith({
-      where: expect.objectContaining({ mergedAt: range }),
-    });
-    expect(prisma.pullRequestReview.count).toHaveBeenCalledWith({
-      where: expect.objectContaining({ submittedAt: range }),
-    });
-    expect(prisma.issue.count).toHaveBeenCalledWith({ where: { userId: 'u1', timestamp: range } });
   });
 
   it('BUG-05: a date-only `to` covers the whole local day in the user’s time zone', async () => {
-    const prisma = createPrismaMock('America/New_York');
-    const service = new ActivityService(prisma as unknown as PrismaService);
-
-    await service.getSummary('u1', { from: '2026-10-23', to: '2026-10-23' });
-
     // New York is UTC-4 on 2026-10-23: the local day is [04:00Z, next day 04:00Z).
-    expect(prisma.commit.count).toHaveBeenCalledWith({
-      where: {
-        userId: 'u1',
-        ...nonMerge,
-        ...included,
-        authoredAt: { gte: new Date('2026-10-23T04:00:00Z'), lt: new Date('2026-10-24T04:00:00Z') },
-      },
+    await expect(
+      serviceIn('America/New_York')('u1', { from: '2026-10-23', to: '2026-10-23' }),
+    ).resolves.toEqual({
+      gte: new Date('2026-10-23T04:00:00Z'),
+      lt: new Date('2026-10-24T04:00:00Z'),
     });
   });
 
-  it('DATA-02: totalPRs is the merged count, not all authored PRs', async () => {
-    const prisma = createPrismaMock();
-    const service = new ActivityService(prisma as unknown as PrismaService);
-    await service.getSummary('u1', { from: '2026-10-01', to: '2026-10-31' });
-    const where = (
-      prisma.pullRequest.count.mock.calls[0] as [{ where: Record<string, unknown> }]
-    )[0].where;
-    expect(where).toHaveProperty('mergedAt');
-    expect(where).not.toHaveProperty('createdAtRemote');
+  it('resolves `period` in the user’s time zone', async () => {
+    await expect(serviceIn('Europe/London')('u1', { period: 'month:2026-01' })).resolves.toEqual({
+      gte: new Date('2026-01-01T00:00:00Z'),
+      lt: new Date('2026-02-01T00:00:00Z'),
+    });
   });
 });
