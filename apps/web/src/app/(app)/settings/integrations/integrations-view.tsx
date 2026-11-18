@@ -507,7 +507,9 @@ function RepositoriesSection({
                 size="sm"
                 variant="ghost"
                 loading={updateMany.isPending && updateMany.variables.included}
-                onClick={() => { bulk(true); }}
+                onClick={() => {
+                  bulk(true);
+                }}
               >
                 Include all{query ? ' shown' : ''}
               </Button>
@@ -515,7 +517,9 @@ function RepositoriesSection({
                 size="sm"
                 variant="ghost"
                 loading={updateMany.isPending && !updateMany.variables.included}
-                onClick={() => { bulk(false); }}
+                onClick={() => {
+                  bulk(false);
+                }}
               >
                 Exclude all{query ? ' shown' : ''}
               </Button>

@@ -1,0 +1,622 @@
+{
+  "data": [
+    {
+      "id": "commit:cmwm1mj1u00cg387d0b3ncjri",
+      "type": "commit",
+      "occurredAt": "2026-11-18T18:03:00.000Z",
+      "repo": { "id": "cmwm1mix40005387dx0j0qb82", "fullName": "acme/web-app" },
+      "title": "fix: correct timezone offset in monthly report",
+      "url": "https://github.com/acme/web-app/commit/b114b74ee1d2bbe66dd848d922aa63436da98144",
+      "ref": "C-acme/web-app@b114b74",
+      "meta": {
+        "recordId": "cmwm1mj1u00cg387d0b3ncjri",
+        "sha": "b114b74ee1d2bbe66dd848d922aa63436da98144",
+        "additions": 5,
+        "deletions": 3
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00ce387dlcg5ni5q",
+      "type": "commit",
+      "occurredAt": "2026-11-18T15:20:00.000Z",
+      "repo": { "id": "cmwm1mix40005387dx0j0qb82", "fullName": "acme/web-app" },
+      "title": "refactor: replace hand-rolled cache with LRU",
+      "url": "https://github.com/acme/web-app/commit/457079018abedc6376be303fededeec9f0b244af",
+      "ref": "C-acme/web-app@4570790",
+      "meta": {
+        "recordId": "cmwm1mj1u00ce387dlcg5ni5q",
+        "sha": "457079018abedc6376be303fededeec9f0b244af",
+        "additions": 38,
+        "deletions": 5
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00ca387donar17hf",
+      "type": "commit",
+      "occurredAt": "2026-11-18T12:06:00.000Z",
+      "repo": { "id": "cmwm1mix40005387dx0j0qb82", "fullName": "acme/web-app" },
+      "title": "docs: document local setup",
+      "url": "https://github.com/acme/web-app/commit/bdf7f36a1ba3005f6ac9aae616ed0b91729823bb",
+      "ref": "C-acme/web-app@bdf7f36",
+      "meta": {
+        "recordId": "cmwm1mj1u00ca387donar17hf",
+        "sha": "bdf7f36a1ba3005f6ac9aae616ed0b91729823bb",
+        "additions": 14,
+        "deletions": 6
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00cc387d7lx3ph9r",
+      "type": "commit",
+      "occurredAt": "2026-11-18T11:48:00.000Z",
+      "repo": { "id": "cmwm1mix40005387dx0j0qb82", "fullName": "acme/web-app" },
+      "title": "fix: prevent double submit on checkout button",
+      "url": "https://github.com/acme/web-app/commit/7a1e005a325ceda82c8a94fdb9feeafcde1d8728",
+      "ref": "C-acme/web-app@7a1e005",
+      "meta": {
+        "recordId": "cmwm1mj1u00cc387d7lx3ph9r",
+        "sha": "7a1e005a325ceda82c8a94fdb9feeafcde1d8728",
+        "additions": 39,
+        "deletions": 6
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00cd387d9u7hk9jg",
+      "type": "commit",
+      "occurredAt": "2026-11-18T11:23:00.000Z",
+      "repo": { "id": "cmwm1mix40005387dx0j0qb82", "fullName": "acme/web-app" },
+      "title": "fix: correct timezone offset in monthly report",
+      "url": "https://github.com/acme/web-app/commit/1f2ac123e554243bb2858335bec356f6eaba37c4",
+      "ref": "C-acme/web-app@1f2ac12",
+      "meta": {
+        "recordId": "cmwm1mj1u00cd387d9u7hk9jg",
+        "sha": "1f2ac123e554243bb2858335bec356f6eaba37c4",
+        "additions": 48,
+        "deletions": 7
+      }
+    },
+    {
+      "id": "pr_opened:cmwm1mj5a00ef387dxzfg2amk",
+      "type": "pr_opened",
+      "occurredAt": "2026-11-18T11:00:00.000Z",
+      "repo": { "id": "cmwm1mix40005387dx0j0qb82", "fullName": "acme/web-app" },
+      "title": "Design tokens: dark mode",
+      "url": "https://github.com/acme/web-app/pull/140",
+      "ref": "PR-acme/web-app#140",
+      "meta": {
+        "recordId": "cmwm1mj5a00ef387dxzfg2amk",
+        "number": 140,
+        "state": "open",
+        "isDraft": false,
+        "additions": 74,
+        "deletions": 27
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00cf387deuehaczh",
+      "type": "commit",
+      "occurredAt": "2026-11-18T09:16:00.000Z",
+      "repo": { "id": "cmwm1mix40006387d91ls6jzb", "fullName": "acme/infra" },
+      "title": "perf: add composite index for invoice lookups",
+      "url": "https://github.com/acme/infra/commit/bcb2caa152528ee0a35202a70f395a7bf9470186",
+      "ref": "C-acme/infra@bcb2caa",
+      "meta": {
+        "recordId": "cmwm1mj1u00cf387deuehaczh",
+        "sha": "bcb2caa152528ee0a35202a70f395a7bf9470186",
+        "additions": 23,
+        "deletions": 5
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00cb387d8hfgrqtq",
+      "type": "commit",
+      "occurredAt": "2026-11-18T09:01:00.000Z",
+      "repo": { "id": "cmwm1mix40005387dx0j0qb82", "fullName": "acme/web-app" },
+      "title": "feat: introduce feature flag for new checkout",
+      "url": "https://github.com/acme/web-app/commit/987daffd278069c22fd594f865bfb99637f29669",
+      "ref": "C-acme/web-app@987daff",
+      "meta": {
+        "recordId": "cmwm1mj1u00cb387d8hfgrqtq",
+        "sha": "987daffd278069c22fd594f865bfb99637f29669",
+        "additions": 13,
+        "deletions": 2
+      }
+    },
+    {
+      "id": "review:cmwm1mj6u00lf387dq5us49d3",
+      "type": "review",
+      "occurredAt": "2026-11-18T06:00:00.000Z",
+      "repo": { "id": "cmwm1mix40004387dt7y7jjai", "fullName": "acme/payments-api" },
+      "title": "Upgrade Postgres driver",
+      "url": "https://github.com/acme/payments-api/pull/295",
+      "ref": "REV-acme/payments-api#295",
+      "meta": {
+        "recordId": "cmwm1mj6u00lf387dq5us49d3",
+        "pullRequestId": "cmwm1mj5b00i7387dualtvgf4",
+        "number": 295,
+        "reviewState": "commented",
+        "comments": 1,
+        "authorLogin": "taylor-teammate"
+      }
+    },
+    {
+      "id": "review:cmwm1mj6u00le387d7mpitv6n",
+      "type": "review",
+      "occurredAt": "2026-11-18T03:00:00.000Z",
+      "repo": { "id": "cmwm1mix40004387dt7y7jjai", "fullName": "acme/payments-api" },
+      "title": "Upgrade Postgres driver",
+      "url": "https://github.com/acme/payments-api/pull/295",
+      "ref": "REV-acme/payments-api#295",
+      "meta": {
+        "recordId": "cmwm1mj6u00le387d7mpitv6n",
+        "pullRequestId": "cmwm1mj5b00i7387dualtvgf4",
+        "number": 295,
+        "reviewState": "approved",
+        "comments": 2,
+        "authorLogin": "taylor-teammate"
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00c7387dl176e25s",
+      "type": "commit",
+      "occurredAt": "2026-11-17T16:54:00.000Z",
+      "repo": { "id": "cmwm1mix50008387d3jcym8hy", "fullName": "oss/fast-json" },
+      "title": "fix: handle null customer address",
+      "url": "https://github.com/oss/fast-json/commit/2378902c7fae4e0a858b992440ca9448b62f5756",
+      "ref": "C-oss/fast-json@2378902",
+      "meta": {
+        "recordId": "cmwm1mj1u00c7387dl176e25s",
+        "sha": "2378902c7fae4e0a858b992440ca9448b62f5756",
+        "additions": 49,
+        "deletions": 12
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00c6387dnn19rowb",
+      "type": "commit",
+      "occurredAt": "2026-11-17T15:51:00.000Z",
+      "repo": { "id": "cmwm1mix50008387d3jcym8hy", "fullName": "oss/fast-json" },
+      "title": "feat: add usage-based billing meter",
+      "url": "https://github.com/oss/fast-json/commit/efe41add159568d723292c3243059493fd43b224",
+      "ref": "C-oss/fast-json@efe41ad",
+      "meta": {
+        "recordId": "cmwm1mj1u00c6387dnn19rowb",
+        "sha": "efe41add159568d723292c3243059493fd43b224",
+        "additions": 4,
+        "deletions": 0
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00c8387dbq0atkub",
+      "type": "commit",
+      "occurredAt": "2026-11-17T14:24:00.000Z",
+      "repo": { "id": "cmwm1mix50008387d3jcym8hy", "fullName": "oss/fast-json" },
+      "title": "perf: add composite index for invoice lookups",
+      "url": "https://github.com/oss/fast-json/commit/2e877e88a0bfd3b2543465ca93963736f867feef",
+      "ref": "C-oss/fast-json@2e877e8",
+      "meta": {
+        "recordId": "cmwm1mj1u00c8387dbq0atkub",
+        "sha": "2e877e88a0bfd3b2543465ca93963736f867feef",
+        "additions": 20,
+        "deletions": 9
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00c9387dj2g1laf8",
+      "type": "commit",
+      "occurredAt": "2026-11-17T12:36:00.000Z",
+      "repo": { "id": "cmwm1mix50008387d3jcym8hy", "fullName": "oss/fast-json" },
+      "title": "fix: prevent double submit on checkout button",
+      "url": "https://github.com/oss/fast-json/commit/e1dc0a2be1856f54664e3f3b97c211a938bf4e81",
+      "ref": "C-oss/fast-json@e1dc0a2",
+      "meta": {
+        "recordId": "cmwm1mj1u00c9387dj2g1laf8",
+        "sha": "e1dc0a2be1856f54664e3f3b97c211a938bf4e81",
+        "additions": 90,
+        "deletions": 18
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00c5387d7in5dbzu",
+      "type": "commit",
+      "occurredAt": "2026-11-17T11:05:00.000Z",
+      "repo": { "id": "cmwm1mix50008387d3jcym8hy", "fullName": "oss/fast-json" },
+      "title": "docs: document local setup",
+      "url": "https://github.com/oss/fast-json/commit/528a208b557eb5b775f08a8c48a7cd53bcb020a6",
+      "ref": "C-oss/fast-json@528a208",
+      "meta": {
+        "recordId": "cmwm1mj1u00c5387d7in5dbzu",
+        "sha": "528a208b557eb5b775f08a8c48a7cd53bcb020a6",
+        "additions": 13,
+        "deletions": 2
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00c2387dii04zcnh",
+      "type": "commit",
+      "occurredAt": "2026-11-16T18:25:00.000Z",
+      "repo": { "id": "cmwm1mix40004387dt7y7jjai", "fullName": "acme/payments-api" },
+      "title": "fix: escape user input in search query",
+      "url": "https://github.com/acme/payments-api/commit/73f8e9fbe8f5b759b847b4c9caad735c72fde362",
+      "ref": "C-acme/payments-api@73f8e9f",
+      "meta": {
+        "recordId": "cmwm1mj1u00c2387dii04zcnh",
+        "sha": "73f8e9fbe8f5b759b847b4c9caad735c72fde362",
+        "additions": 235,
+        "deletions": 12
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00bz387duy2wfepz",
+      "type": "commit",
+      "occurredAt": "2026-11-16T17:49:00.000Z",
+      "repo": { "id": "cmwm1mix50007387de6x1xs0h", "fullName": "acme/design-system" },
+      "title": "refactor: move env parsing into config module",
+      "url": "https://github.com/acme/design-system/commit/a4f72efbbd99bd6c307671c37886c8177cd18bf2",
+      "ref": "C-acme/design-system@a4f72ef",
+      "meta": {
+        "recordId": "cmwm1mj1u00bz387duy2wfepz",
+        "sha": "a4f72efbbd99bd6c307671c37886c8177cd18bf2",
+        "additions": 33,
+        "deletions": 13
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00by387dwooj8m92",
+      "type": "commit",
+      "occurredAt": "2026-11-16T17:05:00.000Z",
+      "repo": { "id": "cmwm1mix50007387de6x1xs0h", "fullName": "acme/design-system" },
+      "title": "fix: escape user input in search query",
+      "url": "https://github.com/acme/design-system/commit/f983b8ed23e37e1dadc9022c1848e8da4705759b",
+      "ref": "C-acme/design-system@f983b8e",
+      "meta": {
+        "recordId": "cmwm1mj1u00by387dwooj8m92",
+        "sha": "f983b8ed23e37e1dadc9022c1848e8da4705759b",
+        "additions": 35,
+        "deletions": 6
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00c1387doj2e4v96",
+      "type": "commit",
+      "occurredAt": "2026-11-16T16:53:00.000Z",
+      "repo": { "id": "cmwm1mix50007387de6x1xs0h", "fullName": "acme/design-system" },
+      "title": "test: cover webhook signature edge cases",
+      "url": "https://github.com/acme/design-system/commit/04845e0c46da9d1736229ec0532b760448e2642c",
+      "ref": "C-acme/design-system@04845e0",
+      "meta": {
+        "recordId": "cmwm1mj1u00c1387doj2e4v96",
+        "sha": "04845e0c46da9d1736229ec0532b760448e2642c",
+        "additions": 37,
+        "deletions": 11
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00c3387dhdsw5wxi",
+      "type": "commit",
+      "occurredAt": "2026-11-16T16:42:00.000Z",
+      "repo": { "id": "cmwm1mix50007387de6x1xs0h", "fullName": "acme/design-system" },
+      "title": "chore: update CI cache key",
+      "url": "https://github.com/acme/design-system/commit/80da35c01023766a6d46d9922edf18c18719d443",
+      "ref": "C-acme/design-system@80da35c",
+      "meta": {
+        "recordId": "cmwm1mj1u00c3387dhdsw5wxi",
+        "sha": "80da35c01023766a6d46d9922edf18c18719d443",
+        "additions": 147,
+        "deletions": 46
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00c0387di4wnnw20",
+      "type": "commit",
+      "occurredAt": "2026-11-16T14:06:00.000Z",
+      "repo": { "id": "cmwm1mix50007387de6x1xs0h", "fullName": "acme/design-system" },
+      "title": "test: cover webhook signature edge cases",
+      "url": "https://github.com/acme/design-system/commit/14a00f5dc70584d969c8b06a89d494a4b487b89b",
+      "ref": "C-acme/design-system@14a00f5",
+      "meta": {
+        "recordId": "cmwm1mj1u00c0387di4wnnw20",
+        "sha": "14a00f5dc70584d969c8b06a89d494a4b487b89b",
+        "additions": 184,
+        "deletions": 83
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00bx387dxdjkjz0x",
+      "type": "commit",
+      "occurredAt": "2026-11-16T12:29:00.000Z",
+      "repo": { "id": "cmwm1mix50007387de6x1xs0h", "fullName": "acme/design-system" },
+      "title": "refactor: replace hand-rolled cache with LRU",
+      "url": "https://github.com/acme/design-system/commit/0617c8545b30f32df3d34c1a8c111cbebbe84bd0",
+      "ref": "C-acme/design-system@0617c85",
+      "meta": {
+        "recordId": "cmwm1mj1u00bx387dxdjkjz0x",
+        "sha": "0617c8545b30f32df3d34c1a8c111cbebbe84bd0",
+        "additions": 74,
+        "deletions": 10
+      }
+    },
+    {
+      "id": "review:cmwm1mj6u00ld387dydpxsxmk",
+      "type": "review",
+      "occurredAt": "2026-11-14T18:00:00.000Z",
+      "repo": { "id": "cmwm1mix40004387dt7y7jjai", "fullName": "acme/payments-api" },
+      "title": "Upgrade Postgres driver",
+      "url": "https://github.com/acme/payments-api/pull/294",
+      "ref": "REV-acme/payments-api#294",
+      "meta": {
+        "recordId": "cmwm1mj6u00ld387dydpxsxmk",
+        "pullRequestId": "cmwm1mj5b00i5387dcs9iaujk",
+        "number": 294,
+        "reviewState": "approved",
+        "comments": 1,
+        "authorLogin": "taylor-teammate"
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1t00bt387drq1lleh3",
+      "type": "commit",
+      "occurredAt": "2026-11-13T17:51:00.000Z",
+      "repo": { "id": "cmwm1mix40005387dx0j0qb82", "fullName": "acme/web-app" },
+      "title": "refactor: extract pricing rules into domain service",
+      "url": "https://github.com/acme/web-app/commit/625dd75888b2d6ceaa7452222b5336f130f80976",
+      "ref": "C-acme/web-app@625dd75",
+      "meta": {
+        "recordId": "cmwm1mj1t00bt387drq1lleh3",
+        "sha": "625dd75888b2d6ceaa7452222b5336f130f80976",
+        "additions": 178,
+        "deletions": 60
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1t00br387d5a29jyqf",
+      "type": "commit",
+      "occurredAt": "2026-11-13T14:54:00.000Z",
+      "repo": { "id": "cmwm1mix40005387dx0j0qb82", "fullName": "acme/web-app" },
+      "title": "fix: escape user input in search query",
+      "url": "https://github.com/acme/web-app/commit/b955bc3ad9837fcab2a7d3c7f39eef7037c19577",
+      "ref": "C-acme/web-app@b955bc3",
+      "meta": {
+        "recordId": "cmwm1mj1t00br387d5a29jyqf",
+        "sha": "b955bc3ad9837fcab2a7d3c7f39eef7037c19577",
+        "additions": 15,
+        "deletions": 1
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00bv387d3s973kxx",
+      "type": "commit",
+      "occurredAt": "2026-11-13T14:46:00.000Z",
+      "repo": { "id": "cmwm1mix40005387dx0j0qb82", "fullName": "acme/web-app" },
+      "title": "refactor: split payments controller",
+      "url": "https://github.com/acme/web-app/commit/bd8ad195bcc53c945277f930897d2003b41b3bab",
+      "ref": "C-acme/web-app@bd8ad19",
+      "meta": {
+        "recordId": "cmwm1mj1u00bv387d3s973kxx",
+        "sha": "bd8ad195bcc53c945277f930897d2003b41b3bab",
+        "additions": 38,
+        "deletions": 2
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1t00bu387dqtrlyvb1",
+      "type": "commit",
+      "occurredAt": "2026-11-13T14:34:00.000Z",
+      "repo": { "id": "cmwm1mix40005387dx0j0qb82", "fullName": "acme/web-app" },
+      "title": "docs: add ADR for event sourcing",
+      "url": "https://github.com/acme/web-app/commit/c212375a47462273e0299d73c9f555189bfadd76",
+      "ref": "C-acme/web-app@c212375",
+      "meta": {
+        "recordId": "cmwm1mj1t00bu387dqtrlyvb1",
+        "sha": "c212375a47462273e0299d73c9f555189bfadd76",
+        "additions": 513,
+        "deletions": 167
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1u00bw387d4hp6bt9a",
+      "type": "commit",
+      "occurredAt": "2026-11-13T14:23:00.000Z",
+      "repo": { "id": "cmwm1mix40006387d91ls6jzb", "fullName": "acme/infra" },
+      "title": "feat: introduce feature flag for new checkout",
+      "url": "https://github.com/acme/infra/commit/234d8147565045eb98712329961f000277f7035a",
+      "ref": "C-acme/infra@234d814",
+      "meta": {
+        "recordId": "cmwm1mj1u00bw387d4hp6bt9a",
+        "sha": "234d8147565045eb98712329961f000277f7035a",
+        "additions": 63,
+        "deletions": 3
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1t00bs387dszh1j9px",
+      "type": "commit",
+      "occurredAt": "2026-11-13T14:15:00.000Z",
+      "repo": { "id": "cmwm1mix40005387dx0j0qb82", "fullName": "acme/web-app" },
+      "title": "chore: tighten eslint rules",
+      "url": "https://github.com/acme/web-app/commit/5b395283fc14a3cbca00653668e5da5aefdb54e0",
+      "ref": "C-acme/web-app@5b39528",
+      "meta": {
+        "recordId": "cmwm1mj1t00bs387dszh1j9px",
+        "sha": "5b395283fc14a3cbca00653668e5da5aefdb54e0",
+        "additions": 97,
+        "deletions": 56
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1t00bp387dcysbhfq0",
+      "type": "commit",
+      "occurredAt": "2026-11-12T18:06:00.000Z",
+      "repo": { "id": "cmwm1mix40004387dt7y7jjai", "fullName": "acme/payments-api" },
+      "title": "feat: expose subscription status endpoint",
+      "url": "https://github.com/acme/payments-api/commit/a1ae2228e2360e2acc3a42fa2708c3734056c4e7",
+      "ref": "C-acme/payments-api@a1ae222",
+      "meta": {
+        "recordId": "cmwm1mj1t00bp387dcysbhfq0",
+        "sha": "a1ae2228e2360e2acc3a42fa2708c3734056c4e7",
+        "additions": 54,
+        "deletions": 25
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1t00bl387d78b46kyk",
+      "type": "commit",
+      "occurredAt": "2026-11-12T16:58:00.000Z",
+      "repo": { "id": "cmwm1mix40006387d91ls6jzb", "fullName": "acme/infra" },
+      "title": "feat: add usage-based billing meter",
+      "url": "https://github.com/acme/infra/commit/80c1886214aba2da9a308ba3808d3994dd243872",
+      "ref": "C-acme/infra@80c1886",
+      "meta": {
+        "recordId": "cmwm1mj1t00bl387d78b46kyk",
+        "sha": "80c1886214aba2da9a308ba3808d3994dd243872",
+        "additions": 33,
+        "deletions": 8
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1t00bk387d2zpyhteo",
+      "type": "commit",
+      "occurredAt": "2026-11-12T13:58:00.000Z",
+      "repo": { "id": "cmwm1mix40004387dt7y7jjai", "fullName": "acme/payments-api" },
+      "title": "feat: add dark mode tokens",
+      "url": "https://github.com/acme/payments-api/commit/d7de62a70bf528c988d8ae4be1241cbecab206b7",
+      "ref": "C-acme/payments-api@d7de62a",
+      "meta": {
+        "recordId": "cmwm1mj1t00bk387d2zpyhteo",
+        "sha": "d7de62a70bf528c988d8ae4be1241cbecab206b7",
+        "additions": 229,
+        "deletions": 93
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1t00bm387ddwotr7e7",
+      "type": "commit",
+      "occurredAt": "2026-11-12T13:15:00.000Z",
+      "repo": { "id": "cmwm1mix40004387dt7y7jjai", "fullName": "acme/payments-api" },
+      "title": "refactor: split payments controller",
+      "url": "https://github.com/acme/payments-api/commit/7b27738034190135e3d3b638115a3a063e80fdf3",
+      "ref": "C-acme/payments-api@7b27738",
+      "meta": {
+        "recordId": "cmwm1mj1t00bm387ddwotr7e7",
+        "sha": "7b27738034190135e3d3b638115a3a063e80fdf3",
+        "additions": 19,
+        "deletions": 2
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1t00bq387d4tkvtkmh",
+      "type": "commit",
+      "occurredAt": "2026-11-12T11:28:00.000Z",
+      "repo": { "id": "cmwm1mix40004387dt7y7jjai", "fullName": "acme/payments-api" },
+      "title": "perf: batch ledger writes",
+      "url": "https://github.com/acme/payments-api/commit/0e1fbbdcedd6b293ddf30d15bbef887040d6b3a0",
+      "ref": "C-acme/payments-api@0e1fbbd",
+      "meta": {
+        "recordId": "cmwm1mj1t00bq387d4tkvtkmh",
+        "sha": "0e1fbbdcedd6b293ddf30d15bbef887040d6b3a0",
+        "additions": 22,
+        "deletions": 3
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1t00bo387daykuxyj8",
+      "type": "commit",
+      "occurredAt": "2026-11-12T10:46:00.000Z",
+      "repo": { "id": "cmwm1mix40004387dt7y7jjai", "fullName": "acme/payments-api" },
+      "title": "feat: add invoice PDF download",
+      "url": "https://github.com/acme/payments-api/commit/92df64286182611d682f9d90b2d8e3479f878998",
+      "ref": "C-acme/payments-api@92df642",
+      "meta": {
+        "recordId": "cmwm1mj1t00bo387daykuxyj8",
+        "sha": "92df64286182611d682f9d90b2d8e3479f878998",
+        "additions": 5,
+        "deletions": 2
+      }
+    },
+    {
+      "id": "pr_merged:cmwm1mj5a00ee387d3wjy39sw",
+      "type": "pr_merged",
+      "occurredAt": "2026-11-12T10:00:00.000Z",
+      "repo": { "id": "cmwm1mix50007387de6x1xs0h", "fullName": "acme/design-system" },
+      "title": "Refunds API (partial + full)",
+      "url": "https://github.com/acme/design-system/pull/155",
+      "ref": "PR-acme/design-system#155",
+      "meta": {
+        "recordId": "cmwm1mj5a00ee387d3wjy39sw",
+        "number": 155,
+        "state": "merged",
+        "isDraft": false,
+        "additions": 111,
+        "deletions": 27
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1t00bn387dcjljdjqa",
+      "type": "commit",
+      "occurredAt": "2026-11-12T09:42:00.000Z",
+      "repo": { "id": "cmwm1mix40004387dt7y7jjai", "fullName": "acme/payments-api" },
+      "title": "chore: tighten eslint rules",
+      "url": "https://github.com/acme/payments-api/commit/ea284f09940ee22e2340a5cf877b3d768fba6aae",
+      "ref": "C-acme/payments-api@ea284f0",
+      "meta": {
+        "recordId": "cmwm1mj1t00bn387dcjljdjqa",
+        "sha": "ea284f09940ee22e2340a5cf877b3d768fba6aae",
+        "additions": 7,
+        "deletions": 3
+      }
+    },
+    {
+      "id": "pr_merged:cmwm1mj5a00ed387dlpnt9dzr",
+      "type": "pr_merged",
+      "occurredAt": "2026-11-12T08:00:00.000Z",
+      "repo": { "id": "cmwm1mix40005387dx0j0qb82", "fullName": "acme/web-app" },
+      "title": "Payments: idempotent intent creation",
+      "url": "https://github.com/acme/web-app/pull/139",
+      "ref": "PR-acme/web-app#139",
+      "meta": {
+        "recordId": "cmwm1mj5a00ed387dlpnt9dzr",
+        "number": 139,
+        "state": "merged",
+        "isDraft": false,
+        "additions": 15,
+        "deletions": 4
+      }
+    },
+    {
+      "id": "pr_opened:cmwm1mj5a00ee387d3wjy39sw",
+      "type": "pr_opened",
+      "occurredAt": "2026-11-11T15:00:00.000Z",
+      "repo": { "id": "cmwm1mix50007387de6x1xs0h", "fullName": "acme/design-system" },
+      "title": "Refunds API (partial + full)",
+      "url": "https://github.com/acme/design-system/pull/155",
+      "ref": "PR-acme/design-system#155",
+      "meta": {
+        "recordId": "cmwm1mj5a00ee387d3wjy39sw",
+        "number": 155,
+        "state": "merged",
+        "isDraft": false,
+        "additions": 111,
+        "deletions": 27
+      }
+    },
+    {
+      "id": "commit:cmwm1mj1t00bj387dikk87dud",
+      "type": "commit",
+      "occurredAt": "2026-11-11T14:40:00.000Z",
+      "repo": { "id": "cmwm1mix50007387de6x1xs0h", "fullName": "acme/design-system" },
+      "title": "refactor: move env parsing into config module",
+      "url": "https://github.com/acme/design-system/commit/c528117771a9c4a6e585ca0aa7fa273488427fa1",
+      "ref": "C-acme/design-system@c528117",
+      "meta": {
+        "recordId": "cmwm1mj1t00bj387dikk87dud",
+        "sha": "c528117771a9c4a6e585ca0aa7fa273488427fa1",
+        "additions": 31,
+        "deletions": 0
+      }
+    }
+  ],
+  "meta": {
+    "nextCursor": "eyJ0IjoiMjAyNi0xMS0xMVQxNDo0MDowMC4wMDBaIiwiaWQiOiJjb21taXQ6Y213bTFtajF0MDBiajM4N2Rpa2s4N2R1ZCJ9",
+    "hasMore": true
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "data": {
+    "integrationId": "cmwm1miwp0002387d1da1vzef",
+    "state": "idle",
+    "currentRun": null,
+    "lastRun": {
+      "id": "cmwm1mj7h00lj387dsbtbz7ff",
+      "integrationId": "cmwm1miwp0002387d1da1vzef",
+      "trigger": "scheduled",
+      "kind": "incremental",
+      "status": "succeeded",
+      "stage": "done",
+      "progress": 100,
+      "counts": {
+        "repos": 5,
+        "commits": 3,
+        "created": 4,
+        "reviews": 1,
+        "prsAuthored": 0,
+        "prsReviewed": 1
+      },
+      "windowFrom": "2026-11-16T03:40:00.000Z",
+      "windowTo": "2026-11-18T00:00:00.000Z",
+      "resumeAt": null,
+      "recentWindowCompletedAt": null,
+      "errorCode": null,
+      "errorMessage": null,
+      "errors": [],
+      "queuedAt": "2026-11-18T00:00:00.000Z",
+      "startedAt": "2026-11-18T00:00:00.000Z",
+      "finishedAt": "2026-11-18T00:00:00.000Z"
+    },
+    "lastSuccessfulAt": "2026-11-18T00:00:00.000Z",
+    "nextScheduledAt": "2026-11-19T03:14:00.000Z"
+  }
+}

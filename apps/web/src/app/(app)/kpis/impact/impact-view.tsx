@@ -32,7 +32,6 @@ import { formatDate, formatLocalMonth, formatTime } from '@/lib/format';
 import { usePeriod } from '@/lib/period';
 import { cn } from '@/lib/utils';
 
-
 /** §6.7: what each dimension combines. */
 const DIMENSION_SUMMARY: Record<string, string> = {
   delivery: 'PRs merged, cycle time, steady weeks',
@@ -358,7 +357,13 @@ function HighlightsCard({
               <span className="mr-auto text-caption text-subtle-foreground">
                 Generated {formatTime(parsed.at, timezone)} · cached for this period
               </span>
-              <Button size="sm" variant="ghost" onClick={() => { run(true); }}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  run(true);
+                }}
+              >
                 <RotateCw aria-hidden="true" />
                 Regenerate
               </Button>
@@ -371,7 +376,14 @@ function HighlightsCard({
               it. Numbers always come from the metrics engine.
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" variant="secondary" disabled={!!quota} onClick={() => { run(false); }}>
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={!!quota}
+                onClick={() => {
+                  run(false);
+                }}
+              >
                 <Sparkles aria-hidden="true" />
                 Generate highlights
               </Button>

@@ -1,0 +1,50 @@
+{
+  "data": [
+    {
+      "ref": "PR-acme/design-system#155",
+      "kind": "pull_request",
+      "id": "cmwm1mj5a00ee387d3wjy39sw",
+      "title": "Refunds API (partial + full)",
+      "repo": "acme/design-system",
+      "url": "https://github.com/acme/design-system/pull/155",
+      "occurredAt": "2026-11-12T10:00:00.000Z"
+    },
+    {
+      "ref": "PR-acme/web-app#139",
+      "kind": "pull_request",
+      "id": "cmwm1mj5a00ed387dlpnt9dzr",
+      "title": "Payments: idempotent intent creation",
+      "repo": "acme/web-app",
+      "url": "https://github.com/acme/web-app/pull/139",
+      "occurredAt": "2026-11-12T08:00:00.000Z"
+    },
+    {
+      "ref": "PR-acme/web-app#138",
+      "kind": "pull_request",
+      "id": "cmwm1mj5a00ec387da729d87t",
+      "title": "Webhook delivery retries",
+      "repo": "acme/web-app",
+      "url": "https://github.com/acme/web-app/pull/138",
+      "occurredAt": "2026-11-05T07:00:00.000Z"
+    },
+    {
+      "ref": "PR-acme/payments-api#271",
+      "kind": "pull_request",
+      "id": "cmwm1mj5a00eb387d0av9ik23",
+      "title": "Payments: idempotent intent creation",
+      "repo": "acme/payments-api",
+      "url": "https://github.com/acme/payments-api/pull/271",
+      "occurredAt": "2026-11-04T16:00:00.000Z"
+    },
+    {
+      "ref": "PR-acme/payments-api#270",
+      "kind": "pull_request",
+      "id": "cmwm1mj5a00ea387dwcxezhwb",
+      "title": "Terraform: split staging and prod state",
+      "repo": "acme/payments-api",
+      "url": "https://github.com/acme/payments-api/pull/270",
+      "occurredAt": "2026-11-01T15:00:00.000Z"
+    }
+  ],
+  "meta": { "nextCursor": null, "hasMore": false, "total": 5, "truncated": false }
+}

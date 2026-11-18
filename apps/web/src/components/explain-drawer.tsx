@@ -263,11 +263,7 @@ export function ExplainDrawer({
                   <p className="text-sm text-muted-foreground">{definition.antiGaming}</p>
                 </Section>
               ) : null}
-              <Evidence
-                metric={metric}
-                periodSpec={periodSpec ?? period?.spec}
-                timezone={timezone}
-              />
+              <Evidence metric={metric} periodSpec={periodSpec} timezone={timezone} />
               <p className="text-caption text-subtle-foreground">
                 <span className="font-mono">{metricsVersion ?? ''}</span>
                 {timezone ? ` · Times in ${timezone}` : ''} · Excluded repositories are ignored.

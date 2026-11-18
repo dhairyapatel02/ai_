@@ -31,12 +31,28 @@ describe('ImpactScoreCard', () => {
     expect(screen.getByText('impact@2.0.0')).toBeInTheDocument();
   });
 
+  it('notes re-weighting when a dimension is unavailable', () => {
+    render(
+      <ImpactScoreCard
+        score={70}
+        dimensions={dimensions.map((d) => (d.key === 'quality' ? { ...d, available: false } : d))}
+      />,
+    );
+    expect(
+      screen.getByText(
+        "Quality isn't scored yet — not enough merged PRs in this period. The other dimensions were re-weighted.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('says "not enough data" instead of a number (AI-01)', () => {
     render(
       <ImpactScoreCard score={null} dimensions={dimensions.map((d) => ({ ...d, score: null }))} />,
     );
-    expect(screen.getByText(/Not enough activity in this period/)).toBeInTheDocument();
-    expect(screen.getByTestId('impact-score-value')).toHaveTextContent('—');
+    expect(screen.getByTestId('impact-score-value')).toHaveTextContent(
+      'Not enough activity in this period to compute a fair score',
+    );
+    expect(screen.queryByText('/ 100')).not.toBeInTheDocument();
   });
 
   it('has a loading state', () => {

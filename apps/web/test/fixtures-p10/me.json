@@ -1,0 +1,47 @@
+{
+  "data": {
+    "user": {
+      "id": "cmwm1miw60000387duole9otw",
+      "email": "demo@devimpact.dev",
+      "name": "Dana Demo",
+      "image": null,
+      "plan": "pro",
+      "createdAt": "2026-11-18T11:33:51.270Z"
+    },
+    "settings": {
+      "timezone": "Europe/London",
+      "currentRole": null,
+      "careerLevel": null,
+      "targetRole": null,
+      "defaultPeriodType": "month",
+      "digestEnabled": false,
+      "digestDayOfWeek": 1,
+      "digestHourLocal": 9,
+      "notifySyncFailures": true,
+      "notifyDocumentReady": false,
+      "aiRedactPrivateRepos": false,
+      "onboardingStep": null,
+      "onboardingCompletedAt": "2026-11-18T00:00:00.000Z"
+    },
+    "entitlements": {
+      "plan": "pro",
+      "limits": {
+        "integrations": 1,
+        "historyMonths": 36,
+        "aiGenerationsPerMonth": 150,
+        "aiQuickPerMonth": 1000
+      },
+      "usage": { "integrations": 1 }
+    },
+    "integrations": [
+      {
+        "id": "cmwm1miwp0002387d1da1vzef",
+        "provider": "github",
+        "status": "active",
+        "externalLogin": "dana-demo",
+        "lastSuccessfulSyncAt": "2026-11-18T00:00:00.000Z"
+      }
+    ],
+    "onboarding": { "step": null, "completed": true }
+  }
+}

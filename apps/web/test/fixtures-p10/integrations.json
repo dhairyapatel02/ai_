@@ -1,0 +1,35 @@
+{
+  "data": [
+    {
+      "id": "cmwm1miwp0002387d1da1vzef",
+      "provider": "github",
+      "status": "active",
+      "statusReason": null,
+      "externalLogin": "dana-demo",
+      "displayName": "Dana Demo",
+      "avatarUrl": null,
+      "installations": [
+        {
+          "installationId": "70000001",
+          "accountLogin": "dana-demo",
+          "accountType": "User",
+          "repositorySelection": "selected",
+          "suspended": false
+        },
+        {
+          "installationId": "70000002",
+          "accountLogin": "acme",
+          "accountType": "Organization",
+          "repositorySelection": "all",
+          "suspended": false
+        }
+      ],
+      "manageUrl": "https://github.com/settings/installations",
+      "lastSyncedAt": "2026-11-18T00:00:00.000Z",
+      "lastSuccessfulSyncAt": "2026-11-18T00:00:00.000Z",
+      "nextScheduledSyncAt": "2026-11-19T03:14:00.000Z",
+      "backfillFrom": "2026-02-21T00:00:00.000Z",
+      "createdAt": "2026-11-18T11:33:51.289Z"
+    }
+  ]
+}
