@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Checks WCAG 2.2 contrast for every text/UI token pair in docs/v2/design/tokens.css, in both themes.
-// Usage: node docs/v2/design/scripts/check-contrast.mjs [--md]
+// Usage: node docs/v2/design/scripts/check-contrast.mjs [--md] [path/to/tokens.css]
+// Default path: the app copy apps/web/src/styles/tokens.css (P09); CI runs it via `npm run check:tokens`.
 // Exit code 1 if any pair is below its threshold. `--md` prints the Markdown table used in
 // DESIGN_SYSTEM.md §4.4.
 import { readFileSync } from 'node:fs';
@@ -8,7 +9,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const css = readFileSync(join(here, '..', 'tokens.css'), 'utf8');
+const fileArg = process.argv.slice(2).find((a) => !a.startsWith('--'));
+const css = readFileSync(
+  fileArg ?? join(here, '..', '..', '..', '..', 'apps', 'web', 'src', 'styles', 'tokens.css'),
+  'utf8',
+);
 
 function block(selector) {
   const start = css.indexOf(`\n${selector} {`);

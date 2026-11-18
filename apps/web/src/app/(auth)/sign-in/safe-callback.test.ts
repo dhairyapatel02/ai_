@@ -16,7 +16,7 @@ describe('safeCallback (sign-in redirect target)', () => {
     '/\t/evil.example',
     '/\n/evil.example',
     'javascript:alert(1)',
-  ])('falls back to /dashboard for %j', (value) => {
-    expect(safeCallback(value)).toBe('/dashboard');
+  ])('falls back to / (which routes to onboarding or the dashboard) for %j', (value) => {
+    expect(safeCallback(value)).toBe('/');
   });
 });

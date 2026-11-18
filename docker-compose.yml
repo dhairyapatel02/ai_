@@ -113,6 +113,8 @@ services:
       DATABASE_URL: postgresql://devimpact:devimpact_password@postgres:5432/devimpact
       WEB_URL: ${WEB_URL:-http://localhost:3000}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-compose-local-only-better-auth-secret-0123456789}
+      # Server Components call the API inside the compose network (the browser uses localhost:4000).
+      API_INTERNAL_URL: http://api:4000/api
       # Production build: dev login is always off here, whatever ENABLE_DEV_LOGIN says.
     depends_on:
       api:

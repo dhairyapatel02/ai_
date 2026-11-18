@@ -39,12 +39,17 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
+      - name: Design tokens (WCAG contrast, app copy in sync with docs/v2/design)
+        run: npm run check:tokens
       - run: npm run typecheck
       - run: npm test
-      - name: Audit API production dependencies (web is gated after the Next.js upgrade in P09)
+      - name: Audit production dependencies (API + web)
         # --omit=optional: better-auth (web) declares vitest as an *optional* peer, so npm counts the
-        # dev-only test runner as a production dependency. Tracked as DEBT-11 (vitest >= 5.1).
-        run: npm audit --omit=dev --omit=optional --workspace=apps/api --audit-level=high
+        # dev-only test runner (and its picomatch advisory, unfixed in every version) as a production
+        # dependency. Tracked as DEBT-11.
+        run: |
+          npm audit --omit=dev --omit=optional --workspace=apps/api --audit-level=high
+          npm audit --omit=dev --omit=optional --workspace=apps/web --audit-level=high
 
   integration:
     name: API integration tests
@@ -110,6 +115,13 @@ jobs:
       - run: npm run test:e2e
         env:
           CI: true
+      - name: Upload Playwright traces/screens on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: test-results/
+          retention-days: 7
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4

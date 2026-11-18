@@ -6,19 +6,20 @@ KPI dashboards, promotion packets and impact scores.
 
 > **Status:** v0.1 → v2.0 rebuild in progress. The plan, decisions and progress live in
 > [`docs/v2/`](docs/v2/README.md). Real authentication (Better Auth, GitHub/Google sign-in, JWTs to
-> the API) landed in Phase 05; the UI is still the functional v0.1 one until Phase 09.
+> the API) landed in Phase 05; Phase 09 rebuilt the web foundation (Next.js 16, design system, app
+> shell, onboarding). The insight pages and document studio are rebuilt in Phases 10–11.
 
 ## Tech stack
 
-| Layer    | Technology                                                                |
-| -------- | ------------------------------------------------------------------------- |
-| Frontend | Next.js 14 (App Router), Tailwind CSS, shadcn/ui                          |
-| Backend  | NestJS 11 (REST API) + a separate BullMQ worker process                   |
-| Database | PostgreSQL 16 + Prisma 7 (`pg` driver adapter, committed migrations)      |
-| Queue    | Redis 7 + BullMQ                                                          |
-| AI       | Anthropic Claude API                                                      |
-| Shared   | `packages/shared` — Zod schemas and types used by API and web             |
-| Tooling  | TypeScript (strict), ESLint 9, Prettier, Jest, Vitest, Playwright, Docker |
+| Layer    | Technology                                                                                |
+| -------- | ----------------------------------------------------------------------------------------- |
+| Frontend | Next.js 16 (App Router, Turbopack), React 19, Tailwind CSS 4, shadcn/ui, TanStack Query 5 |
+| Backend  | NestJS 11 (REST API) + a separate BullMQ worker process                                   |
+| Database | PostgreSQL 16 + Prisma 7 (`pg` driver adapter, committed migrations)                      |
+| Queue    | Redis 7 + BullMQ                                                                          |
+| AI       | Anthropic Claude API                                                                      |
+| Shared   | `packages/shared` — Zod schemas and types used by API and web                             |
+| Tooling  | TypeScript (strict), ESLint 9, Prettier, Jest, Vitest, Playwright, Docker                 |
 
 ## Project structure
 
@@ -28,7 +29,7 @@ KPI dashboards, promotion packets and impact scores.
 │   ├── api/                 # NestJS API (src/main.ts) + queue worker (src/worker.ts)
 │   │   ├── prisma/          # schema.prisma, migrations/, seed.ts
 │   │   └── test/            # integration tests, factories, test helpers
-│   └── web/                 # Next.js frontend
+│   └── web/                 # Next.js frontend (see "Web app" below)
 ├── packages/shared/         # Zod schemas, enums, types (built to dist/ on install)
 ├── e2e/                     # Playwright smoke tests
 ├── docs/v2/                 # v2 plan, audit, decisions, progress
@@ -102,8 +103,9 @@ npm run dev:web
 ```
 
 - Web: http://localhost:3000 — you land on `/sign-in`. With `ENABLE_DEV_LOGIN=true` (the
-  `.env.example` default) click **Sign in as demo user (dev only)** to open the seeded demo account
-  without any OAuth app. GitHub/Google buttons appear once their credentials are set
+  `.env.example` default) click **Sign in as demo@devimpact.dev** (the "Development only" box) to
+  open the seeded demo account without any OAuth app. Accounts that haven't finished onboarding
+  land on `/onboarding`. GitHub/Google buttons appear once their credentials are set
   ([Authentication setup](#authentication-setup)).
 - API: http://localhost:4000/api — readiness `GET /api/health`, liveness `GET /api/health/live`,
   OpenAPI docs at http://localhost:4000/api/docs (not served in production).
@@ -361,16 +363,17 @@ or Google sign-in to log in. Seed the containerised database from your machine w
 
 ## Quality checks and tests
 
-| Command             | What it does                                                               |
-| ------------------- | -------------------------------------------------------------------------- |
-| `npm run check`     | Lint + format check + typecheck + unit tests + build (run before every PR) |
-| `npm run lint`      | ESLint (flat config, type-aware) across all workspaces                     |
-| `npm run format`    | Prettier write (`format:check` to verify)                                  |
-| `npm run typecheck` | `tsc --noEmit` for api, web, shared and the E2E files                      |
-| `npm test`          | Unit tests: API (Jest), web (Vitest + Testing Library), shared (Vitest)    |
-| `npm run test:int`  | API integration tests against a real Postgres + Redis                      |
-| `npm run test:e2e`  | Playwright smoke tests against the built apps                              |
-| `npm run eval`      | Mocked AI evals only (also part of `npm test`); `eval:live` = real API     |
+| Command                | What it does                                                                  |
+| ---------------------- | ----------------------------------------------------------------------------- |
+| `npm run check`        | Lint + format + tokens + typecheck + unit tests + build (run before every PR) |
+| `npm run check:tokens` | WCAG contrast of every token pair + app/docs `tokens.css` in sync             |
+| `npm run lint`         | ESLint (flat config, type-aware) across all workspaces                        |
+| `npm run format`       | Prettier write (`format:check` to verify)                                     |
+| `npm run typecheck`    | `tsc --noEmit` for api, web, shared and the E2E files                         |
+| `npm test`             | Unit tests: API (Jest), web (Vitest + Testing Library), shared (Vitest)       |
+| `npm run test:int`     | API integration tests against a real Postgres + Redis                         |
+| `npm run test:e2e`     | Playwright smoke tests against the built apps                                 |
+| `npm run eval`         | Mocked AI evals only (also part of `npm test`); `eval:live` = real API        |
 
 **Integration tests** use the separate database in `DATABASE_URL_TEST` (default
 `devimpact_test`; it is truncated between tests and migrated automatically). Create it once:
@@ -384,9 +387,12 @@ npm run test:int
 ```
 
 **E2E tests** need built apps and a migrated, seeded database. Playwright starts the API, the web
-app in development mode on :3000 (`ENABLE_DEV_LOGIN=true`, build dir `.next-e2e`) and the
-production web build on :3001 (to prove the dev login is a 404 there), or reuses servers already
-running locally:
+app in development mode on :3000 (`ENABLE_DEV_LOGIN=true`; Next 16 keeps dev output in
+`.next/dev`, next to the production build) and the production web build on :3001 (to prove the dev
+login is a 404 there), or reuses servers already running locally. The suites cover sign-in,
+onboarding (GitHub App round trip intercepted in the browser), the shell at 1440/768/390 px, theme
+persistence, the ⌘K palette, the period picker and axe-core (0 serious/critical) on the shell,
+sign-in and onboarding:
 
 ```bash
 npm run build && npm run db:deploy && npm run db:seed
@@ -401,6 +407,8 @@ npm run test:e2e
 ```
 
 Traces are off by default; re-run a failing test with `npx playwright test --trace on` to debug.
+Regenerate the Phase 09 screenshots (2× DPR, light/dark, desktop/mobile) into
+`docs/v2/screenshots/p09/` with `SCREENSHOTS=1 npm run test:e2e -- e2e/screenshots.spec.ts`.
 
 Tests never call the real GitHub or Anthropic APIs: `octokit` is stubbed in Jest, GitHub OAuth/REST
 calls go to unroutable `*.github.invalid` hosts answered by a fake (`test/utils/fake-github.ts`),
@@ -416,10 +424,55 @@ so the real JWT verification path runs. E2E tests sign in through `POST /api/dev
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request and on pushes
 to `main`:
 
-1. **quality** — lint, format check, typecheck, unit tests, `npm audit` for API production deps
+1. **quality** — lint, format check, design-token contrast, typecheck, unit tests, `npm audit` for
+   API and web production deps
 2. **integration** — API integration tests with Postgres 16 + Redis 7 service containers
 3. **e2e** — build all workspaces, migrate + seed, Playwright smoke (report uploaded on failure)
 4. **docker** — `docker compose build`, start the stack, wait for healthchecks, probe `/api/health`
+
+## Web app (`apps/web`)
+
+**Stack (exact pins, D-025):** Next.js 16.4.6 (Turbopack, `src/proxy.ts`), React 19.3.1, Tailwind
+CSS 4.3.5 (CSS-first, tokens in `src/styles/tokens.css`), shadcn/ui new-york-v4 sources in
+`src/components/ui`, TanStack Query 5.108, next-themes 0.4.6, Better Auth 1.7.25, Vitest 5.1.
+
+```
+apps/web/src/
+├── app/
+│   ├── (auth)/sign-in           # S1 — public
+│   ├── (onboarding)/onboarding  # S2–S5 wizard (connect, pending, repositories, sync)
+│   ├── (system)/integrations/github/callback
+│   ├── (app)/…                  # signed-in pages inside the AppShell (loading/error/not-found)
+│   ├── not-found.tsx, global-error.tsx, providers.tsx, layout.tsx, globals.css
+├── components/
+│   ├── ui/                      # shadcn primitives adapted to the tokens (DESIGN_SYSTEM §5.1)
+│   ├── states/                  # PageHeader, StatCard, DeltaText, ChartCard, EmptyState, ErrorState,
+│   │                            # Banner, skeletons, DataTable, InfoPopover, ConfirmDialog
+│   ├── shell/                   # AppShell, sidebar, top bar, mobile nav, period picker, sync status, ⌘K
+│   └── *.tsx                    # ImpactScoreCard, ActivityHeatmap, SyncStatusBadge, DateRangePicker, …
+├── hooks/                       # useEventStream (fetch SSE), useMediaQuery, useIsMobile
+├── lib/api/                     # apiClient, ApiError, query keys + client, hooks, SSE reader, server client
+├── lib/period.ts                # global `?period=` URL state (shared period utils)
+└── proxy.ts                     # optimistic route protection (session cookie)
+```
+
+**Rules:** components never call `fetch` (ESLint `no-restricted-syntax`; use `apiClient` + TanStack
+Query), never `alert()`, never Tailwind palette colours (tokens only, UX-11); every view has loading,
+empty, error and success states.
+
+### Adding a page
+
+1. **Route:** `src/app/(app)/<route>/page.tsx` — a Server Component exporting `metadata` and
+   rendering a client view (`<route>-view.tsx`). Add the route to `NAV_GROUPS` / `routeMeta` in
+   `src/components/shell/nav-config.ts` (title, breadcrumb parent, `period: true` if the data
+   depends on the global period).
+2. **Query hook:** add a key to `qk` (`src/lib/api/query-keys.ts`, domain first) and a hook next to
+   the others (`src/lib/api/metrics-hooks.ts` style) that calls
+   `apiClient.get(path, { schema: <shared Zod schema>, query, signal })`.
+3. **States:** loading → `PageSkeleton`/`CardSkeleton`; error → `ErrorState` (retry + request ID);
+   empty → `EmptyState` (what's missing + one action); period pages wrap content in
+   `<PeriodGate>` (designed `INVALID_PERIOD` state) and show `<SyncBanner />`.
+4. **Tests:** Vitest for logic/components; Playwright + axe for new critical flows.
 
 ## API endpoints
 

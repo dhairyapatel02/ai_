@@ -11,6 +11,6 @@ export function safeCallback(value: string | undefined): string {
     // eslint-disable-next-line no-control-regex -- rejecting control characters is the point
     /[\u0000-\u001f\u007f]/.test(value)
   )
-    return '/dashboard';
+    return '/';
   return value;
 }

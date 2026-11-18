@@ -45,17 +45,6 @@ describe('Me + Documents API (integration)', () => {
     expect(await t.prisma.userSettings.count({ where: { userId: user.id } })).toBe(1);
   });
 
-  it('GET /api/auth/me is a deprecated alias of /api/me', async () => {
-    const user = await f.user();
-    const res = await request(t.app.getHttpServer())
-      .get('/api/auth/me')
-      .set('authorization', bearer(user.id))
-      .expect(200);
-    expect(res.headers.deprecation).toBe('true');
-    expect(res.headers.sunset).toBeDefined();
-    expect(res.body.data.user.id).toBe(user.id);
-  });
-
   it('PATCH /api/me/settings validates the IANA time zone and updates settings', async () => {
     const user = await f.user();
     const as = bearer(user.id);

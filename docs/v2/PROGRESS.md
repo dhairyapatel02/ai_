@@ -15,7 +15,7 @@ Every phase session updates this file before opening its PR.
 | 06 | Sync Engine v2 | ✅ Done | (this PR) | 2026-11-16 | GitHub App sync (GraphQL), SyncRun, webhooks, scheduler, Prisma 7; budget 119/250 requests |
 | 07 | Metrics Engine & Impact Score v2 | ✅ Done | (this PR) | 2026-11-17 | Deterministic `metrics@2.0.0` / `impact@2.0.0`, rollups, metrics/impact/career/activity APIs; p95 ≤ 100 ms |
 | 08 | AI Layer v2 | ✅ Done | (this PR) | 2026-11-17 | Worker generation + Redis Streams SSE, structured output, evidence + citations, cache, quotas, 42 mocked evals; live eval pending (no key, AI-10) |
-| 09 | Frontend Foundation & App Shell | ⏳ Not started | | | |
+| 09 | Frontend Foundation & App Shell | ✅ Done | (this PR) | 2026-11-18 | Next 16 + React 19 + Tailwind 4, tokens/themes, AppShell + ⌘K + period picker, typed apiClient + TanStack Query + fetch-SSE, sign-in + onboarding, axe-clean E2E |
 | 10 | Frontend: Insights Pages | ⏳ Not started | | | |
 | 11 | Frontend: AI Document Studio | ⏳ Not started | | | |
 | 12 | Product Extensions | ⏳ Not started | | | |
@@ -953,3 +953,183 @@ DEBT-10 (SDK), GAP-08 (API).
   at a closed port. `resetRedisState()` clears doc streams, cancel flags and SSE counters.
 - *Live evals:* `ANTHROPIC_API_KEY=… npm run eval:live -- --record` → `docs/v2/evals/REPORT.md` + live
   recordings; then decide the default tier (AI-10).
+
+### Phase 09 — Frontend Foundation & App Shell (2026-11-18)
+**Branch / PR:** `claude/phase-09-frontend-foundation-mgfr0c` → `main` / PR "Phase 09: Frontend Foundation & App Shell"
+(branched from `main@6264d69` = P08 merged).
+
+**Summary:**
+- **Upgrade (D-025):** Next 14.2.35 → **16.4.6** (codemods `middleware-to-proxy`,
+  `next-async-request-api`; `src/proxy.ts`; config moved out of `experimental`), React 18 → **19.3.1**,
+  Tailwind 3 → **4.3.5** (CSS-first, `@custom-variant dark`, no `tailwind.config.ts`), Vitest 3 → 5.1
+  (web + shared), `@next/eslint-plugin-next` 16 (flat config). Better Auth 1.7.25 kept (its peers
+  allow Next 16 / React 19 / Vitest 5). `next build` passes with no deprecation warnings. The web
+  production `npm audit` is gated in CI (0 high/critical; SEC-09).
+- **Design system:** `design/tokens.css` copied verbatim to `src/styles/tokens.css` (contrast +
+  sync check `npm run check:tokens` in CI); Instrument Sans + JetBrains Mono via `next/font`;
+  next-themes `attribute="class"`, system default, no flash (E2E-checked at DOMContentLoaded). All 31
+  shadcn components from DESIGN_SYSTEM §11 (+ `toggle`, `kbd`) vendored from the shadcn GitHub
+  sources (registry unreachable) and adapted: radius by role, single global focus ring, button and
+  badge variants per §5.1, 16 px inputs on phones, `surface` controls. State catalogue in
+  `components/states/`: `PageHeader`, `StatCard`, `DeltaText`, `ChartCard` (+ "View as table"),
+  `EmptyState`, `ErrorState` (retry + request ID), `Banner`, skeletons, `DataTable` (sortable,
+  paginated, stacked < 768 px), `InfoPopover`, `ConfirmDialog` (typed confirmation); sonner toasts.
+- **Shell (IA §3–§5):** `AppShell` with a skip link, focus moved to `main` on route change, grouped
+  sidebar (collapsible rail, `[`), drawer at 768–1023 px, bottom bar + "More" drawer below 768 px,
+  top bar (breadcrumb, `PeriodPicker` on period pages, `SyncStatus`, theme toggle, New menu),
+  `UserMenu`, `CommandPalette` (go to, sync now with disabled reason, new documents, change period,
+  switch theme, recent documents + server search, help), `G`+key / `A` / `?` shortcuts that can be
+  turned off, `SyncBanner` (needs reconnection, failed, rate-limited, recent 30 days ready).
+- **Data layer (ADR-0010):** `createApiClient` + browser and server clients, `ApiError`, `qk`,
+  `makeQueryClient`, hooks (`useMe`, `useUpdateSettings`, `useIntegrations`, `useSyncStatus`,
+  `useStartSync`, `useRepos`, `useUpdateRepos`, metrics/impact/career hooks), `usePeriod` (URL state
+  with the shared period utils), `useEventStream` + `readEventStream` + `parseDocumentEvent` (shared
+  `DocumentStreamEvents` schemas). `/me` is prefetched on the server in the `(app)` layout.
+- **Auth + onboarding:** designed sign-in (S1) with GitHub / Google / dev-only demo, provider errors,
+  cancelled, `account_not_linked` (SEC-16) and session-ended notices; sign-out in the account menu
+  and the drawer. Onboarding S2–S5 on the real API: connect (`POST /integrations/github/connect`,
+  remembered return target, designed errors), pending (copyable admin message, check again),
+  repositories (`GET/PATCH /repos`, select recently active, search > 20, discovery line), first sync
+  (polling, stages + counts, ready banner on `recentWindowCompletedAt`, rate-limit/failed/
+  needs-reauth/empty/partial states), `onboardingStep` saved per step, `onboardingCompleted` on
+  finish. The callback page lives in a `(system)` group.
+- **Interim pages in the shell:** dashboard (stat cards, `ImpactScoreCard`, top repositories,
+  12-month `ActivityHeatmap`), KPIs (sections, info popovers, "Not enough data · n = x of y"),
+  career, Settings → Integrations (sync now, reconnect, disconnect keep/delete, planned providers),
+  Settings → Profile (name, time zone, default period), interim resume/appraisal/promotion studios
+  on `POST /documents` + polling via TanStack Query. Rebuilt with tests: `ImpactScoreCard`
+  (+ `ImpactBands`, `DimensionBars`), `ActivityHeatmap`, `SyncStatusBadge`, `DateRangePicker`,
+  `GenerateButton` (progress + disabled reason), `DocumentPreview` (+ `EvidenceChip`). Removed:
+  `Sidebar`, `ResumeBulletCard`, `auth-context.tsx`, every `alert()`/`confirm()`, and the API alias
+  `GET /auth/me` with its integration test.
+- **Tests:** web Vitest **108** (23 files: apiClient, errors, SSE parser/reader, `useEventStream`
+  reconnect, query defaults/keys, polling intervals, period state, formatting, sign-in notices,
+  navigation, sync copy, state components, onboarding helpers, rebuilt components, env); shared 69;
+  API unit 211; API integration **156** (alias test removed); Playwright **21** + 3 opt-in screenshot
+  tests (auth, onboarding ×5, shell ×10 incl. axe on dashboard light/dark/mobile, sign-in,
+  onboarding connect/repositories/sync/pending). All green locally.
+- **Security review** (`security-review` skill): no HIGH/MEDIUM findings. Verified: the Bearer JWT
+  only goes to the configured API base (`NEXT_PUBLIC_API_URL` / `API_INTERNAL_URL`), `credentials:
+  'omit'`, token kept in memory; every redirect built from input passes `safeCallback` (sign-in,
+  session-expired, proxy) or the `ConnectReturnTo` enum (GitHub callback, also for the
+  sessionStorage hint); `code`/`state` are stripped from the address bar; external navigations use
+  server-built GitHub URLs; no `dangerouslySetInnerHTML` in new code (LLM content is rendered as
+  React text); a fresh QueryClient per server render (no cross-user hydration); sign-out clears the
+  token and the cache; dev login unchanged (404 in production builds); the `/auth/me` alias is gone.
+
+**Acceptance criteria:**
+- [x] `next build` passes on Next 16.4.6; no React/Next deprecation warnings in the build output.
+- [x] Every route group (`(auth)`, `(onboarding)`, `(system)`, `(app)`) has `loading.tsx` and
+  `error.tsx`; unknown routes show the designed 404 (E2E), inside the shell when signed in.
+- [x] Shell usable at 390, 768 and 1440 px (E2E, 0 px horizontal overflow at 390). Keyboard: skip
+  link, ⌘K and shortcuts, focus traps in drawers and dialogs (Radix). axe shows 0 serious/critical
+  violations on the shell (light, dark, mobile), sign-in and onboarding.
+- [x] Light/dark themes come from the tokens (contrast check 39/39 in CI); no theme flash on reload.
+- [x] No component uses `fetch` directly (ESLint `no-restricted-syntax`; the only callers are
+  `lib/api/*`, `auth-client.ts`, `lib/dev-login.ts` (same-origin route handler) and route handlers).
+- [x] No `alert()` anywhere (`grep` + ESLint `no-alert`).
+- [x] Onboarding completes end-to-end in E2E (`/` → repositories → import complete → dashboard,
+  `onboarding.completed = true`), plus resume, install (intercepted), org pending and cancelled.
+- [x] Screenshots committed to `docs/v2/screenshots/p09/` (20 PNGs: sign-in, shell, onboarding ×3 ×
+  light/dark × desktop/mobile, 2× DPR); `npm run check`, `test:int`, `test:e2e` green locally (CI
+  runs on the PR).
+
+**Deviations from the phase file:**
+- shadcn was not initialised with its CLI (registry host blocked); the sources came from the
+  shadcn-ui GitHub repository with a hand-written `components.json` (D-025, DEBT-13). The shadcn
+  `sidebar` primitive is installed but not used (its breakpoint is 768, IA needs 1024).
+- `useEventSource` from task 5 is named `useEventStream` (ADR-0010 amendment). It is built and
+  tested against the P08 contract; no page consumes it until P11.
+- RSC prefetch covers `/me` (the shell); page queries load on the client in parallel (no
+  waterfall), because P10/P11 rebuild those pages.
+- IA destinations owned by P10–P12 are placeholders ("Not available yet"), so the navigation is
+  complete. The documents library links to the type picker and the interim studios.
+- Step 1 does not auto-skip when GitHub is connected; it shows "GitHub connected as @login ·
+  Continue" (Back from step 2 stays usable). The browser time zone is prefilled only while the
+  stored one is the default `UTC`.
+- E2E no longer uses `NEXT_DIST_DIR=.next-e2e` (D-021 → D-025): Next 16 separates dev output, and
+  the dev log inside a custom distDir caused a reload loop.
+- ESM `prisma-client` generator (DEBT-12) not adopted (optional; it would also change the API).
+- Docker images were not built locally (sandbox registry limits, as in P05–P08); Compose gains
+  `API_INTERNAL_URL` for the web container, and the CI docker job verifies the images.
+
+**Deferred items:** designed Dashboard/Activity/KPIs/Impact/Career/Integrations → P10; documents
+library, studios with SSE, viewer, Documents nav spinner (GAP-13) → P11; Achievements, Goals,
+Notifications, Privacy, Plan & usage, sign-in methods/sessions in Profile → P12; bundle budget
+(PERF-05), legacy account-linking policy (SEC-16), shadcn re-sync (DEBT-13), ESM Prisma generator
+(DEBT-12), org name on the pending screen (GAP-12) → P14.
+
+**New issues found:** GAP-12, GAP-13, DEBT-13 (`audit/ISSUES.md`, TRACEABILITY §2). Fixed: UX-01,
+UX-05, UX-07, UX-09, UX-11, SEC-09, GAP-06, GAP-09, BUG-11, PERF-04, DEBT-06, DEBT-07; partially:
+UX-02, UX-08, SEC-16 (UI), PERF-05, DEBT-11.
+
+**Handoff notes for next phases (P10 / P11 / P12):**
+- *Adding a page:* README → "Adding a page". In short: `src/app/(app)/<route>/page.tsx` (Server
+  Component + `metadata`) renders a `'use client'` view; register the route in
+  `components/shell/nav-config.ts` (`NAV_GROUPS`, `routeMeta` with `period: true` for period
+  pages); add a `qk` key + a hook calling `apiClient.get(path, { schema, query, signal })`; render
+  states with `components/states`; wrap period pages in `<PeriodGate>{(period) => …}</PeriodGate>`
+  and show `<SyncBanner />`. Delete the matching placeholder (`components/coming-soon.tsx` users)
+  and the redirect in `next.config.js` when a designed page replaces an interim one.
+- *Component catalogue:* `src/components/ui` (shadcn primitives, token-adapted; Button variants
+  `default | secondary | ghost | destructive | destructive-outline | link`, sizes
+  `sm | default | lg | icon*`, `loading` prop; Badge `neutral | accent | success | warning | danger |
+  outline`), `src/components/states` (see the summary above), `src/components/shell`, and domain
+  components in `src/components/*.tsx` (`ImpactScoreCard`, `ImpactBands`, `DimensionBars`,
+  `ActivityHeatmap`, `SyncStatusBadge`, `DateRangePicker`, `GenerateButton`, `DocumentPreview`,
+  `EvidenceChip`, `PeriodGate`/`InvalidPeriodState`, `ComingSoon`, `NotFoundState`). Missing from
+  DESIGN_SYSTEM §5.2 (build where first needed): `MetricRow`, `ExplainDrawer`, `ActivityChart`,
+  `Sparkline`, `FeedItem`, `ItemDrawer`, `NextStepCard` (P10); `DocumentRenderer`/`Editor`,
+  `StreamingStatus`, `VersionList`, citation popover (P11); `QuotaMeter`, `PlannedProviderCard`
+  extraction (P12).
+- *Query keys:* `qk` in `src/lib/api/query-keys.ts`. The domain comes first
+  (`['metrics', 'overview', period]`). Period keys use the explicit spec or `'default'`; params go
+  last. Invalidate a domain with `queryClient.invalidateQueries({ queryKey: qk.metrics.all })`.
+  `SYNC_DEPENDENT_KEYS` are invalidated automatically when a sync stops being active.
+- *apiClient / ApiError:* `import { apiClient } from '@/lib/api/browser'` →
+  `apiClient.get('/metrics/kpis', { schema: KpisResponse, query: { period }, signal })`, `post/patch/
+  delete(path, { body, schema })`, `getPage(path, { schema: Item })` → `{ items, meta }`,
+  `requestWithMeta` for `meta` extras. Failures throw `ApiError { code, status, details, requestId,
+  retryAfterSeconds, retryable }`. Show them with `<ErrorState error={e} what="your KPIs" />` or
+  `toast.error(errorMessage(e, 'the sync'))`. `quotaDetails(e)` reads 402 details. Server
+  Components use `await getServerApi()` (`src/lib/api/server.ts`).
+- *useEventStream (P11):*
+  ```ts
+  const [sections, setSections] = useState<Record<string, unknown>>({});
+  const stream = useEventStream<DocumentStreamEvent>(docId ? `/documents/${docId}/stream` : null, {
+    parse: parseDocumentEvent,               // shared DocumentStreamEvents schemas
+    onEvent: (e) => {
+      if (e.event === 'section') setSections((s) => ({ ...s, [`${e.data.key}:${e.data.index}`]: e.data.content }));
+      if (e.event === 'done') void queryClient.invalidateQueries({ queryKey: qk.documents.detail(e.data.documentId) });
+    },
+  });
+  // stream.status: idle | connecting | open | reconnecting | closed | error; stream.terminal: 'done' | 'error' | 'cancelled'
+  // stream.error: ApiError (e.g. 429 RATE_LIMITED class "sse"); reconnects with Last-Event-ID up to 5× (1 s → 15 s backoff)
+  ```
+  It ignores `: heartbeat` comments and refreshes the JWT once on 401. After `error` /
+  `maxRetries`, fall back to polling `GET /documents/:id`. Announce once per completed section
+  (DESIGN_SYSTEM §10), not per delta.
+- *Sync polling:* `const sync = useSyncStatus()` → `sync.data` is `SyncStatusDto` or `null`
+  (not connected: the API answers 404). Polling runs every 2 s while `queued`/`running`, every 30 s
+  while `waiting_rate_limit`, and stops otherwise. `isSyncActive(sync.data)` tells whether a run
+  is active. `useStartSync().mutate(integrationId?)` treats 409 `SYNC_IN_PROGRESS` as
+  `{ alreadyRunning: true }`; handle `INTEGRATION_NEEDS_REAUTH` with `POST
+  /integrations/:id/reconnect`. Copy helpers: `describeSync()` (shell), `SyncStatusBadge`,
+  `syncPhase()` (onboarding).
+- *Period:* `const period = usePeriod()` → `apiParam` (send to the API), `resolved`
+  (`ResolvedPeriod` label/inProgress), `invalid`, `today`, `timezone`, `setPeriod(spec | null)`.
+  Links between Overview pages keep `?period` (`hrefWithPeriod`).
+- *API gaps found:* GAP-12 (no org login for pending approval), GAP-13 (no background-generation
+  signal for the Documents nav), GAP-11 still open (sync progress is polling-only). The seeded
+  repositories have `lastActivityAt = null`, so onboarding shows "No activity from you in the last
+  12 months" for all of them. The seed may want realistic values for P10 screenshots.
+- *E2E:* helpers in `e2e/helpers.ts` (`signIn`, `api`, `setOnboarding`,
+  `expectNoSeriousA11yViolations`, `hideDevOverlay`). Wait for hydration before clicking in
+  `next dev` (e.g. `await expect(page.getByTestId('stat-commits')).toBeVisible()`). Keep the demo
+  user's onboarding completed at the end of a test. Screenshots: `SCREENSHOTS=1 npm run test:e2e
+  -- e2e/screenshots.spec.ts`.
+- *Local run in the cloud container:* `pg_ctlcluster 16 main start`, `redis-server --daemonize
+  yes`, create the `devimpact` role (password `devimpact_password`) and the `devimpact` +
+  `devimpact_test` databases, then `npm run db:deploy && npm run db:seed && npm run build`.
+  Full-repo ESLint needs `NODE_OPTIONS=--max-old-space-size=6144` in this sandbox (the default heap
+  ran out once).

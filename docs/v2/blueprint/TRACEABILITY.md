@@ -176,4 +176,8 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | AI-11 | ⚪ | ADR-0009 (prompt caching) | P14 | added by P08: verify cache reads live |
 | AI-12 | ⚪ | F-47 | P11/P14 | added by P08: section regenerate costs a full generation |
 
+| GAP-12 | ⚪ | F-10 | P14 | added by P09: name the organization on the approval-pending screen |
+| GAP-13 | ⚪ | F-72, IA §3.1 | P11 | added by P09: background-generation signal for the Documents nav spinner |
+| DEBT-13 | ⚪ | DESIGN_SYSTEM §11 | P14 | added by P09: re-sync vendored shadcn sources with the CLI |
+
 Every open ISSUES row with a target of P05 or later is mapped above; one (GAP-10) is won't-fix for v2.0.

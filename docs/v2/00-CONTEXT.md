@@ -226,3 +226,37 @@ raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
   `AI_RETRY_BASE_MS`, `AI_WORKER_CONCURRENCY`, `AI_STREAM_TTL_SECONDS`, `ENTITLEMENTS_JSON`,
   `AI_PRICES_JSON`. Local mock: `npm run ai:mock --workspace=apps/api`.
 - **Web (interim):** studio pages call `POST /documents` and poll; P11 builds the studio + SSE.
+
+### After Phase 09 (2026-11-18)
+- **Web stack (D-025):** Next.js **16.4.6** (Turbopack, `src/proxy.ts` replaces middleware), React
+  **19.3.1**, Tailwind CSS **4.3.5** (CSS-first; `src/styles/tokens.css` = `design/tokens.css`,
+  checked in CI by `npm run check:tokens`), shadcn/ui new-york-v4 sources adapted to the tokens,
+  TanStack Query 5, next-themes (light/dark/system, no flash), Instrument Sans + JetBrains Mono,
+  Vitest 5. Better Auth stays 1.7.25.
+- **Data layer (ADR-0010):** typed `apiClient` (`src/lib/api/`) on the shared Zod schemas with
+  `ApiError` (`code`, `status`, `details`, `requestId`, `retryAfterSeconds`), one token refresh on 401
+  then `/sign-in?reason=session_expired`, query-key factory `qk`, query defaults (retry ≤ 2 on
+  network/5xx only), `useSyncStatus` polling (2 s / 30 s / off), fetch-based `useEventStream`
+  (`Last-Event-ID`, heartbeats ignored, terminal `done`/`error`/`cancelled`), server client for RSC
+  (`/me` prefetched in the `(app)` layout). `auth-context.tsx`, the old `Sidebar` and the API's
+  `GET /auth/me` alias are gone. Components cannot call `fetch` or `alert` (lint).
+- **Shell + states:** route groups `(auth)`, `(onboarding)`, `(system)`, `(app)`, each with
+  `loading`/`error` (+ `not-found`), a global 404 (inside the shell when signed in) and
+  `global-error`. AppShell per IA §3 (sidebar ≥ 1024 px with a collapsible rail, drawer 768–1023 px,
+  bottom bar < 768 px), top bar with the global period picker (`?period=`, IA §4), sync status,
+  theme toggle, New menu, ⌘K palette, `G`-key shortcuts and a skip link. State catalogue in
+  `src/components/states/`.
+- **Auth + onboarding:** designed sign-in (S1) incl. `account_not_linked` (SEC-16 UI) and the
+  session-ended notice; onboarding S2–S5 against the real API (connect → org approval pending →
+  repositories → first sync with polling and the `recentWindowCompletedAt` "dashboard ready"
+  moment), resumable via `onboardingStep`. `/` redirects to `/onboarding` until onboarding is
+  completed. `ConnectReturnTo` = `/onboarding` | `/settings/integrations`.
+- **Routes:** interim pages now live at their IA routes (`/settings/integrations`,
+  `/settings/profile`, `/documents/new/{resume,appraisal,promotion}`); old paths redirect.
+  Activity, Impact detail, Documents library, Achievements, Goals, Notifications, Privacy and Plan
+  are placeholders until P10–P12.
+- **Tests:** web Vitest 108; Playwright 21 (+3 opt-in screenshot tests) incl. axe-core (0
+  serious/critical) on the shell, sign-in and onboarding, 1440/768/390 px navigation, theme
+  persistence, ⌘K, the period picker, and onboarding end-to-end. The GitHub App round trip is
+  intercepted in the browser. CI also audits web production dependencies.
+- **New env:** `API_INTERNAL_URL` (optional, server-side API base; Compose sets `http://api:4000/api`).

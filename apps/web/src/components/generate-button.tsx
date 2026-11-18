@@ -1,20 +1,39 @@
 'use client';
 
-import { Loader2, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
-interface GenerateButtonProps {
+import type { ReactNode } from 'react';
+
+/**
+ * Primary AI action (DESIGN_SYSTEM §7: `sparkles` only on buttons that call Claude). While
+ * generating, the label stays legible ("Generating…"), the button is `aria-busy`, and an optional
+ * progress line ("Writing section 2 of 5 · Key accomplishments") is announced politely. A disabled
+ * button always shows its reason (quota, rate limit).
+ */
+export function GenerateButton({
+  loading,
+  onClick,
+  children = 'Generate',
+  progress,
+  disabledReason,
+}: {
   loading: boolean;
   onClick: () => void;
-  children?: React.ReactNode;
-}
-
-export function GenerateButton({ loading, onClick, children }: GenerateButtonProps) {
+  children?: ReactNode;
+  progress?: string | null;
+  disabledReason?: string | null;
+}) {
   return (
-    <Button onClick={onClick} disabled={loading} size="lg" className="gap-2">
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-      {loading ? 'Generating...' : children || 'Generate'}
-    </Button>
+    <div className="flex flex-col items-start gap-1.5">
+      <Button size="lg" loading={loading} disabled={Boolean(disabledReason)} onClick={onClick}>
+        <Sparkles aria-hidden="true" />
+        {loading ? 'Generating…' : children}
+      </Button>
+      <p className="min-h-4 text-caption text-subtle-foreground" aria-live="polite">
+        {disabledReason ?? (loading ? (progress ?? 'Gathering your evidence…') : '')}
+      </p>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { ImpactScoreCard } from './impact-score-card';
+import { bandIndex, ImpactScoreCard } from './impact-score-card';
 
 const dimensions = [
   { key: 'delivery', label: 'Delivery', score: 73 },
@@ -11,7 +11,7 @@ const dimensions = [
 ];
 
 describe('ImpactScoreCard', () => {
-  it('shows the overall score, band and the four v2 dimensions', () => {
+  it('shows the score out of 100, band and the four v2 dimensions', () => {
     render(
       <ImpactScoreCard
         score={78}
@@ -20,26 +20,34 @@ describe('ImpactScoreCard', () => {
         scoreVersion="impact@2.0.0"
       />,
     );
-    expect(screen.getByText('Impact Score')).toBeInTheDocument();
-    expect(screen.getByText('78')).toBeInTheDocument();
-    expect(screen.getByText('Strong')).toBeInTheDocument();
-    for (const [label, value] of [
-      ['Delivery', '73'],
-      ['Collaboration', '82'],
-      ['Ownership', '61'],
-    ]) {
-      expect(screen.getByText(label)).toBeInTheDocument();
-      expect(screen.getByText(value)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Impact score' })).toBeInTheDocument();
+    expect(screen.getByTestId('impact-score-value')).toHaveTextContent('78');
+    expect(screen.getByText('/ 100')).toBeInTheDocument();
+    expect(screen.getAllByText('Strong').length).toBeGreaterThan(0);
+    for (const label of ['Delivery', 'Quality', 'Collaboration', 'Ownership']) {
+      expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     }
-    expect(screen.getByText('Quality')).toBeInTheDocument();
-    expect(screen.queryByText('Leadership')).not.toBeInTheDocument();
+    expect(screen.getByText('82')).toBeInTheDocument();
+    expect(screen.getByText('impact@2.0.0')).toBeInTheDocument();
   });
 
-  it('says "not enough data" instead of showing a number (AI-01)', () => {
+  it('says "not enough data" instead of a number (AI-01)', () => {
     render(
       <ImpactScoreCard score={null} dimensions={dimensions.map((d) => ({ ...d, score: null }))} />,
     );
     expect(screen.getByText(/Not enough activity in this period/)).toBeInTheDocument();
-    expect(screen.queryByText('0')).not.toBeInTheDocument();
+    expect(screen.getByTestId('impact-score-value')).toHaveTextContent('—');
+  });
+
+  it('has a loading state', () => {
+    render(<ImpactScoreCard loading score={null} dimensions={[]} />);
+    expect(screen.getByText('Loading impact score')).toBeInTheDocument();
+  });
+
+  it('maps scores to the impact@2.0.0 bands', () => {
+    expect(bandIndex(39)).toBe(0);
+    expect(bandIndex(40)).toBe(1);
+    expect(bandIndex(79)).toBe(2);
+    expect(bandIndex(100)).toBe(3);
   });
 });
