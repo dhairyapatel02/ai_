@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { Id, IntegrationStatus, QueryBoolean, Timestamp } from './common';
+import { SyncRunDto } from './sync';
 
 /** API_CONTRACT_V2 §3.5 / §6. Tokens are never part of any DTO. */
 export const InstallationDto = z.object({
@@ -30,7 +31,9 @@ export const IntegrationDto = z.object({
 });
 export type IntegrationDto = z.infer<typeof IntegrationDto>;
 
-export const ConnectReturnTo = z.enum(['/onboarding', '/settings/integrations', '/connect']);
+/** Where the GitHub callback returns to (IA §2: onboarding or Settings → Integrations). */
+export const ConnectReturnTo = z.enum(['/onboarding', '/settings/integrations']);
+export type ConnectReturnTo = z.infer<typeof ConnectReturnTo>;
 
 export const ConnectGitHubInput = z.strictObject({ returnTo: ConnectReturnTo.optional() });
 export type ConnectGitHubInput = z.infer<typeof ConnectGitHubInput>;
@@ -64,6 +67,28 @@ export const GitHubCallbackInput = z
     path: ['code'],
   });
 export type GitHubCallbackInput = z.infer<typeof GitHubCallbackInput>;
+
+/** `GET /integrations/:id`. */
+export const IntegrationDetail = IntegrationDto.extend({ currentRun: SyncRunDto.nullable() });
+export type IntegrationDetail = z.infer<typeof IntegrationDetail>;
+
+/**
+ * `POST /integrations/github/callback` result: `201` connected (backfill queued) or `200` org
+ * approval pending (`setupAction=request`). `returnTo` comes from the signed state; clients still
+ * check it against `ConnectReturnTo` before navigating.
+ */
+export const GitHubCallbackConnected = z.object({
+  integration: IntegrationDto,
+  syncRun: SyncRunDto,
+  returnTo: z.string().nullable(),
+});
+export const GitHubCallbackPending = z.object({
+  integration: IntegrationDto.nullable(),
+  pendingApproval: z.literal(true),
+  returnTo: z.string().nullable(),
+});
+export const GitHubCallbackResult = z.union([GitHubCallbackPending, GitHubCallbackConnected]);
+export type GitHubCallbackResult = z.infer<typeof GitHubCallbackResult>;
 
 export const DisconnectQuery = z.strictObject({ purgeData: QueryBoolean.default(false) });
 export type DisconnectQuery = z.infer<typeof DisconnectQuery>;

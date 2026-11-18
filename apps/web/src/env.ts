@@ -30,6 +30,10 @@ const serverEnvObject = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   ENABLE_DEV_LOGIN: z.enum(['true', 'false']).optional(),
+  // Server-side calls to the API (Server Components). Defaults to NEXT_PUBLIC_API_URL; set it when
+  // the server reaches the API on another address than the browser (Docker: http://api:4000/api).
+  API_INTERNAL_URL: z.url().optional(),
+  NEXT_PUBLIC_API_URL: z.url().default('http://localhost:4000/api'),
 });
 
 const serverEnvSchema = serverEnvObject.transform((env) => {
@@ -43,6 +47,7 @@ const serverEnvSchema = serverEnvObject.transform((env) => {
     WEB_ORIGINS: origins,
     BETTER_AUTH_URL: env.BETTER_AUTH_URL ?? webUrl,
     AUTH_JWT_ISSUER: env.AUTH_JWT_ISSUER ?? webUrl,
+    API_INTERNAL_URL: (env.API_INTERNAL_URL ?? env.NEXT_PUBLIC_API_URL).replace(/\/+$/, ''),
     github:
       env.GITHUB_SIGNIN_CLIENT_ID && env.GITHUB_SIGNIN_CLIENT_SECRET
         ? { clientId: env.GITHUB_SIGNIN_CLIENT_ID, clientSecret: env.GITHUB_SIGNIN_CLIENT_SECRET }

@@ -443,7 +443,7 @@ Digest preferences are part of `PATCH /me/settings`.
 |---|---|---|---|
 | `POST /auth/dev-login` | **Removed** | `POST /api/dev-login` on web (dev only) | P05 |
 | `POST /auth/github`, `POST /auth/google` | **Removed** (stubs, API-03) | Better Auth `/api/auth/sign-in/social` | P05 |
-| `GET /auth/me` | **Changed → alias**, deprecated | `GET /me` (alias kept until P09 removes old web code) | P05 → P09 |
+| `GET /auth/me` | **Removed** (P09) | `GET /me` (alias removed with the old web code in P09) | P05 → P09 |
 | `GET /integrations` | **Kept, changed** (shape `IntegrationDto`) | same | P05/P06 |
 | `POST /integrations/github/connect` | **Kept, changed** (GitHub App, `state`, `{url, mode}`) | same | P05 |
 | `POST /integrations/github/callback` | **Kept, changed** (state required, installation id) | same | P05 |

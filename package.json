@@ -22,7 +22,7 @@
     "eval": "npm run eval --workspace=apps/api",
     "eval:live": "npm run eval:live --workspace=apps/api --",
     "test:e2e": "playwright test --trace off",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build",
+    "check": "npm run lint && npm run format:check && npm run check:tokens && npm run typecheck && npm run test && npm run build",
     "db:generate": "npm run db:generate --workspace=apps/api",
     "db:migrate": "npm run db:migrate --workspace=apps/api",
     "db:deploy": "npm run db:deploy --workspace=apps/api",
@@ -30,12 +30,13 @@
     "db:seed:heavy": "npm run db:seed:heavy --workspace=apps/api",
     "metrics:recompute": "npm run metrics:recompute --workspace=apps/api --",
     "perf:metrics": "npm run perf:metrics --workspace=apps/api",
-    "db:reset": "npm run db:reset --workspace=apps/api"
+    "db:reset": "npm run db:reset --workspace=apps/api",
+    "check:tokens": "node docs/v2/design/scripts/check-contrast.mjs && cmp docs/v2/design/tokens.css apps/web/src/styles/tokens.css"
   },
   "devDependencies": {
-    "@eslint/compat": "^1.4.1",
+    "@axe-core/playwright": "4.14.0",
     "@eslint/js": "^9.39.0",
-    "@next/eslint-plugin-next": "14.2.35",
+    "@next/eslint-plugin-next": "16.4.6",
     "@playwright/test": "1.63.0",
     "@prisma/client": "7.10.1",
     "@types/node": "^22.20.0",
@@ -55,6 +56,8 @@
   },
   "overrides": {
     "multer": "^2.5.0",
-    "deepmerge-ts": "^8.0.2"
+    "deepmerge-ts": "^8.0.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
   }
 }

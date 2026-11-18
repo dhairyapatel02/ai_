@@ -9,7 +9,7 @@ import {
   UsageResponse,
   UserDto,
 } from '@devimpact/shared';
-import { Controller, Delete, Get, Header, HttpCode, Patch } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Patch } from '@nestjs/common';
 import { z } from 'zod';
 
 import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
@@ -91,25 +91,5 @@ export class MeController {
   })
   remove(@CurrentUser() user: AuthUser, @ZodBody(DeleteMeInput) body: DeleteMeInput) {
     return this.me.deleteAccount(user.id, body.confirmEmail);
-  }
-}
-
-/** `GET /auth/me` — deprecated alias of `GET /me`, kept until P09 removes the old web code. */
-@Controller('auth')
-export class AuthMeAliasController {
-  constructor(private readonly me: MeService) {}
-
-  @Get('me')
-  @Header('Deprecation', 'true')
-  @Header('Sunset', 'Thu, 31 Dec 2026 23:59:59 GMT')
-  @Header('Link', '</api/me>; rel="successor-version"')
-  @ApiDoc({
-    summary: 'Deprecated alias of GET /me',
-    tags: ['me'],
-    response: MeDto,
-    deprecated: true,
-  })
-  get(@CurrentUser() user: AuthUser) {
-    return this.me.me(user.id);
   }
 }

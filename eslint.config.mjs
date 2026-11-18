@@ -1,6 +1,5 @@
 // @ts-check
 // Root ESLint flat config for the whole monorepo (apps/api, apps/web, packages/shared, e2e).
-import { fixupPluginRules } from '@eslint/compat';
 import js from '@eslint/js';
 import nextPlugin from '@next/eslint-plugin-next';
 import prettier from 'eslint-config-prettier';
@@ -108,8 +107,7 @@ export default tseslint.config(
   // Next.js web app
   {
     files: ['apps/web/**/*.{ts,tsx}'],
-    // @next/eslint-plugin-next 14 uses ESLint 8 context APIs; fixupPluginRules shims them for ESLint 9.
-    plugins: { '@next/next': fixupPluginRules(nextPlugin), 'react-hooks': reactHooks },
+    plugins: { '@next/next': nextPlugin, 'react-hooks': reactHooks },
     languageOptions: { globals: { ...globals.browser } },
     settings: { next: { rootDir: 'apps/web/' } },
     rules: {
@@ -122,6 +120,54 @@ export default tseslint.config(
         'error',
         { checksVoidReturn: { attributes: false } },
       ],
+      // Design system + data layer guards (UX-05, UX-11, ADR-0010).
+      'no-alert': 'error',
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.name='fetch']",
+          message:
+            'Call the API through apiClient (src/lib/api) + TanStack Query, never fetch() directly.',
+        },
+        {
+          selector:
+            'Literal[value=/(^|\\s|:)(text|bg|border|ring|fill|stroke|from|to|via|outline|decoration|divide|placeholder|caret|accent|shadow)-(red|green|blue|yellow|orange|amber|lime|emerald|teal|cyan|sky|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone)-\\d{2,3}/]',
+          message:
+            'Use design tokens (bg-surface-2, text-muted-foreground, …), never Tailwind palette colours (UX-11).',
+        },
+        {
+          selector:
+            'TemplateElement[value.raw=/(^|\\s|:)(text|bg|border|ring|fill|stroke)-(red|green|blue|yellow|orange|amber|emerald|indigo|purple|pink|slate|gray|zinc|neutral)-\\d{2,3}/]',
+          message:
+            'Use design tokens (bg-surface-2, text-muted-foreground, …), never Tailwind palette colours (UX-11).',
+        },
+      ],
+    },
+  },
+  {
+    // The only modules allowed to call fetch(): the API client, the SSE reader, the JWT cache,
+    // route handlers (server) and tests.
+    files: [
+      'apps/web/src/lib/api/**/*.ts',
+      'apps/web/src/lib/auth-client.ts',
+      'apps/web/src/app/api/**/*.ts',
+      'apps/web/**/*.test.{ts,tsx}',
+      'apps/web/test/**/*.{ts,tsx}',
+    ],
+    rules: { 'no-restricted-syntax': 'off' },
+  },
+  {
+    // Vendored shadcn/ui sources (new-york-v4 registry, adapted to tokens). Third-party typing
+    // (recharts payloads) and upstream idioms are kept to ease future re-syncs with the registry.
+    files: ['apps/web/src/components/ui/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/no-deprecated': 'off',
+      '@typescript-eslint/no-unnecessary-type-conversion': 'off',
+      '@typescript-eslint/no-unused-expressions': 'off',
     },
   },
   {

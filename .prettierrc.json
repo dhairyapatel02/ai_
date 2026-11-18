@@ -5,6 +5,6 @@
   "semi": true,
   "arrowParens": "always",
   "plugins": ["prettier-plugin-tailwindcss"],
-  "tailwindConfig": "./apps/web/tailwind.config.ts",
+  "tailwindStylesheet": "./apps/web/src/app/globals.css",
   "tailwindFunctions": ["cn", "cva"]
 }
