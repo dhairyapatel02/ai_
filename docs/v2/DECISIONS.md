@@ -490,3 +490,70 @@ unchanged), Phase 08 chose:
 binds `ACHIEVEMENT_SOURCE`, calls `DigestSummaryService` and builds the plan/usage page on
 `/me/usage`; P14 runs the live eval (AI-10/11), adds `AiUsage`/stream retention (OPS-18) and cost
 dashboards.
+
+### D-025 · P09 implementation choices (frontend foundation) · APPLIED (P09)
+Within D-002/D-010/D-020, ADR-0003 and ADR-0010, Phase 09 chose:
+- **Versions (exact pins, checked on npm 2026-11-18):** Next.js **16.4.6** (latest stable major;
+  `latest` on npm), React / React DOM **19.3.1**, `@types/react(-dom)` 19.3.0, Tailwind CSS +
+  `@tailwindcss/postcss` **4.3.5**, `tw-animate-css` 1.4.0, `@tanstack/react-query` **5.108.0**,
+  `next-themes` 0.4.6, `radix-ui` 1.8.1, `cmdk` 1.1.1, `sonner` 2.0.8, `lucide-react` 1.74.0,
+  `react-day-picker` 9.14.0 (shadcn calendar targets v9, not v10), `react-hook-form` 7.92.0,
+  `@hookform/resolvers` 7.0.7, `recharts` 3.11.0, `tailwind-merge` 3.7.0, `vitest` **5.1.0** (web +
+  shared), `@vitejs/plugin-react` 6.3.0 (Vite 8, `resolve.tsconfigPaths` replaces
+  `vite-tsconfig-paths`), `@next/eslint-plugin-next` 16.4.6 (flat config, no `@eslint/compat`),
+  `@axe-core/playwright` 4.14.0. **Better Auth 1.7.25 is kept:** its peer ranges already allow
+  `next ^16`, `react ^19` and `vitest ^5`. Root `overrides` pin `react`, `react-dom` and
+  `@types/react(-dom)` because stale lockfile entries otherwise hoisted React 18 next to React 19.
+- **Upgrade path:** official codemods `middleware-to-proxy` (`src/proxy.ts`, Node runtime) and
+  `next-async-request-api` (async `searchParams`), then manual changes from the bundled Next 16
+  guide (`node_modules/next/dist/docs`; nextjs.org is not reachable from the sandbox):
+  `experimental.outputFileTracingRoot` → `outputFileTracingRoot`, `turbopack.root`, no `eslint`
+  key, error boundaries use `retry()`. `next typegen` runs before `tsc`. `AGENTS.md`, which
+  `next dev` writes, is committed so the tree stays clean.
+- **E2E dev server:** `NEXT_DIST_DIR=.next-e2e` (D-021) is no longer used. Next 16 writes dev output
+  to `.next/dev`, separate from the production build. Its dev log inside a custom distDir also
+  started an endless Fast Refresh reload loop. Placeholder GitHub/Google client ids make the
+  sign-in page render its provider buttons. No test follows them.
+- **shadcn/ui:** `ui.shadcn.com` is unreachable from the sandbox, so the CLI cannot fetch the
+  registry. The new-york-v4 sources of every component in DESIGN_SYSTEM §11 were taken from the
+  shadcn-ui/ui GitHub repository (`apps/v4/registry/new-york-v4/ui`) and adapted to the tokens:
+  radius by role, the single global focus ring (2 px `--ring` + 2 px offset instead of shadcn's
+  3 px ring), `surface` controls and 16 px inputs below 768 px. Button and badge variants follow
+  DESIGN_SYSTEM §5.1. `components.json` is committed, so `npx shadcn add` works when the registry
+  is reachable (DEBT-13). The custom sidebar implements IA §3 breakpoints (≥ 1024 / 768–1023 /
+  < 768); the shadcn `sidebar` primitive switches at 768 px, so it is installed but not used.
+- **Tokens:** `docs/v2/design/tokens.css` is copied byte-for-byte to `apps/web/src/styles/tokens.css`
+  (Prettier-ignored). `npm run check:tokens` (CI) runs the contrast checker against the app copy
+  and `cmp`s the two files. Fonts come from `next/font/google` as `--font-instrument-sans` /
+  `--font-jetbrains-mono`, mapped onto the token `--font-sans` / `--font-mono`.
+- **Data layer:** `createApiClient` (`src/lib/api/client.ts`) is shared by the browser client
+  (`browser.ts`: in-memory JWT from `getApiToken()`, one refresh on 401, then
+  `/sign-in?callbackUrl=…&reason=session_expired`) and a server client (`server.ts`:
+  `auth.api.getToken` + `API_INTERNAL_URL`). Responses are validated with the shared Zod
+  schemas. A mismatch is a typed `INVALID_RESPONSE`. `ApiError` adds `NETWORK_ERROR` /
+  `INVALID_RESPONSE` to `ERROR_CODES`. Queries retry at most twice, and only on network/5xx errors.
+  `staleTime` is 30 s and window-focus refetch is off. The `(app)` layout prefetches `/me` on the
+  server and hydrates it (PERF-04).
+- **Period:** when the URL has no `?period=`, the API param is omitted and the query key uses
+  `'default'` (no waterfall behind `/me`; the API applies the same default). The picker label
+  resolves the default on the client with `periodSpecContaining(defaultPeriodType,
+  todayIn(timezone))`.
+- **Lint guards:** `no-alert`, plus a `no-restricted-syntax` ban on `fetch()` outside `lib/api`,
+  `auth-client.ts`, route handlers and tests, and on Tailwind palette colour classes (UX-11). The
+  vendored `components/ui` relaxes 7 type-aware rules for upstream idioms.
+- **Routes:** interim pages moved to their IA routes, with temporary redirects in `next.config.js`
+  (`/connect` → `/settings/integrations`, `/settings` → `/settings/profile`, `/resume|/appraisal|
+  /promotion` → `/documents/new/*`). `ConnectReturnTo` drops `/connect`. IA destinations owned by
+  P10–P12 render a "Not available yet" placeholder, so navigation is complete and no link 404s.
+  The GitHub callback lives in a minimal `(system)` group.
+- **Onboarding specifics:** `/` and `/onboarding` redirect on the server from `GET /me`. Each step
+  saves `onboardingStep`. Step 1 prefills the browser time zone **only when the stored time zone
+  is still the default `UTC`**, so an explicit choice is never overwritten. When GitHub is
+  already connected, step 1 shows "GitHub connected as @login · Continue" instead of
+  auto-skipping (Back from step 2 stays usable). "Finish later" leaves the step saved. The
+  callback remembers the starting page in `sessionStorage` so errors land on the right page with
+  a designed banner (`?error=denied|expired|in_use|entitlement|upstream|failed`).
+*Consequences:* P10–P12 replace the placeholder pages and interim views with the designed screens
+using the catalogue in `components/states` and `lib/api` (README → "Adding a page"); P11 builds
+on `useEventStream` + `parseDocumentEvent`; the redirects and placeholders are removed when the
+designed pages ship.
