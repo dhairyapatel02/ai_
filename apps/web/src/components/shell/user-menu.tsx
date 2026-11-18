@@ -46,7 +46,8 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
           'flex w-full min-w-0 cursor-pointer items-center gap-2.5 rounded-sm px-2 py-1.5 text-left hover:bg-surface-2',
           collapsed && 'justify-center px-0',
         )}
-        aria-label={`Account menu${user ? ` for ${user.name}` : ''}`}
+        // Visible name + plan is the accessible name; the collapsed rail needs a label.
+        aria-label={collapsed ? `Account menu${user ? ` for ${user.name}` : ''}` : undefined}
       >
         <span
           className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-caption font-semibold text-accent-foreground"

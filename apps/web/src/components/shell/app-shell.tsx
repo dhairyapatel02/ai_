@@ -16,15 +16,14 @@ function ShellFrame({ children, title }: { children: ReactNode; title?: string }
   const { collapsed } = useShell();
   const pathname = usePathname();
   const mainRef = useRef<HTMLElement>(null);
-  const firstRender = useRef(true);
+  const previousPath = useRef(pathname);
   useGlobalShortcuts();
 
   // After a route change, focus moves to <main> without a scroll jump (DESIGN_SYSTEM §10).
+  // Compares paths (not a first-render flag) so StrictMode's double effects don't steal focus.
   useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
+    if (previousPath.current === pathname) return;
+    previousPath.current = pathname;
     mainRef.current?.focus({ preventScroll: true });
   }, [pathname]);
 

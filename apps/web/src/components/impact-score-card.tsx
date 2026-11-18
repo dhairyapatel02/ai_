@@ -55,19 +55,22 @@ export function ImpactBands({ score }: { score: number | null }) {
 /** Four labelled horizontal bars 0–100 with values (one hue; labels carry identity). */
 export function DimensionBars({ dimensions }: { dimensions: ImpactDimensionView[] }) {
   return (
-    <dl className="flex flex-col gap-2.5">
+    <ul className="flex flex-col gap-2.5" aria-label="Dimension scores">
       {dimensions.map((d) => (
-        <div key={d.key} className="flex flex-col gap-1">
-          <div className="flex justify-between text-sm">
-            <dt className="text-muted-foreground">{d.label}</dt>
-            <dd className="font-medium tabular-nums">{d.score ?? '—'}</dd>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-surface-3" aria-hidden="true">
-            <div className="h-full rounded-full bg-chart-5" style={{ width: `${d.score ?? 0}%` }} />
-          </div>
-        </div>
+        <li key={d.key} className="flex flex-col gap-1">
+          <span className="flex justify-between text-sm">
+            <span className="text-muted-foreground">{d.label}</span>
+            <span className="font-medium tabular-nums">{d.score ?? '—'}</span>
+          </span>
+          <span className="block h-1.5 overflow-hidden rounded-full bg-surface-3" aria-hidden="true">
+            <span
+              className="block h-full rounded-full bg-chart-5"
+              style={{ width: `${d.score ?? 0}%` }}
+            />
+          </span>
+        </li>
       ))}
-    </dl>
+    </ul>
   );
 }
 

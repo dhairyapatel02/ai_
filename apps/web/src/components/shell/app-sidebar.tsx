@@ -65,7 +65,7 @@ export function AppSidebar() {
           'text-muted-foreground',
           collapsed ? 'size-8 self-center px-0' : 'justify-start',
         )}
-        aria-label="Search or jump to…"
+        aria-label={collapsed ? 'Search or jump to…' : undefined}
         aria-keyshortcuts="Meta+K Control+K"
         onClick={() => {
           setPaletteOpen(true);
