@@ -1008,6 +1008,14 @@ DEBT-10 (SDK), GAP-08 (API).
   API unit 211; API integration **156** (alias test removed); Playwright **21** + 3 opt-in screenshot
   tests (auth, onboarding ×5, shell ×10 incl. axe on dashboard light/dark/mobile, sign-in,
   onboarding connect/repositories/sync/pending). All green locally.
+- **Security review** (`security-review` skill): no HIGH/MEDIUM findings. Verified: the Bearer JWT
+  only goes to the configured API base (`NEXT_PUBLIC_API_URL` / `API_INTERNAL_URL`), `credentials:
+  'omit'`, token kept in memory; every redirect built from input passes `safeCallback` (sign-in,
+  session-expired, proxy) or the `ConnectReturnTo` enum (GitHub callback, also for the
+  sessionStorage hint); `code`/`state` are stripped from the address bar; external navigations use
+  server-built GitHub URLs; no `dangerouslySetInnerHTML` in new code (LLM content is rendered as
+  React text); a fresh QueryClient per server render (no cross-user hydration); sign-out clears the
+  token and the cache; dev login unchanged (404 in production builds); the `/auth/me` alias is gone.
 
 **Acceptance criteria:**
 - [x] `next build` passes on Next 16.4.6; no React/Next deprecation warnings in the build output.
