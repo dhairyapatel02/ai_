@@ -1,12 +1,13 @@
 'use client';
 
-import type { SyncStatusDto } from '@devimpact/shared';
 import { CircleDashed } from 'lucide-react';
 import Link from 'next/link';
 
 import { useMe, useSyncStatus } from '@/lib/api/hooks';
 import { formatRelative, formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
+
+import type { SyncStatusDto } from '@devimpact/shared';
 
 export type SyncTone = 'ok' | 'active' | 'warning' | 'danger' | 'none';
 

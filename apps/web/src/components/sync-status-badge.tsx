@@ -1,6 +1,5 @@
 'use client';
 
-import type { SyncStatusDto } from '@devimpact/shared';
 import {
   CircleAlert,
   CircleCheck,
@@ -12,6 +11,8 @@ import {
 
 import { describeSync, type SyncTone } from '@/components/shell/sync-status';
 import { Badge } from '@/components/ui/badge';
+
+import type { SyncStatusDto } from '@devimpact/shared';
 
 const VARIANT: Record<SyncTone, 'success' | 'accent' | 'warning' | 'danger' | 'neutral'> = {
   ok: 'success',

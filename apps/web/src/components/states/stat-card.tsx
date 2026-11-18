@@ -1,10 +1,11 @@
-import type { ReactNode } from 'react';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 import { DeltaText, type DeltaUnit } from './delta-text';
 import { InfoPopover } from './info-popover';
+
+import type { ReactNode } from 'react';
 
 /**
  * Dashboard stat tile (DESIGN_SYSTEM §5.2): label + info button, value, descriptive delta.

@@ -102,7 +102,7 @@ export function SyncBanner() {
     );
   }
   const run = status.currentRun;
-  if (run && run.kind === 'backfill' && (status.state === 'running' || status.state === 'queued')) {
+  if (run?.kind === 'backfill' && (status.state === 'running' || status.state === 'queued')) {
     const ready = Boolean(run.recentWindowCompletedAt);
     return (
       <Banner

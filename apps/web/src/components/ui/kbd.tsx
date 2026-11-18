@@ -1,6 +1,7 @@
+import { cn } from '@/lib/utils';
+
 import type { ComponentProps } from 'react';
 
-import { cn } from '@/lib/utils';
 
 /** Keyboard key hint (radius 4 px, caption size). */
 export function Kbd({ className, ...props }: ComponentProps<'kbd'>) {

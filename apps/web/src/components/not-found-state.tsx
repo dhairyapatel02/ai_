@@ -3,8 +3,8 @@
 import { Compass, Search } from 'lucide-react';
 import Link from 'next/link';
 
-import { EmptyState } from '@/components/states';
 import { useOptionalShell } from '@/components/shell/shell-context';
+import { EmptyState } from '@/components/states';
 import { Button } from '@/components/ui/button';
 
 /** SCREENS S25 404: "Page not found" + Go to dashboard + Search (opens ⌘K when in the shell). */

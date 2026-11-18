@@ -1,6 +1,5 @@
 'use client';
 
-import type { SyncRunDto, SyncStatusDto } from '@devimpact/shared';
 import { CircleCheck, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -17,6 +16,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/lib/api/errors';
 import { useMe, useStartSync, useSyncStatus, useUpdateSettings } from '@/lib/api/hooks';
 import { formatCount, formatTime } from '@/lib/format';
+
+import type { SyncRunDto, SyncStatusDto } from '@devimpact/shared';
 
 export type SyncPhase =
   | 'not_connected'

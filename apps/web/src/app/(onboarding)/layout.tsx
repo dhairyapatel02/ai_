@@ -1,10 +1,11 @@
 import Link from 'next/link';
 
-import type { ReactNode } from 'react';
 
 import { Wordmark } from '@/components/brand';
 import { ThemeToggle } from '@/components/shell/theme-toggle';
 import { Button } from '@/components/ui/button';
+
+import type { ReactNode } from 'react';
 
 /** Onboarding wizard frame (SCREENS S2–S5): brand, theme, "Finish later", 720 px column. */
 export default function OnboardingLayout({ children }: { children: ReactNode }) {

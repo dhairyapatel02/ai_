@@ -45,7 +45,7 @@ export default function GlobalError({
               Try again
             </button>
             {/* A full reload is intentional: the app's root layout failed. */}
-            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+            { }
             <a href="/dashboard">Go to dashboard</a>
           </div>
           {error.digest ? (

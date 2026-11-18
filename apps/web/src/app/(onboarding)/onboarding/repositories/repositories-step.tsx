@@ -1,6 +1,5 @@
 'use client';
 
-import type { RepositoryDto } from '@devimpact/shared';
 import { FolderGit2, Lock, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -23,6 +22,8 @@ import {
   useUpdateSettings,
 } from '@/lib/api/hooks';
 import { formatRelative } from '@/lib/format';
+
+import type { RepositoryDto } from '@devimpact/shared';
 
 const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 

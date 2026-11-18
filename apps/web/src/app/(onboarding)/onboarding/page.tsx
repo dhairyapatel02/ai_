@@ -1,8 +1,8 @@
 import { MeDto } from '@devimpact/shared';
 import { redirect } from 'next/navigation';
 
-import { onboardingPath } from '@/lib/onboarding';
 import { getServerApi } from '@/lib/api/server';
+import { onboardingPath } from '@/lib/onboarding';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,9 +1,11 @@
 'use client';
 
 import { Sparkles } from 'lucide-react';
-import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
+
+import type { ReactNode } from 'react';
+
 
 /**
  * Primary AI action (DESIGN_SYSTEM §7: `sparkles` only on buttons that call Claude). While

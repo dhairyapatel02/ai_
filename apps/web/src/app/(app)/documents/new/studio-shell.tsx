@@ -1,11 +1,12 @@
 'use client';
 
-import type { ReactNode } from 'react';
 
 import { DocumentPreview } from '@/components/document-preview';
 import { Banner, PageHeader } from '@/components/states';
 import { Card, CardContent } from '@/components/ui/card';
 import { useGenerateDocument } from '@/lib/documents';
+
+import type { ReactNode } from 'react';
 
 /** Shared frame of the interim studios (P11 builds S13–S15 with streaming). */
 export function StudioShell({

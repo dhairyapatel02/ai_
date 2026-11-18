@@ -1,8 +1,9 @@
-import type { SyncRunDto, SyncStage } from '@devimpact/shared';
 import { Check, LoaderCircle } from 'lucide-react';
 
 import { formatCount } from '@/lib/format';
 import { cn } from '@/lib/utils';
+
+import type { SyncRunDto, SyncStage } from '@devimpact/shared';
 
 interface StageDef {
   key: 'repositories' | 'authored_prs' | 'reviewed_prs' | 'commits' | 'rollups';

@@ -2,13 +2,14 @@ import { MeDto } from '@devimpact/shared';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { redirect } from 'next/navigation';
 
-import type { ReactNode } from 'react';
 
 import { AppShell } from '@/components/shell/app-shell';
 import { isApiError } from '@/lib/api/errors';
 import { makeQueryClient } from '@/lib/api/query-client';
 import { qk } from '@/lib/api/query-keys';
 import { getServerApi } from '@/lib/api/server';
+
+import type { ReactNode } from 'react';
 
 /**
  * Signed-in shell. `/me` is prefetched on the server and hydrated into TanStack Query, so the

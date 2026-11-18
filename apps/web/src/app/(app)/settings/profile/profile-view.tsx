@@ -9,7 +9,7 @@ import {
   type PeriodTypeWire as PeriodType,
 } from '@devimpact/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useId, useState, type FormEvent } from 'react';
+import { useId, useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -71,7 +71,7 @@ function ProfileForm({ me }: { me: MeDto }) {
     },
   });
 
-  const save = async (event: FormEvent) => {
+  const save = async (event: { preventDefault: () => void }) => {
     event.preventDefault();
     const next: FieldErrors = {};
     if (!UpdateMeInput.safeParse({ name }).success) next.name = 'Enter a name (1–100 characters).';

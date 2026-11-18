@@ -2,7 +2,8 @@ import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
-export type DeltaUnit = 'count' | 'hours' | 'ratio' | 'score' | string;
+/** `count` · `hours` · `ratio` (shown in points) · `score` · any other metric unit (plain number). */
+export type DeltaUnit = string;
 
 /** Amount without sign: `3`, `1.5 h`, `9 pts` (ratios are percentage points). */
 export function formatDeltaAmount(delta: number, unit: DeltaUnit): string {

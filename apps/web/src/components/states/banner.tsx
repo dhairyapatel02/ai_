@@ -1,7 +1,9 @@
 import { CircleAlert, CircleCheck, Info, TriangleAlert, type LucideIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
+
+import type { ReactNode } from 'react';
+
 
 type Tone = 'info' | 'warning' | 'danger' | 'success' | 'neutral';
 

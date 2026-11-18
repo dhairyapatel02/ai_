@@ -58,12 +58,12 @@ export interface QuotaDetails {
 }
 
 export function quotaDetails(error: ApiError): QuotaDetails | null {
-  const d = error.details as Partial<QuotaDetails> | null | undefined;
+  const d = error.details as Record<string, unknown> | null | undefined;
   if (error.code !== 'QUOTA_EXCEEDED' || !d || typeof d.resetsAt !== 'string') return null;
   return {
-    feature: String(d.feature ?? ''),
-    used: Number(d.used ?? 0),
-    limit: Number(d.limit ?? 0),
+    feature: typeof d.feature === 'string' ? d.feature : '',
+    used: typeof d.used === 'number' ? d.used : 0,
+    limit: typeof d.limit === 'number' ? d.limit : 0,
     resetsAt: d.resetsAt,
   };
 }

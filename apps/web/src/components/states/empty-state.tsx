@@ -1,7 +1,8 @@
+import { cn } from '@/lib/utils';
+
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import { cn } from '@/lib/utils';
 
 /**
  * Designed empty state (DESIGN_SYSTEM §5.2, §9): icon tile, title, one-sentence reason, primary +

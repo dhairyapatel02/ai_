@@ -1,6 +1,7 @@
+import { Wordmark } from '@/components/brand';
+
 import type { ReactNode } from 'react';
 
-import { Wordmark } from '@/components/brand';
 
 /** System pages without the shell (IA §2 "no UI beyond a spinner/error"). */
 export default function SystemLayout({ children }: { children: ReactNode }) {

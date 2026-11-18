@@ -1,4 +1,3 @@
-import type { MetricValue } from '@devimpact/shared';
 import { Calculator, TriangleAlert } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatMetric } from '@/lib/metrics-format';
 
 import { EvidenceChip } from './evidence-chip';
+
+import type { MetricValue } from '@devimpact/shared';
 
 interface Claim {
   id?: string;

@@ -1,6 +1,5 @@
 'use client';
 
-import type { MetricValue, OverviewResponse } from '@devimpact/shared';
 import { Award, FileText, Plug } from 'lucide-react';
 import Link from 'next/link';
 
@@ -15,6 +14,8 @@ import { useMe } from '@/lib/api/hooks';
 import { useHeatmap, useImpact, useMetricsRepos, useOverview } from '@/lib/api/metrics-hooks';
 import { formatCount } from '@/lib/format';
 import { formatMetric } from '@/lib/metrics-format';
+
+import type { MetricValue, OverviewResponse } from '@devimpact/shared';
 
 function comparisonLabel(overview: OverviewResponse | undefined): string {
   if (!overview) return '';

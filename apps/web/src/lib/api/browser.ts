@@ -25,6 +25,8 @@ export const apiClient = createApiClient({
     if (redirecting || typeof window === 'undefined') return;
     redirecting = true;
     const params = new URLSearchParams({ callbackUrl: currentPath(), reason: 'session_expired' });
+    // Full reload on purpose: no state from the ended session may survive in memory.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign(`/sign-in?${params.toString()}`);
   },
 });

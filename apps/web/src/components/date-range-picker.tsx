@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type FormEvent } from 'react';
+import { useId, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,7 +39,7 @@ export function DateRangePicker({
   const [to, setTo] = useState(value?.to ?? today);
   const [error, setError] = useState<string | null>(null);
 
-  const submit = (event: FormEvent) => {
+  const submit = (event: { preventDefault: () => void }) => {
     event.preventDefault();
     const result = customRangeSpec(from, to, today);
     if ('error' in result) {

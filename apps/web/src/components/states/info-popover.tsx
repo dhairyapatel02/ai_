@@ -1,9 +1,11 @@
 'use client';
 
 import { Info } from 'lucide-react';
-import type { ReactNode } from 'react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+import type { ReactNode } from 'react';
+
 
 /**
  * "How is this calculated?" (DESIGN_SYSTEM §5.2, F-27): a 28 px info button that opens a popover

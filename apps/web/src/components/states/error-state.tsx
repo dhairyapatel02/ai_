@@ -1,13 +1,15 @@
 'use client';
 
 import { CloudOff, RotateCw } from 'lucide-react';
-import type { ReactNode } from 'react';
+
 
 import { Button } from '@/components/ui/button';
 import { errorMessage, isApiError } from '@/lib/api/errors';
 import { cn } from '@/lib/utils';
 
 import { EmptyState } from './empty-state';
+
+import type { ReactNode } from 'react';
 
 /**
  * Designed error state (DESIGN_SYSTEM §5.2, §9): what failed + likely cause + what to do, a Retry
@@ -34,10 +36,11 @@ export function ErrorState({
   className?: string;
 }) {
   const requestId = isApiError(error) ? error.requestId : null;
-  const digest =
+  const rawDigest =
     !isApiError(error) && error && typeof error === 'object' && 'digest' in error
-      ? String((error as { digest?: unknown }).digest ?? '')
-      : '';
+      ? (error as { digest?: unknown }).digest
+      : undefined;
+  const digest = typeof rawDigest === 'string' ? rawDigest : '';
   return (
     <EmptyState
       icon={CloudOff}

@@ -1,11 +1,12 @@
 'use client';
 
-import type { HeatmapResponse } from '@devimpact/shared';
 import { useEffect, useMemo, useRef } from 'react';
 
 import { ChartCard } from '@/components/states/chart-card';
 import { formatCount } from '@/lib/format';
 import { cn } from '@/lib/utils';
+
+import type { HeatmapResponse } from '@devimpact/shared';
 
 type Day = Pick<HeatmapResponse['days'][number], 'date' | 'count'>;
 

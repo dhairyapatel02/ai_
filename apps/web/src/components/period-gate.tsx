@@ -1,12 +1,14 @@
 'use client';
 
 import { CalendarX } from 'lucide-react';
-import type { ReactNode } from 'react';
+
 
 import { EmptyState } from '@/components/states';
 import { Button } from '@/components/ui/button';
 import { isApiError } from '@/lib/api/errors';
 import { usePeriod } from '@/lib/period';
+
+import type { ReactNode } from 'react';
 
 /** Designed INVALID_PERIOD state (malformed `?period=` or `400 INVALID_PERIOD` from the API). */
 export function InvalidPeriodState({ message }: { message?: string | null }) {

@@ -2,48 +2,40 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { DocumentPreview } from './document-preview';
+import { shortRef } from './evidence-chip';
 
 describe('DocumentPreview', () => {
-  it('renders sections, claims with citation chips, flags and engine metrics', () => {
+  it('renders sections, evidence chips, flags and engine metrics labelled as calculated', () => {
     render(
       <DocumentPreview
-        type="APPRAISAL"
+        type="appraisal"
         content={{
           sections: {
             executiveSummary: { id: 'es1', text: 'Great quarter', citations: ['PR-acme/api#12'] },
             keyContributions: [
-              {
-                id: 'kc1',
-                title: 'Refunds',
-                text: 'Shipped refunds',
-                citations: [],
-                flags: ['uncited'],
-              },
+              { id: 'kc1', title: 'Refunds', text: 'Shipped refunds', citations: [], flags: ['uncited'] },
             ],
-            metrics: [
-              {
-                key: 'prs_merged',
-                label: 'PRs merged',
-                unit: 'count',
-                value: 7,
-                n: 7,
-                status: 'ok',
-              },
-            ],
+            metrics: [{ key: 'prs_merged', label: 'PRs merged', unit: 'count', value: 7, n: 7, status: 'ok' }],
           },
         }}
       />,
     );
-    expect(screen.getByText('appraisal Document')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Appraisal' })).toBeInTheDocument();
     expect(screen.getByText('Great quarter')).toBeInTheDocument();
-    expect(screen.getByText('PR-acme/api#12')).toBeInTheDocument();
+    expect(screen.getByLabelText('Evidence PR-acme/api#12')).toHaveTextContent('api #12');
     expect(screen.getByText('No evidence linked')).toBeInTheDocument();
-    expect(screen.getByText('PRs merged')).toBeInTheDocument();
-    expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.getByText('Calculated by DevImpact — not written by AI')).toBeInTheDocument();
+    expect(screen.getByRole('rowheader', { name: 'PRs merged' })).toBeInTheDocument();
   });
 
-  it('shows imported v0.1 documents as raw JSON', () => {
-    render(<DocumentPreview type="RESUME" content={{ legacy: true, raw: { summary: 'Old' } }} />);
+  it('marks imported v0.1 documents as read-only', () => {
+    render(<DocumentPreview type="resume" content={{ legacy: true, raw: { summary: 'Old' } }} />);
+    expect(screen.getByText(/Imported from DevImpact v0.1/)).toBeInTheDocument();
     expect(screen.getByText(/"summary": "Old"/)).toBeInTheDocument();
+  });
+
+  it('shortens refs for chips', () => {
+    expect(shortRef('PR-harbor-io/payments-api#1935')).toBe('payments-api #1935');
+    expect(shortRef('C-acme/api@abc1234')).toBe('api@abc1234');
   });
 });

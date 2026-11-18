@@ -46,7 +46,7 @@ export function toQueryString(query: QueryParams | undefined): string {
     if (Array.isArray(value)) {
       if (value.length) params.set(key, value.join(','));
     } else {
-      params.set(key, String(value as string | number | boolean));
+      params.set(key, String(value));
     }
   }
   const qs = params.toString();
@@ -175,7 +175,7 @@ export function createApiClient(config: ApiClientConfig) {
   }
 
   async function request<T>(method: Method, path: string, options: RequestOptions<T> = {}) {
-    const { data, res } = await send(method, path, options as RequestOptions<unknown>);
+    const { data, res } = await send(method, path, options);
     return parse(data, options.schema, res);
   }
 
@@ -189,7 +189,7 @@ export function createApiClient(config: ApiClientConfig) {
       const { data, meta, res } = await send('GET', path, {
         ...options,
         schema: undefined,
-      } as RequestOptions<unknown>);
+      });
       const items = parse(data, z.array(options.schema ?? z.unknown()) as z.ZodType<T[]>, res);
       const pageMeta = PageMeta.safeParse(meta);
       return {
@@ -199,7 +199,7 @@ export function createApiClient(config: ApiClientConfig) {
     },
     /** Raw access to `meta` for endpoints that add fields to it (e.g. `recomputeQueued`). */
     async requestWithMeta<T>(method: Method, path: string, options: RequestOptions<T> = {}) {
-      const { data, meta, res } = await send(method, path, options as RequestOptions<unknown>);
+      const { data, meta, res } = await send(method, path, options);
       return { data: parse(data, options.schema, res), meta: meta ?? {} };
     },
   };
