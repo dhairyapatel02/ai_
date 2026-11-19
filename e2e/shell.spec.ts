@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
 
-import { expectNoSeriousA11yViolations, hideDevOverlay, setOnboarding, signIn } from './helpers';
+import {
+  expectNoSeriousA11yViolations,
+  hideDevOverlay,
+  setOnboarding,
+  signIn,
+  waitForHydration,
+} from './helpers';
 
 test.describe.configure({ timeout: 120_000 });
 
@@ -58,7 +64,8 @@ test.describe('app shell', () => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto('/dashboard');
     await hideDevOverlay(page);
-    await expect(page.getByTestId('stat-commits')).toBeVisible(); // hydrated
+    await expect(page.getByTestId('stat-commits')).toBeVisible();
+    await waitForHydration(page);
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden();
     await expect(page.getByRole('navigation', { name: 'Primary' })).toBeHidden();
     await page.getByRole('button', { name: 'Open navigation' }).click();
@@ -74,7 +81,8 @@ test.describe('app shell', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/dashboard');
     await hideDevOverlay(page);
-    await expect(page.getByTestId('stat-commits')).toBeVisible(); // hydrated
+    await expect(page.getByTestId('stat-commits')).toBeVisible();
+    await waitForHydration(page);
     const bottom = page.getByRole('navigation', { name: 'Primary' });
     await expect(bottom).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden();
@@ -109,7 +117,9 @@ test.describe('app shell', () => {
     });
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/dashboard');
-    await expect(page.getByTestId('stat-commits')).toBeVisible(); // hydrated
+    await expect(page.getByTestId('stat-commits')).toBeVisible();
+    await waitForHydration(page);
+    await waitForHydration(page);
     const toggle = page.getByTestId('theme-toggle');
     await expect(toggle).toHaveAttribute('data-theme-choice', 'system');
     await toggle.click(); // light
@@ -129,6 +139,7 @@ test.describe('app shell', () => {
   test('⌘K palette navigates with the keyboard', async ({ page }) => {
     await page.goto('/dashboard');
     await expect(page.getByTestId('stat-commits')).toBeVisible();
+    await waitForHydration(page);
     await page.keyboard.press('ControlOrMeta+k');
     const palette = page.getByRole('dialog', { name: 'Command menu' });
     await expect(palette).toBeVisible();
@@ -142,7 +153,9 @@ test.describe('app shell', () => {
     page,
   }) => {
     await page.goto('/dashboard');
-    await expect(page.getByTestId('stat-commits')).toBeVisible(); // hydrated
+    await expect(page.getByTestId('stat-commits')).toBeVisible();
+    await waitForHydration(page);
+    await waitForHydration(page);
     await page.getByTestId('period-picker').click();
     await page.getByRole('button', { name: /^Last month/ }).click();
     await expect(page).toHaveURL(/\?period=month%3A\d{4}-\d{2}|\?period=month:\d{4}-\d{2}/);

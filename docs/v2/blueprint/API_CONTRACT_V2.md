@@ -295,7 +295,7 @@ export const ActivityFilter = PageQuery.extend({ period: PeriodSpec.optional(), 
 | `GET /activity/reviews` | `ActivityFilter & { state?: ReviewState }` | `ReviewItem[]` = `{ id, ref, pullRequest: { id, repo, number, title, url, authorLogin }, state, submittedAt, commentsCount, hasBody, turnaroundHours: number\|null }` | 400, 401 |
 | `GET /activity/commits` | `ActivityFilter` | `CommitItem[]` = `{ id, ref, repo, sha, messageHeadline, authoredAt, additions, deletions, branch, associatedPrNumber, url }` | 400, 401 |
 | `GET /activity/commits/:id` | — | `CommitItem & { messageBody }` | 401, 404 |
-| `GET /activity/summary` | *deprecated* (`Deprecation: true`) until P10 | v1-compatible shape computed from v2 data (correct merged count) | removed in P10 |
+| ~~`GET /activity/summary`~~ | **Removed in P10** (404) — use `/metrics/overview` and `/metrics/kpis` | — | — |
 
 ## 12. Career
 
@@ -452,7 +452,7 @@ Digest preferences are part of `PATCH /me/settings`.
 | `GET /sync/status` | **Kept, changed** (DB-backed, per integration) | same | P06 |
 | `GET /activity/commits` | **Kept, changed** (validation, cursor pagination, repo filter) | same | P05 (validation) / P07 |
 | `GET /activity/prs` | **Kept, changed** (`role` required; no stubs) | same | P07 |
-| `GET /activity/summary` | **Deprecated → removed** | `GET /metrics/overview`, `/metrics/kpis` | P07 (deprecate), P10 (remove) |
+| `GET /activity/summary` | **Removed** (P10: no caller remained) | `GET /metrics/overview`, `/metrics/kpis` | P07 (deprecate), P10 (removed) |
 | `POST /generate/resume` / `appraisal` / `promotion` | **Removed** | `POST /documents` (+ stream) | P08 |
 | `GET /generate/impact-score` | **Removed** (side-effecting GET, API-04) | `GET /impact` (read-only) + `POST /impact/highlights` | P07 |
 | `GET /documents` | **Kept, changed** (cursor pagination, summaries) | same | P08 |

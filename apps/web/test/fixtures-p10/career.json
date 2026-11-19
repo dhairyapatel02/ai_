@@ -1,0 +1,990 @@
+{
+  "data": {
+    "years": [2026],
+    "year": 2026,
+    "timezone": "Europe/London",
+    "quarters": [
+      {
+        "quarter": 4,
+        "label": "Q4 2026",
+        "inProgress": true,
+        "repos": [
+          {
+            "repositoryId": "cmwm1mix40004387dt7y7jjai",
+            "fullName": "acme/payments-api",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00eb387d0av9ik23",
+                "ref": "PR-acme/payments-api#271",
+                "title": "Payments: idempotent intent creation",
+                "date": "2026-11-04",
+                "url": "https://github.com/acme/payments-api/pull/271",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00ea387dwcxezhwb",
+                "ref": "PR-acme/payments-api#270",
+                "title": "Terraform: split staging and prod state",
+                "date": "2026-11-01",
+                "url": "https://github.com/acme/payments-api/pull/270",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00e7387dk6qgry2s",
+                "ref": "PR-acme/payments-api#269",
+                "title": "Observability: request tracing",
+                "date": "2026-10-22",
+                "url": "https://github.com/acme/payments-api/pull/269",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00e6387do9vvjttz",
+                "ref": "PR-acme/payments-api#268",
+                "title": "Refunds API (partial + full)",
+                "date": "2026-10-14",
+                "url": "https://github.com/acme/payments-api/pull/268",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00lf387dq5us49d3",
+                "ref": "REV-acme/payments-api#295",
+                "title": "Reviewed 6 pull requests by teammates",
+                "date": "2026-11-18",
+                "url": null,
+                "tags": [],
+                "count": 6
+              }
+            ],
+            "truncated": false,
+            "totalItems": 5
+          },
+          {
+            "repositoryId": "cmwm1mix50007387de6x1xs0h",
+            "fullName": "acme/design-system",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00ee387d3wjy39sw",
+                "ref": "PR-acme/design-system#155",
+                "title": "Refunds API (partial + full)",
+                "date": "2026-11-12",
+                "url": "https://github.com/acme/design-system/pull/155",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00e9387dczxnoe69",
+                "ref": "PR-acme/design-system#154",
+                "title": "CSV export streaming",
+                "date": "2026-10-29",
+                "url": "https://github.com/acme/design-system/pull/154",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00l5387d364esijg",
+                "ref": "REV-acme/design-system#162",
+                "title": "Reviewed 1 pull request by teammates",
+                "date": "2026-10-16",
+                "url": null,
+                "tags": [],
+                "count": 1
+              }
+            ],
+            "truncated": false,
+            "totalItems": 3
+          },
+          {
+            "repositoryId": "cmwm1mix40005387dx0j0qb82",
+            "fullName": "acme/web-app",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00ed387dlpnt9dzr",
+                "ref": "PR-acme/web-app#139",
+                "title": "Payments: idempotent intent creation",
+                "date": "2026-11-12",
+                "url": "https://github.com/acme/web-app/pull/139",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00ec387da729d87t",
+                "ref": "PR-acme/web-app#138",
+                "title": "Webhook delivery retries",
+                "date": "2026-11-05",
+                "url": "https://github.com/acme/web-app/pull/138",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00lc387dve6ekmmg",
+                "ref": "REV-acme/web-app#161",
+                "title": "Reviewed 3 pull requests by teammates",
+                "date": "2026-11-10",
+                "url": null,
+                "tags": [],
+                "count": 3
+              }
+            ],
+            "truncated": false,
+            "totalItems": 3
+          },
+          {
+            "repositoryId": "cmwm1mix40006387d91ls6jzb",
+            "fullName": "acme/infra",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00e5387de54bfosq",
+                "ref": "PR-acme/infra#315",
+                "title": "Invoice PDF export",
+                "date": "2026-10-01",
+                "url": "https://github.com/acme/infra/pull/315",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00l6387dqrown9ed",
+                "ref": "REV-acme/infra#329",
+                "title": "Reviewed 1 pull request by teammates",
+                "date": "2026-10-21",
+                "url": null,
+                "tags": [],
+                "count": 1
+              }
+            ],
+            "truncated": false,
+            "totalItems": 2
+          },
+          {
+            "repositoryId": "cmwm1mix50008387d3jcym8hy",
+            "fullName": "oss/fast-json",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00e8387dzbmezpm0",
+                "ref": "PR-oss/fast-json#187",
+                "title": "Terraform: split staging and prod state",
+                "date": "2026-10-30",
+                "url": "https://github.com/oss/fast-json/pull/187",
+                "tags": []
+              }
+            ],
+            "truncated": false,
+            "totalItems": 1
+          }
+        ],
+        "milestones": [
+          {
+            "kind": "longest_active_week_streak",
+            "date": "2026-10-01",
+            "title": "Longest active-week streak: 8 weeks",
+            "refs": []
+          },
+          {
+            "kind": "largest_merged_pr",
+            "date": "2026-10-14",
+            "title": "Largest merged PR: Refunds API (partial + full)",
+            "refs": ["PR-acme/payments-api#268"]
+          }
+        ],
+        "totals": { "prsMerged": 10, "prsReviewed": 11, "achievements": 0 }
+      },
+      {
+        "quarter": 3,
+        "label": "Q3 2026",
+        "inProgress": false,
+        "repos": [
+          {
+            "repositoryId": "cmwm1mix40006387d91ls6jzb",
+            "fullName": "acme/infra",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00e2387dfgjpx3xo",
+                "ref": "PR-acme/infra#314",
+                "title": "Monthly report timezone fix",
+                "date": "2026-09-24",
+                "url": "https://github.com/acme/infra/pull/314",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dv387db39y7fpp",
+                "ref": "PR-acme/infra#312",
+                "title": "Usage-based billing meter",
+                "date": "2026-09-08",
+                "url": "https://github.com/acme/infra/pull/312",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dw387d423fmd4f",
+                "ref": "PR-acme/infra#313",
+                "title": "Ledger write batching",
+                "date": "2026-09-07",
+                "url": "https://github.com/acme/infra/pull/313",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dt387d0bj3vw3z",
+                "ref": "PR-acme/infra#311",
+                "title": "Session refresh race fix",
+                "date": "2026-09-01",
+                "url": "https://github.com/acme/infra/pull/311",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dq387d1uw1twxs",
+                "ref": "PR-acme/infra#309",
+                "title": "Session refresh race fix",
+                "date": "2026-08-28",
+                "url": "https://github.com/acme/infra/pull/309",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dr387dydpzwm68",
+                "ref": "PR-acme/infra#310",
+                "title": "Search: escape user input",
+                "date": "2026-08-28",
+                "url": "https://github.com/acme/infra/pull/310",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dm387d0tqgtz85",
+                "ref": "PR-acme/infra#308",
+                "title": "Ledger write batching",
+                "date": "2026-08-09",
+                "url": "https://github.com/acme/infra/pull/308",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00ky387dy9i9wvkw",
+                "ref": "REV-acme/infra#328",
+                "title": "Reviewed 4 pull requests by teammates",
+                "date": "2026-09-19",
+                "url": null,
+                "tags": [],
+                "count": 4
+              }
+            ],
+            "truncated": false,
+            "totalItems": 8
+          },
+          {
+            "repositoryId": "cmwm1mix40004387dt7y7jjai",
+            "fullName": "acme/payments-api",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00e0387d7x6iae89",
+                "ref": "PR-acme/payments-api#266",
+                "title": "CSV export streaming",
+                "date": "2026-09-17",
+                "url": "https://github.com/acme/payments-api/pull/266",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dz387dryiuhue6",
+                "ref": "PR-acme/payments-api#265",
+                "title": "CSV export streaming",
+                "date": "2026-09-16",
+                "url": "https://github.com/acme/payments-api/pull/265",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dx387d69xse7fd",
+                "ref": "PR-acme/payments-api#264",
+                "title": "Webhook delivery retries",
+                "date": "2026-09-14",
+                "url": "https://github.com/acme/payments-api/pull/264",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dp387d5hzxx0d8",
+                "ref": "PR-acme/payments-api#262",
+                "title": "Invoice PDF export",
+                "date": "2026-08-27",
+                "url": "https://github.com/acme/payments-api/pull/262",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00do387drsxcrjck",
+                "ref": "PR-acme/payments-api#261",
+                "title": "Session refresh race fix",
+                "date": "2026-08-22",
+                "url": "https://github.com/acme/payments-api/pull/261",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dk387d65fne46n",
+                "ref": "PR-acme/payments-api#260",
+                "title": "Design tokens: dark mode",
+                "date": "2026-07-27",
+                "url": "https://github.com/acme/payments-api/pull/260",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dj387dla5z8a9l",
+                "ref": "PR-acme/payments-api#259",
+                "title": "Invoice PDF export",
+                "date": "2026-07-26",
+                "url": "https://github.com/acme/payments-api/pull/259",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00kz387dd8xz8m3h",
+                "ref": "REV-acme/payments-api#289",
+                "title": "Reviewed 8 pull requests by teammates",
+                "date": "2026-09-25",
+                "url": null,
+                "tags": [],
+                "count": 8
+              }
+            ],
+            "truncated": false,
+            "totalItems": 8
+          },
+          {
+            "repositoryId": "cmwm1mix40005387dx0j0qb82",
+            "fullName": "acme/web-app",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00e3387dvc7kssil",
+                "ref": "PR-acme/web-app#137",
+                "title": "Checkout v2 behind feature flag",
+                "date": "2026-09-23",
+                "url": "https://github.com/acme/web-app/pull/137",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00e1387dnoiscd7b",
+                "ref": "PR-acme/web-app#136",
+                "title": "Terraform: split staging and prod state",
+                "date": "2026-09-18",
+                "url": "https://github.com/acme/web-app/pull/136",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00du387d19cbdafa",
+                "ref": "PR-acme/web-app#135",
+                "title": "Refunds API (partial + full)",
+                "date": "2026-09-02",
+                "url": "https://github.com/acme/web-app/pull/135",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dl387d7nxt246b",
+                "ref": "PR-acme/web-app#134",
+                "title": "Invoice PDF export",
+                "date": "2026-08-07",
+                "url": "https://github.com/acme/web-app/pull/134",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00di387dyxx8yeup",
+                "ref": "PR-acme/web-app#133",
+                "title": "Usage-based billing meter",
+                "date": "2026-07-10",
+                "url": "https://github.com/acme/web-app/pull/133",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dh387dip7a6ll0",
+                "ref": "PR-acme/web-app#132",
+                "title": "Observability: request tracing",
+                "date": "2026-07-07",
+                "url": "https://github.com/acme/web-app/pull/132",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00l0387du0jypa8o",
+                "ref": "REV-acme/web-app#158",
+                "title": "Reviewed 8 pull requests by teammates",
+                "date": "2026-09-30",
+                "url": null,
+                "tags": [],
+                "count": 8
+              }
+            ],
+            "truncated": false,
+            "totalItems": 7
+          },
+          {
+            "repositoryId": "cmwm1mix50007387de6x1xs0h",
+            "fullName": "acme/design-system",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dy387d58ef9xqj",
+                "ref": "PR-acme/design-system#153",
+                "title": "Search: escape user input",
+                "date": "2026-09-12",
+                "url": "https://github.com/acme/design-system/pull/153",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dn387d92sh9wj0",
+                "ref": "PR-acme/design-system#152",
+                "title": "Observability: request tracing",
+                "date": "2026-08-19",
+                "url": "https://github.com/acme/design-system/pull/152",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00kv387dv8b71aj3",
+                "ref": "REV-acme/design-system#161",
+                "title": "Reviewed 2 pull requests by teammates",
+                "date": "2026-09-14",
+                "url": null,
+                "tags": [],
+                "count": 2
+              }
+            ],
+            "truncated": false,
+            "totalItems": 3
+          }
+        ],
+        "milestones": [
+          {
+            "kind": "longest_active_week_streak",
+            "date": "2026-07-01",
+            "title": "Longest active-week streak: 11 weeks",
+            "refs": []
+          },
+          {
+            "kind": "largest_merged_pr",
+            "date": "2026-09-17",
+            "title": "Largest merged PR: CSV export streaming",
+            "refs": ["PR-acme/payments-api#266"]
+          }
+        ],
+        "totals": { "prsMerged": 22, "prsReviewed": 22, "achievements": 0 }
+      },
+      {
+        "quarter": 2,
+        "label": "Q2 2026",
+        "inProgress": false,
+        "repos": [
+          {
+            "repositoryId": "cmwm1mix40004387dt7y7jjai",
+            "fullName": "acme/payments-api",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00df387dirg83o5q",
+                "ref": "PR-acme/payments-api#258",
+                "title": "Payments: idempotent intent creation",
+                "date": "2026-06-30",
+                "url": "https://github.com/acme/payments-api/pull/258",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00de387dy77t6rvo",
+                "ref": "PR-acme/payments-api#257",
+                "title": "Observability: request tracing",
+                "date": "2026-06-26",
+                "url": "https://github.com/acme/payments-api/pull/257",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00db387dfbw679lp",
+                "ref": "PR-acme/payments-api#256",
+                "title": "CSV export streaming",
+                "date": "2026-06-16",
+                "url": "https://github.com/acme/payments-api/pull/256",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00d2387dle0dtros",
+                "ref": "PR-acme/payments-api#253",
+                "title": "Usage-based billing meter",
+                "date": "2026-05-17",
+                "url": "https://github.com/acme/payments-api/pull/253",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cz387dxshxloqx",
+                "ref": "PR-acme/payments-api#252",
+                "title": "Design tokens: dark mode",
+                "date": "2026-05-08",
+                "url": "https://github.com/acme/payments-api/pull/252",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cw387dz09vyhcl",
+                "ref": "PR-acme/payments-api#251",
+                "title": "Ledger write batching",
+                "date": "2026-04-18",
+                "url": "https://github.com/acme/payments-api/pull/251",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cv387duyxgf0nd",
+                "ref": "PR-acme/payments-api#250",
+                "title": "Usage-based billing meter",
+                "date": "2026-04-08",
+                "url": "https://github.com/acme/payments-api/pull/250",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00k4387dbkrt7wzu",
+                "ref": "REV-acme/payments-api#281",
+                "title": "Reviewed 7 pull requests by teammates",
+                "date": "2026-06-16",
+                "url": null,
+                "tags": [],
+                "count": 7
+              }
+            ],
+            "truncated": false,
+            "totalItems": 8
+          },
+          {
+            "repositoryId": "cmwm1mix40005387dx0j0qb82",
+            "fullName": "acme/web-app",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dc387dmnhgavl1",
+                "ref": "PR-acme/web-app#131",
+                "title": "Design tokens: dark mode",
+                "date": "2026-06-19",
+                "url": "https://github.com/acme/web-app/pull/131",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00da387dbtzomtax",
+                "ref": "PR-acme/web-app#130",
+                "title": "Ledger write batching",
+                "date": "2026-06-13",
+                "url": "https://github.com/acme/web-app/pull/130",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00d9387d6l8p3ehi",
+                "ref": "PR-acme/web-app#129",
+                "title": "Webhook delivery retries",
+                "date": "2026-06-07",
+                "url": "https://github.com/acme/web-app/pull/129",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00d8387dlqrc2za9",
+                "ref": "PR-acme/web-app#128",
+                "title": "Observability: request tracing",
+                "date": "2026-06-07",
+                "url": "https://github.com/acme/web-app/pull/128",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00d6387ddrft0z1v",
+                "ref": "PR-acme/web-app#127",
+                "title": "Monthly report timezone fix",
+                "date": "2026-05-25",
+                "url": "https://github.com/acme/web-app/pull/127",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cx387d1sj30vfo",
+                "ref": "PR-acme/web-app#126",
+                "title": "Terraform: split staging and prod state",
+                "date": "2026-04-25",
+                "url": "https://github.com/acme/web-app/pull/126",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cu387d76ft3mhs",
+                "ref": "PR-acme/web-app#125",
+                "title": "Payments: idempotent intent creation",
+                "date": "2026-04-10",
+                "url": "https://github.com/acme/web-app/pull/125",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00k9387dts5v2bzq",
+                "ref": "REV-acme/web-app#150",
+                "title": "Reviewed 6 pull requests by teammates",
+                "date": "2026-06-28",
+                "url": null,
+                "tags": [],
+                "count": 6
+              }
+            ],
+            "truncated": false,
+            "totalItems": 8
+          },
+          {
+            "repositoryId": "cmwm1mix50007387de6x1xs0h",
+            "fullName": "acme/design-system",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00d3387do1jl6r07",
+                "ref": "PR-acme/design-system#151",
+                "title": "Observability: request tracing",
+                "date": "2026-05-15",
+                "url": "https://github.com/acme/design-system/pull/151",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cy387dv2mh8t9a",
+                "ref": "PR-acme/design-system#150",
+                "title": "Design tokens: dark mode",
+                "date": "2026-04-22",
+                "url": "https://github.com/acme/design-system/pull/150",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00jv387d75l01zj2",
+                "ref": "REV-acme/design-system#159",
+                "title": "Reviewed 2 pull requests by teammates",
+                "date": "2026-05-26",
+                "url": null,
+                "tags": [],
+                "count": 2
+              }
+            ],
+            "truncated": false,
+            "totalItems": 3
+          },
+          {
+            "repositoryId": "cmwm1mix40006387d91ls6jzb",
+            "fullName": "acme/infra",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00dd387d5wojq062",
+                "ref": "PR-acme/infra#307",
+                "title": "CSV export streaming",
+                "date": "2026-06-25",
+                "url": "https://github.com/acme/infra/pull/307",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00d5387de4mpnhly",
+                "ref": "PR-acme/infra#306",
+                "title": "Design tokens: dark mode",
+                "date": "2026-05-22",
+                "url": "https://github.com/acme/infra/pull/306",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00k8387d4vt4kv73",
+                "ref": "REV-acme/infra#324",
+                "title": "Reviewed 7 pull requests by teammates",
+                "date": "2026-06-25",
+                "url": null,
+                "tags": [],
+                "count": 7
+              }
+            ],
+            "truncated": false,
+            "totalItems": 3
+          },
+          {
+            "repositoryId": "cmwm1mix50008387d3jcym8hy",
+            "fullName": "oss/fast-json",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00d1387dwwxkr30w",
+                "ref": "PR-oss/fast-json#185",
+                "title": "Webhook delivery retries",
+                "date": "2026-05-13",
+                "url": "https://github.com/oss/fast-json/pull/185",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00k5387dix0u188c",
+                "ref": "REV-oss/fast-json#189",
+                "title": "Reviewed 2 pull requests by teammates",
+                "date": "2026-06-18",
+                "url": null,
+                "tags": [],
+                "count": 2
+              }
+            ],
+            "truncated": false,
+            "totalItems": 2
+          }
+        ],
+        "milestones": [
+          {
+            "kind": "longest_active_week_streak",
+            "date": "2026-04-01",
+            "title": "Longest active-week streak: 9 weeks",
+            "refs": []
+          },
+          {
+            "kind": "first_merged_pr_in_repo",
+            "date": "2026-05-13",
+            "title": "First merged PR in oss/fast-json",
+            "refs": ["PR-oss/fast-json#185"]
+          },
+          {
+            "kind": "largest_merged_pr",
+            "date": "2026-06-13",
+            "title": "Largest merged PR: Ledger write batching",
+            "refs": ["PR-acme/web-app#130"]
+          }
+        ],
+        "totals": { "prsMerged": 19, "prsReviewed": 24, "achievements": 0 }
+      },
+      {
+        "quarter": 1,
+        "label": "Q1 2026",
+        "inProgress": false,
+        "repos": [
+          {
+            "repositoryId": "cmwm1mix40006387d91ls6jzb",
+            "fullName": "acme/infra",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cq387deaz50ioj",
+                "ref": "PR-acme/infra#304",
+                "title": "Monthly report timezone fix",
+                "date": "2026-03-20",
+                "url": "https://github.com/acme/infra/pull/304",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cj387d5m0tq52m",
+                "ref": "PR-acme/infra#303",
+                "title": "Refunds API (partial + full)",
+                "date": "2026-02-27",
+                "url": "https://github.com/acme/infra/pull/303",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00ci387d2n784wrz",
+                "ref": "PR-acme/infra#302",
+                "title": "Design tokens: dark mode",
+                "date": "2026-02-24",
+                "url": "https://github.com/acme/infra/pull/302",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00j6387d8b6rdq45",
+                "ref": "REV-acme/infra#317",
+                "title": "Reviewed 2 pull requests by teammates",
+                "date": "2026-03-08",
+                "url": null,
+                "tags": [],
+                "count": 2
+              }
+            ],
+            "truncated": false,
+            "totalItems": 4
+          },
+          {
+            "repositoryId": "cmwm1mix40004387dt7y7jjai",
+            "fullName": "acme/payments-api",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cr387dmy8l2jc8",
+                "ref": "PR-acme/payments-api#249",
+                "title": "Payments: idempotent intent creation",
+                "date": "2026-03-26",
+                "url": "https://github.com/acme/payments-api/pull/249",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cl387d1vtr37dd",
+                "ref": "PR-acme/payments-api#247",
+                "title": "Checkout v2 behind feature flag",
+                "date": "2026-03-04",
+                "url": "https://github.com/acme/payments-api/pull/247",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00ck387dkgzefgtt",
+                "ref": "PR-acme/payments-api#246",
+                "title": "Payments: idempotent intent creation",
+                "date": "2026-02-27",
+                "url": "https://github.com/acme/payments-api/pull/246",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00jb387dm2rxcvea",
+                "ref": "REV-acme/payments-api#274",
+                "title": "Reviewed 3 pull requests by teammates",
+                "date": "2026-03-25",
+                "url": null,
+                "tags": [],
+                "count": 3
+              }
+            ],
+            "truncated": false,
+            "totalItems": 4
+          },
+          {
+            "repositoryId": "cmwm1mix50007387de6x1xs0h",
+            "fullName": "acme/design-system",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cs387dih6pi97p",
+                "ref": "PR-acme/design-system#148",
+                "title": "CSV export streaming",
+                "date": "2026-03-30",
+                "url": "https://github.com/acme/design-system/pull/148",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cn387drdcnd9q3",
+                "ref": "PR-acme/design-system#147",
+                "title": "CSV export streaming",
+                "date": "2026-03-09",
+                "url": "https://github.com/acme/design-system/pull/147",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00j8387du2zbyiwu",
+                "ref": "REV-acme/design-system#157",
+                "title": "Reviewed 2 pull requests by teammates",
+                "date": "2026-03-16",
+                "url": null,
+                "tags": [],
+                "count": 2
+              }
+            ],
+            "truncated": false,
+            "totalItems": 3
+          },
+          {
+            "repositoryId": "cmwm1mix40005387dx0j0qb82",
+            "fullName": "acme/web-app",
+            "items": [
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cp387d4d0k118r",
+                "ref": "PR-acme/web-app#124",
+                "title": "Monthly report timezone fix",
+                "date": "2026-03-19",
+                "url": "https://github.com/acme/web-app/pull/124",
+                "tags": []
+              },
+              {
+                "type": "pr_merged",
+                "id": "cmwm1mj5a00cm387d6nehbg6g",
+                "ref": "PR-acme/web-app#123",
+                "title": "CSV export streaming",
+                "date": "2026-03-05",
+                "url": "https://github.com/acme/web-app/pull/123",
+                "tags": []
+              },
+              {
+                "type": "review_cluster",
+                "id": "cmwm1mj6u00jd387d776jtet7",
+                "ref": "REV-acme/web-app#144",
+                "title": "Reviewed 4 pull requests by teammates",
+                "date": "2026-03-30",
+                "url": null,
+                "tags": [],
+                "count": 4
+              }
+            ],
+            "truncated": false,
+            "totalItems": 3
+          }
+        ],
+        "milestones": [
+          {
+            "kind": "longest_active_week_streak",
+            "date": "2026-01-01",
+            "title": "Longest active-week streak: 7 weeks",
+            "refs": []
+          },
+          {
+            "kind": "first_merged_pr_in_repo",
+            "date": "2026-02-24",
+            "title": "First merged PR in acme/infra",
+            "refs": ["PR-acme/infra#302"]
+          },
+          {
+            "kind": "first_merged_pr_in_repo",
+            "date": "2026-02-27",
+            "title": "First merged PR in acme/payments-api",
+            "refs": ["PR-acme/payments-api#246"]
+          },
+          {
+            "kind": "first_merged_pr_in_repo",
+            "date": "2026-03-05",
+            "title": "First merged PR in acme/web-app",
+            "refs": ["PR-acme/web-app#123"]
+          },
+          {
+            "kind": "first_merged_pr_in_repo",
+            "date": "2026-03-09",
+            "title": "First merged PR in acme/design-system",
+            "refs": ["PR-acme/design-system#147"]
+          },
+          {
+            "kind": "largest_merged_pr",
+            "date": "2026-03-26",
+            "title": "Largest merged PR: Payments: idempotent intent creation",
+            "refs": ["PR-acme/payments-api#249"]
+          }
+        ],
+        "totals": { "prsMerged": 10, "prsReviewed": 11, "achievements": 0 }
+      }
+    ]
+  }
+}

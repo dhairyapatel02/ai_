@@ -1,4 +1,5 @@
 import { type ExecutionContext, Inject, Injectable, Module, SetMetadata } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import {
   ThrottlerGuard,
@@ -15,6 +16,7 @@ import { type AuthenticatedRequest, IS_PUBLIC } from '../auth/auth.decorators';
 import { AppException } from '../common/app-exception';
 import { REDIS_CLIENT } from '../redis/redis.module';
 
+import type { Env } from '../config/env';
 import type { Response } from 'express';
 
 const MINUTE = 60_000;
@@ -143,9 +145,16 @@ export class RateLimitGuard extends ThrottlerGuard {
 @Module({
   imports: [
     ThrottlerModule.forRootAsync({
-      inject: [REDIS_CLIENT],
-      useFactory: (redis: Redis) => ({
-        throttlers: Object.entries(RATE_LIMIT_WINDOWS).map(([name, w]) => ({ name, ...w })),
+      inject: [REDIS_CLIENT, ConfigService],
+      useFactory: (redis: Redis, config: ConfigService<Env, true>) => ({
+        throttlers: Object.entries(RATE_LIMIT_WINDOWS).map(([name, w]) => ({
+          name,
+          ...w,
+          // The `default` class limit is configurable (E2E raises it; production keeps 300/min).
+          ...(name === 'default'
+            ? { limit: config.get('RATE_LIMIT_DEFAULT_PER_MINUTE', { infer: true }) }
+            : {}),
+        })),
         storage: new RedisThrottlerStorage(redis),
       }),
     }),

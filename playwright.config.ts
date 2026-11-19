@@ -37,13 +37,17 @@ export default defineConfig({
     {
       command: 'node apps/api/dist/main.js',
       url: `${API_URL}/health`,
+      // The P10 axe loops visit every insight page in four browser contexts (> 300 requests/min).
+      env: { RATE_LIMIT_DEFAULT_PER_MINUTE: '3000' },
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
       stdout: 'pipe',
     },
     {
       command: 'npm run dev --workspace=apps/web -- --port 3000',
-      url: `${WEB_URL}/api/health`,
+      // Wait for a compiled page, not just the health route: the first tests otherwise hit the
+      // sign-in page while Turbopack is still compiling it (aborted navigations on a cold start).
+      url: `${WEB_URL}/sign-in`,
       env: {
         ENABLE_DEV_LOGIN: 'true',
         NEXT_TELEMETRY_DISABLED: '1',

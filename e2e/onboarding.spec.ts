@@ -59,10 +59,15 @@ const envelope = (data: unknown) => JSON.stringify({ success: true, data });
 async function withoutIntegrations(page: Page) {
   await page.route(`${API_URL}/me`, async (route: Route) => {
     if (route.request().method() !== 'GET') return route.fallback();
-    const response = await route.fetch();
-    const body = (await response.json()) as { data: { integrations: unknown[] } };
-    body.data.integrations = [];
-    await route.fulfill({ response, json: body });
+    try {
+      const response = await route.fetch();
+      const body = (await response.json()) as { data: { integrations: unknown[] } };
+      body.data.integrations = [];
+      await route.fulfill({ response, json: body });
+    } catch {
+      // The page navigated while the request was in flight (the response was disposed): the
+      // request is gone, nothing to fulfil.
+    }
   });
 }
 

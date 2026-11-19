@@ -1,0 +1,520 @@
+{
+  "data": {
+    "period": {
+      "spec": "month:2026-11",
+      "type": "month",
+      "startDate": "2026-11-01",
+      "endDate": "2026-11-18",
+      "timezone": "Europe/London",
+      "periodDays": 30,
+      "inProgress": true,
+      "label": "November 2026"
+    },
+    "status": "ok",
+    "scoreVersion": "impact@2.0.0",
+    "overall": 77,
+    "band": "Strong",
+    "dimensions": [
+      {
+        "key": "delivery",
+        "label": "Delivery",
+        "score": 72,
+        "weight": 0.3,
+        "available": true,
+        "components": [
+          {
+            "metric": "prs_merged",
+            "value": 5,
+            "n": 5,
+            "bandScore": 64.16666666666667,
+            "shrunkScore": null,
+            "weight": 0.5,
+            "effectiveWeight": 0.5,
+            "available": true
+          },
+          {
+            "metric": "pr_cycle_time_median_hours",
+            "value": 38,
+            "n": 5,
+            "bandScore": 77.70833333333333,
+            "shrunkScore": 67.31770833333333,
+            "weight": 0.3,
+            "effectiveWeight": 0.3,
+            "available": true
+          },
+          {
+            "metric": "active_weeks_ratio",
+            "value": 1,
+            "n": 3,
+            "bandScore": 100,
+            "shrunkScore": null,
+            "weight": 0.2,
+            "effectiveWeight": 0.2,
+            "available": true
+          }
+        ]
+      },
+      {
+        "key": "quality",
+        "label": "Quality",
+        "score": 80,
+        "weight": 0.25,
+        "available": true,
+        "components": [
+          {
+            "metric": "small_pr_ratio",
+            "value": 1,
+            "n": 4,
+            "bandScore": 100,
+            "shrunkScore": 78.57142857142857,
+            "weight": 0.4,
+            "effectiveWeight": 0.4,
+            "available": true
+          },
+          {
+            "metric": "revert_rate",
+            "value": 0,
+            "n": 5,
+            "bandScore": 100,
+            "shrunkScore": 81.25,
+            "weight": 0.35,
+            "effectiveWeight": 0.35,
+            "available": true
+          },
+          {
+            "metric": "merge_rate",
+            "value": 1,
+            "n": 5,
+            "bandScore": 100,
+            "shrunkScore": 81.25,
+            "weight": 0.25,
+            "effectiveWeight": 0.25,
+            "available": true
+          }
+        ]
+      },
+      {
+        "key": "collaboration",
+        "label": "Collaboration",
+        "score": 72,
+        "weight": 0.3,
+        "available": true,
+        "components": [
+          {
+            "metric": "prs_reviewed",
+            "value": 5,
+            "n": 5,
+            "bandScore": 62.22222222222223,
+            "shrunkScore": null,
+            "weight": 0.5,
+            "effectiveWeight": 0.5,
+            "available": true
+          },
+          {
+            "metric": "review_turnaround_median_hours",
+            "value": 4.5,
+            "n": 5,
+            "bandScore": 93.75,
+            "shrunkScore": 77.34375,
+            "weight": 0.3,
+            "effectiveWeight": 0.3,
+            "available": true
+          },
+          {
+            "metric": "review_balance",
+            "value": 0.5,
+            "n": 10,
+            "bandScore": 100,
+            "shrunkScore": 88.46153846153847,
+            "weight": 0.2,
+            "effectiveWeight": 0.2,
+            "available": true
+          }
+        ]
+      },
+      {
+        "key": "ownership",
+        "label": "Ownership",
+        "score": 88,
+        "weight": 0.15,
+        "available": true,
+        "components": [
+          {
+            "metric": "two_way_repos",
+            "value": 2,
+            "n": 2,
+            "bandScore": 80,
+            "shrunkScore": null,
+            "weight": 0.6,
+            "effectiveWeight": 0.6,
+            "available": true
+          },
+          {
+            "metric": "repos_contributed",
+            "value": 5,
+            "n": 5,
+            "bandScore": 100,
+            "shrunkScore": null,
+            "weight": 0.4,
+            "effectiveWeight": 0.4,
+            "available": true
+          }
+        ]
+      }
+    ],
+    "explanation": "Your impact score: 77 (Strong) — a summary of signals from your GitHub activity in November 2026, not a judgement of your performance.\n\nIt combines four dimensions: Delivery 72 (PRs merged, cycle time, steady weeks), Quality 80 (small PRs, reverts, merge rate), Collaboration 72 (PRs reviewed, review turnaround, review balance) and Ownership 88 (repositories where you both ship and review, breadth). Weights: 30 / 25 / 30 / 15.\n\nEach metric is compared with fixed reference ranges based on public engineering research — never with other people. Results from small samples are pulled toward the middle, and volume beyond a healthy level earns no extra points. Lines of code are not used.\n\nVersion impact@2.0.0 (metrics@2.0.0). Only repositories you included are counted.",
+    "inputs": {
+      "period": {
+        "type": "month",
+        "endDate": "2026-11-18",
+        "timezone": "Europe/London",
+        "startDate": "2026-11-01",
+        "periodDays": 30
+      },
+      "status": "ok",
+      "metrics": {
+        "commits": { "n": 42, "value": 42, "status": "ok" },
+        "merge_rate": { "n": 5, "value": 1, "status": "ok" },
+        "prs_merged": { "n": 5, "value": 5, "status": "ok" },
+        "prs_opened": { "n": 5, "value": 5, "status": "ok" },
+        "active_days": { "n": 12, "value": 12, "status": "ok" },
+        "revert_rate": { "n": 5, "value": 0, "status": "ok" },
+        "prs_reviewed": { "n": 5, "value": 5, "status": "ok" },
+        "two_way_repos": { "n": 2, "value": 2, "status": "ok" },
+        "repos_reviewed": { "n": 2, "value": 2, "status": "ok" },
+        "review_balance": { "n": 10, "value": 0.5, "status": "ok" },
+        "small_pr_ratio": { "n": 4, "value": 1, "status": "ok" },
+        "repos_contributed": { "n": 5, "value": 5, "status": "ok" },
+        "active_weeks_ratio": { "n": 3, "value": 1, "status": "ok" },
+        "review_depth_median": { "n": 5, "value": 4, "status": "ok" },
+        "pr_size_median_lines": { "n": 4, "value": 62, "status": "ok" },
+        "repos_with_merged_prs": { "n": 3, "value": 3, "status": "ok" },
+        "first_pass_approval_rate": { "n": 5, "value": 0.6, "status": "ok" },
+        "longest_active_week_streak": { "n": 3, "value": 3, "status": "ok" },
+        "pr_cycle_time_median_hours": { "n": 5, "value": 38, "status": "ok" },
+        "review_turnaround_median_hours": { "n": 5, "value": 4.5, "status": "ok" },
+        "time_to_first_review_median_hours": { "n": 4, "value": 14.5, "status": "ok" }
+      },
+      "overall": 76.5301997481685,
+      "evidence": {
+        "commits": [
+          "cmwm1mj1u00cg387d0b3ncjri",
+          "cmwm1mj1u00ce387dlcg5ni5q",
+          "cmwm1mj1u00ca387donar17hf",
+          "cmwm1mj1u00cc387d7lx3ph9r",
+          "cmwm1mj1u00cd387d9u7hk9jg",
+          "cmwm1mj1u00cf387deuehaczh",
+          "cmwm1mj1u00cb387d8hfgrqtq",
+          "cmwm1mj1u00c7387dl176e25s",
+          "cmwm1mj1u00c6387dnn19rowb",
+          "cmwm1mj1u00c8387dbq0atkub",
+          "cmwm1mj1u00c9387dj2g1laf8",
+          "cmwm1mj1u00c5387d7in5dbzu",
+          "cmwm1mj1u00c2387dii04zcnh",
+          "cmwm1mj1u00bz387duy2wfepz",
+          "cmwm1mj1u00by387dwooj8m92",
+          "cmwm1mj1u00c1387doj2e4v96",
+          "cmwm1mj1u00c3387dhdsw5wxi",
+          "cmwm1mj1u00c0387di4wnnw20",
+          "cmwm1mj1u00bx387dxdjkjz0x",
+          "cmwm1mj1t00bt387drq1lleh3",
+          "cmwm1mj1t00br387d5a29jyqf",
+          "cmwm1mj1u00bv387d3s973kxx",
+          "cmwm1mj1t00bu387dqtrlyvb1",
+          "cmwm1mj1u00bw387d4hp6bt9a",
+          "cmwm1mj1t00bs387dszh1j9px",
+          "cmwm1mj1t00bp387dcysbhfq0",
+          "cmwm1mj1t00bl387d78b46kyk",
+          "cmwm1mj1t00bk387d2zpyhteo",
+          "cmwm1mj1t00bm387ddwotr7e7",
+          "cmwm1mj1t00bq387d4tkvtkmh",
+          "cmwm1mj1t00bo387daykuxyj8",
+          "cmwm1mj1t00bn387dcjljdjqa",
+          "cmwm1mj1t00bj387dikk87dud",
+          "cmwm1mj1t00bh387djszh52kf",
+          "cmwm1mj1t00bi387dz7949hbq",
+          "cmwm1mj1t00be387dyvatftuf",
+          "cmwm1mj1t00bd387d3m1rwupt",
+          "cmwm1mj1t00bc387d5ix17wd8",
+          "cmwm1mj1t00bb387doz6kdjde",
+          "cmwm1mj1t00ba387drhhjp7e6",
+          "cmwm1mj1t00b8387dn6rxnf4e",
+          "cmwm1mj1t00b9387d2vvafi2k"
+        ],
+        "merge_rate": [
+          "cmwm1mj5a00ee387d3wjy39sw",
+          "cmwm1mj5a00ed387dlpnt9dzr",
+          "cmwm1mj5a00ec387da729d87t",
+          "cmwm1mj5a00eb387d0av9ik23",
+          "cmwm1mj5a00ea387dwcxezhwb"
+        ],
+        "prs_merged": [
+          "cmwm1mj5a00ee387d3wjy39sw",
+          "cmwm1mj5a00ed387dlpnt9dzr",
+          "cmwm1mj5a00ec387da729d87t",
+          "cmwm1mj5a00eb387d0av9ik23",
+          "cmwm1mj5a00ea387dwcxezhwb"
+        ],
+        "prs_opened": [
+          "cmwm1mj5a00ef387dxzfg2amk",
+          "cmwm1mj5a00ee387d3wjy39sw",
+          "cmwm1mj5a00ed387dlpnt9dzr",
+          "cmwm1mj5a00ec387da729d87t",
+          "cmwm1mj5a00eb387d0av9ik23"
+        ],
+        "active_days": [
+          "cmwm1mj1u00cg387d0b3ncjri",
+          "cmwm1mj1u00c7387dl176e25s",
+          "cmwm1mj1u00c2387dii04zcnh",
+          "cmwm1mj6u00ld387dydpxsxmk",
+          "cmwm1mj1t00bt387drq1lleh3",
+          "cmwm1mj1t00bp387dcysbhfq0",
+          "cmwm1mj5a00ee387d3wjy39sw",
+          "cmwm1mj5a00ed387dlpnt9dzr",
+          "cmwm1mj6u00lb387dqluh0tzf",
+          "cmwm1mj6u00la387dmfrnkskt",
+          "cmwm1mj5a00ec387da729d87t",
+          "cmwm1mj1t00ba387drhhjp7e6"
+        ],
+        "revert_rate": [],
+        "prs_reviewed": [
+          "cmwm1mj6u00le387d7mpitv6n",
+          "cmwm1mj6u00ld387dydpxsxmk",
+          "cmwm1mj6u00lb387dqluh0tzf",
+          "cmwm1mj6u00la387dmfrnkskt",
+          "cmwm1mj6u00l9387df8aa45l6"
+        ],
+        "two_way_repos": [
+          "cmwm1mj6u00le387d7mpitv6n",
+          "cmwm1mj5a00ed387dlpnt9dzr",
+          "cmwm1mj6u00lb387dqluh0tzf",
+          "cmwm1mj5a00eb387d0av9ik23"
+        ],
+        "repos_reviewed": ["cmwm1mj6u00le387d7mpitv6n", "cmwm1mj6u00lb387dqluh0tzf"],
+        "review_balance": [
+          "cmwm1mj6u00le387d7mpitv6n",
+          "cmwm1mj6u00ld387dydpxsxmk",
+          "cmwm1mj5a00ee387d3wjy39sw",
+          "cmwm1mj5a00ed387dlpnt9dzr",
+          "cmwm1mj6u00lb387dqluh0tzf",
+          "cmwm1mj6u00la387dmfrnkskt",
+          "cmwm1mj5a00ec387da729d87t",
+          "cmwm1mj5a00eb387d0av9ik23",
+          "cmwm1mj6u00l9387df8aa45l6",
+          "cmwm1mj5a00ea387dwcxezhwb"
+        ],
+        "small_pr_ratio": [
+          "cmwm1mj5a00ee387d3wjy39sw",
+          "cmwm1mj5a00ed387dlpnt9dzr",
+          "cmwm1mj5a00ec387da729d87t",
+          "cmwm1mj5a00ea387dwcxezhwb"
+        ],
+        "repos_contributed": [
+          "cmwm1mj1u00cg387d0b3ncjri",
+          "cmwm1mj1u00cf387deuehaczh",
+          "cmwm1mj6u00le387d7mpitv6n",
+          "cmwm1mj1u00c7387dl176e25s",
+          "cmwm1mj1u00bz387duy2wfepz"
+        ],
+        "active_weeks_ratio": [
+          "cmwm1mj1u00cg387d0b3ncjri",
+          "cmwm1mj6u00ld387dydpxsxmk",
+          "cmwm1mj6u00la387dmfrnkskt"
+        ],
+        "review_depth_median": [
+          "cmwm1mj6u00le387d7mpitv6n",
+          "cmwm1mj6u00ld387dydpxsxmk",
+          "cmwm1mj6u00lb387dqluh0tzf",
+          "cmwm1mj6u00la387dmfrnkskt",
+          "cmwm1mj6u00l9387df8aa45l6"
+        ],
+        "pr_size_median_lines": [
+          "cmwm1mj5a00ee387d3wjy39sw",
+          "cmwm1mj5a00ed387dlpnt9dzr",
+          "cmwm1mj5a00ec387da729d87t",
+          "cmwm1mj5a00ea387dwcxezhwb"
+        ],
+        "repos_with_merged_prs": [
+          "cmwm1mj5a00ee387d3wjy39sw",
+          "cmwm1mj5a00ed387dlpnt9dzr",
+          "cmwm1mj5a00eb387d0av9ik23"
+        ],
+        "first_pass_approval_rate": [
+          "cmwm1mj5a00ee387d3wjy39sw",
+          "cmwm1mj5a00ec387da729d87t",
+          "cmwm1mj5a00ea387dwcxezhwb"
+        ],
+        "longest_active_week_streak": [
+          "cmwm1mj1u00cg387d0b3ncjri",
+          "cmwm1mj6u00ld387dydpxsxmk",
+          "cmwm1mj6u00la387dmfrnkskt"
+        ],
+        "pr_cycle_time_median_hours": [
+          "cmwm1mj5a00ee387d3wjy39sw",
+          "cmwm1mj5a00ed387dlpnt9dzr",
+          "cmwm1mj5a00ec387da729d87t",
+          "cmwm1mj5a00eb387d0av9ik23",
+          "cmwm1mj5a00ea387dwcxezhwb"
+        ],
+        "review_turnaround_median_hours": [
+          "cmwm1mj6u00le387d7mpitv6n",
+          "cmwm1mj6u00ld387dydpxsxmk",
+          "cmwm1mj6u00lb387dqluh0tzf",
+          "cmwm1mj6u00la387dmfrnkskt",
+          "cmwm1mj6u00l9387df8aa45l6"
+        ],
+        "time_to_first_review_median_hours": [
+          "cmwm1mj5a00ee387d3wjy39sw",
+          "cmwm1mj5a00ed387dlpnt9dzr",
+          "cmwm1mj5a00ec387da729d87t",
+          "cmwm1mj5a00eb387d0av9ik23"
+        ]
+      },
+      "dimensions": {
+        "quality": {
+          "score": 80.17857142857143,
+          "weight": 0.25,
+          "available": true,
+          "components": [
+            {
+              "band": 100,
+              "input": 1,
+              "metric": "small_pr_ratio",
+              "shrunk": 78.57142857142857,
+              "weight": 0.4,
+              "effectiveWeight": 0.4
+            },
+            {
+              "band": 100,
+              "input": 0,
+              "metric": "revert_rate",
+              "shrunk": 81.25,
+              "weight": 0.35,
+              "effectiveWeight": 0.35
+            },
+            {
+              "band": 100,
+              "input": 1,
+              "metric": "merge_rate",
+              "shrunk": 81.25,
+              "weight": 0.25,
+              "effectiveWeight": 0.25
+            }
+          ]
+        },
+        "delivery": {
+          "score": 72.27864583333333,
+          "weight": 0.3,
+          "available": true,
+          "components": [
+            {
+              "band": 64.16666666666667,
+              "input": 4.666666666666667,
+              "metric": "prs_merged",
+              "shrunk": null,
+              "weight": 0.5,
+              "effectiveWeight": 0.5
+            },
+            {
+              "band": 77.70833333333333,
+              "input": 38,
+              "metric": "pr_cycle_time_median_hours",
+              "shrunk": 67.31770833333333,
+              "weight": 0.3,
+              "effectiveWeight": 0.3
+            },
+            {
+              "band": 100,
+              "input": 1,
+              "metric": "active_weeks_ratio",
+              "shrunk": null,
+              "weight": 0.2,
+              "effectiveWeight": 0.2
+            }
+          ]
+        },
+        "ownership": {
+          "score": 88,
+          "weight": 0.15,
+          "available": true,
+          "components": [
+            {
+              "band": 80,
+              "input": 2,
+              "metric": "two_way_repos",
+              "shrunk": null,
+              "weight": 0.6,
+              "effectiveWeight": 0.6
+            },
+            {
+              "band": 100,
+              "input": 5,
+              "metric": "repos_contributed",
+              "shrunk": null,
+              "weight": 0.4,
+              "effectiveWeight": 0.4
+            }
+          ]
+        },
+        "collaboration": {
+          "score": 72.00654380341881,
+          "weight": 0.3,
+          "available": true,
+          "components": [
+            {
+              "band": 62.22222222222223,
+              "input": 4.666666666666667,
+              "metric": "prs_reviewed",
+              "shrunk": null,
+              "weight": 0.5,
+              "effectiveWeight": 0.5
+            },
+            {
+              "band": 93.75,
+              "input": 4.5,
+              "metric": "review_turnaround_median_hours",
+              "shrunk": 77.34375,
+              "weight": 0.3,
+              "effectiveWeight": 0.3
+            },
+            {
+              "band": 100,
+              "input": 0.5,
+              "metric": "review_balance",
+              "shrunk": 88.46153846153847,
+              "weight": 0.2,
+              "effectiveWeight": 0.2
+            }
+          ]
+        }
+      },
+      "scoreVersion": "impact@2.0.0",
+      "metricsVersion": "metrics@2.0.0",
+      "evidenceTruncated": {
+        "commits": false,
+        "merge_rate": false,
+        "prs_merged": false,
+        "prs_opened": false,
+        "active_days": false,
+        "revert_rate": false,
+        "prs_reviewed": false,
+        "two_way_repos": false,
+        "repos_reviewed": false,
+        "review_balance": false,
+        "small_pr_ratio": false,
+        "repos_contributed": false,
+        "active_weeks_ratio": false,
+        "review_depth_median": false,
+        "pr_size_median_lines": false,
+        "repos_with_merged_prs": false,
+        "first_pass_approval_rate": false,
+        "longest_active_week_streak": false,
+        "pr_cycle_time_median_hours": false,
+        "review_turnaround_median_hours": false,
+        "time_to_first_review_median_hours": false
+      }
+    },
+    "computedAt": "2026-11-18T11:44:59.842Z",
+    "highlights": { "documentId": "cmwm2h52e00002f7dt8sda1f1", "status": "ready" }
+  }
+}

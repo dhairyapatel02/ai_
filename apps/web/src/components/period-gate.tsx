@@ -7,8 +7,6 @@ import { Button } from '@/components/ui/button';
 import { isApiError } from '@/lib/api/errors';
 import { usePeriod } from '@/lib/period';
 
-import type { ReactNode } from 'react';
-
 /** Designed INVALID_PERIOD state (malformed `?period=` or `400 INVALID_PERIOD` from the API). */
 export function InvalidPeriodState({ message }: { message?: string | null }) {
   const period = usePeriod();
@@ -34,15 +32,4 @@ export function InvalidPeriodState({ message }: { message?: string | null }) {
 
 export function isInvalidPeriodError(error: unknown): boolean {
   return isApiError(error) && error.code === 'INVALID_PERIOD';
-}
-
-/** Renders children only when `?period=` is usable; otherwise the designed invalid-period state. */
-export function PeriodGate({
-  children,
-}: {
-  children: (apiPeriod: string | undefined) => ReactNode;
-}) {
-  const period = usePeriod();
-  if (period.invalid) return <InvalidPeriodState message={period.invalid} />;
-  return children(period.apiParam);
 }

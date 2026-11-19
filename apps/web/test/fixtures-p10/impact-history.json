@@ -1,0 +1,221 @@
+{
+  "data": {
+    "scoreVersion": "impact@2.0.0",
+    "points": [
+      {
+        "period": {
+          "spec": "month:2025-12",
+          "type": "month",
+          "startDate": "2025-12-01",
+          "endDate": "2025-12-31",
+          "timezone": "Europe/London",
+          "periodDays": 31,
+          "inProgress": false,
+          "label": "December 2025"
+        },
+        "status": "insufficient_data",
+        "overall": null,
+        "band": null,
+        "dimensions": {
+          "delivery": null,
+          "quality": null,
+          "collaboration": null,
+          "ownership": null
+        },
+        "scoreVersion": "impact@2.0.0"
+      },
+      {
+        "period": {
+          "spec": "month:2026-01",
+          "type": "month",
+          "startDate": "2026-01-01",
+          "endDate": "2026-01-31",
+          "timezone": "Europe/London",
+          "periodDays": 31,
+          "inProgress": false,
+          "label": "January 2026"
+        },
+        "status": "insufficient_data",
+        "overall": null,
+        "band": null,
+        "dimensions": {
+          "delivery": null,
+          "quality": null,
+          "collaboration": null,
+          "ownership": null
+        },
+        "scoreVersion": "impact@2.0.0"
+      },
+      {
+        "period": {
+          "spec": "month:2026-02",
+          "type": "month",
+          "startDate": "2026-02-01",
+          "endDate": "2026-02-28",
+          "timezone": "Europe/London",
+          "periodDays": 28,
+          "inProgress": false,
+          "label": "February 2026"
+        },
+        "status": "ok",
+        "overall": 58,
+        "band": "Moderate",
+        "dimensions": { "delivery": 57, "quality": 63, "collaboration": 49, "ownership": 71 },
+        "scoreVersion": "impact@2.0.0"
+      },
+      {
+        "period": {
+          "spec": "month:2026-03",
+          "type": "month",
+          "startDate": "2026-03-01",
+          "endDate": "2026-03-31",
+          "timezone": "Europe/London",
+          "periodDays": 31,
+          "inProgress": false,
+          "label": "March 2026"
+        },
+        "status": "ok",
+        "overall": 85,
+        "band": "Very strong",
+        "dimensions": { "delivery": 81, "quality": 82, "collaboration": 82, "ownership": 100 },
+        "scoreVersion": "impact@2.0.0"
+      },
+      {
+        "period": {
+          "spec": "month:2026-04",
+          "type": "month",
+          "startDate": "2026-04-01",
+          "endDate": "2026-04-30",
+          "timezone": "Europe/London",
+          "periodDays": 30,
+          "inProgress": false,
+          "label": "April 2026"
+        },
+        "status": "ok",
+        "overall": 79,
+        "band": "Strong",
+        "dimensions": { "delivery": 70, "quality": 80, "collaboration": 79, "ownership": 100 },
+        "scoreVersion": "impact@2.0.0"
+      },
+      {
+        "period": {
+          "spec": "month:2026-05",
+          "type": "month",
+          "startDate": "2026-05-01",
+          "endDate": "2026-05-31",
+          "timezone": "Europe/London",
+          "periodDays": 31,
+          "inProgress": false,
+          "label": "May 2026"
+        },
+        "status": "ok",
+        "overall": 78,
+        "band": "Strong",
+        "dimensions": { "delivery": 74, "quality": 67, "collaboration": 80, "ownership": 100 },
+        "scoreVersion": "impact@2.0.0"
+      },
+      {
+        "period": {
+          "spec": "month:2026-06",
+          "type": "month",
+          "startDate": "2026-06-01",
+          "endDate": "2026-06-30",
+          "timezone": "Europe/London",
+          "periodDays": 30,
+          "inProgress": false,
+          "label": "June 2026"
+        },
+        "status": "ok",
+        "overall": 79,
+        "band": "Strong",
+        "dimensions": { "delivery": 83, "quality": 58, "collaboration": 84, "ownership": 95 },
+        "scoreVersion": "impact@2.0.0"
+      },
+      {
+        "period": {
+          "spec": "month:2026-07",
+          "type": "month",
+          "startDate": "2026-07-01",
+          "endDate": "2026-07-31",
+          "timezone": "Europe/London",
+          "periodDays": 31,
+          "inProgress": false,
+          "label": "July 2026"
+        },
+        "status": "ok",
+        "overall": 70,
+        "band": "Strong",
+        "dimensions": { "delivery": 68, "quality": 67, "collaboration": 68, "ownership": 88 },
+        "scoreVersion": "impact@2.0.0"
+      },
+      {
+        "period": {
+          "spec": "month:2026-08",
+          "type": "month",
+          "startDate": "2026-08-01",
+          "endDate": "2026-08-31",
+          "timezone": "Europe/London",
+          "periodDays": 31,
+          "inProgress": false,
+          "label": "August 2026"
+        },
+        "status": "ok",
+        "overall": 83,
+        "band": "Very strong",
+        "dimensions": { "delivery": 78, "quality": 82, "collaboration": 80, "ownership": 100 },
+        "scoreVersion": "impact@2.0.0"
+      },
+      {
+        "period": {
+          "spec": "month:2026-09",
+          "type": "month",
+          "startDate": "2026-09-01",
+          "endDate": "2026-09-30",
+          "timezone": "Europe/London",
+          "periodDays": 30,
+          "inProgress": false,
+          "label": "September 2026"
+        },
+        "status": "ok",
+        "overall": 82,
+        "band": "Very strong",
+        "dimensions": { "delivery": 90, "quality": 65, "collaboration": 80, "ownership": 95 },
+        "scoreVersion": "impact@2.0.0"
+      },
+      {
+        "period": {
+          "spec": "month:2026-10",
+          "type": "month",
+          "startDate": "2026-10-01",
+          "endDate": "2026-10-31",
+          "timezone": "Europe/London",
+          "periodDays": 31,
+          "inProgress": false,
+          "label": "October 2026"
+        },
+        "status": "ok",
+        "overall": 77,
+        "band": "Strong",
+        "dimensions": { "delivery": 72, "quality": 74, "collaboration": 72, "ownership": 100 },
+        "scoreVersion": "impact@2.0.0"
+      },
+      {
+        "period": {
+          "spec": "month:2026-11",
+          "type": "month",
+          "startDate": "2026-11-01",
+          "endDate": "2026-11-18",
+          "timezone": "Europe/London",
+          "periodDays": 30,
+          "inProgress": true,
+          "label": "November 2026"
+        },
+        "status": "ok",
+        "overall": 77,
+        "band": "Strong",
+        "dimensions": { "delivery": 72, "quality": 80, "collaboration": 72, "ownership": 88 },
+        "scoreVersion": "impact@2.0.0"
+      }
+    ]
+  }
+}

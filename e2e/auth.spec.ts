@@ -47,12 +47,10 @@ test.describe('authentication', () => {
 test.describe('dashboard in the shell (dev login as the seeded demo user)', () => {
   test('sign in from /sign-in and see stat cards with seeded data', async ({ page }) => {
     await page.goto('/sign-in?callbackUrl=/dashboard');
-    const overview = page.waitForResponse((r) => r.url().includes('/metrics/overview'), {
-      timeout: 90_000,
-    });
     await page.getByRole('button', { name: 'Sign in as demo@devimpact.dev' }).click();
     await expect(page).toHaveURL(/\/dashboard$/, { timeout: 60_000 });
-    expect((await overview).status()).toBe(200);
+    // The dashboard's first-paint queries are prefetched on the server (P10), so the numbers
+    // arrive in the HTML rather than through a browser request.
 
     await expect(page.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeVisible();
     const commits = page.getByTestId('stat-commits');
@@ -75,7 +73,8 @@ test.describe('dashboard in the shell (dev login as the seeded demo user)', () =
     const apiRequest = page.waitForRequest(
       (r) => r.url().startsWith(API_URL) && r.method() === 'GET',
     );
-    await page.goto('/dashboard');
+    // KPIs fetch on the client (the dashboard prefetches on the server).
+    await page.goto('/kpis');
     const sent = await apiRequest;
     const headers = await sent.allHeaders();
     expect(headers.authorization).toMatch(/^Bearer [\w-]+\.[\w-]+\.[\w-]+$/);

@@ -34,16 +34,29 @@ export const qk = {
     repos: (period: Period, limit: number) => ['metrics', 'repos', p(period), limit] as const,
     heatmap: (from?: string, to?: string) =>
       ['metrics', 'heatmap', from ?? 'default', to ?? 'default'] as const,
+    timeseries: (metric: string, interval: string, period: Period) =>
+      ['metrics', 'timeseries', metric, interval, p(period)] as const,
+    trends: (period: Period, count: number) => ['metrics', 'trends', p(period), count] as const,
+    evidence: (metric: string, period: Period, limit: number) =>
+      ['metrics', 'evidence', metric, p(period), limit] as const,
   },
   impact: {
     all: ['impact'] as const,
     detail: (period: Period) => ['impact', 'detail', p(period)] as const,
+    history: (periodType: 'month' | 'quarter', count: number) =>
+      ['impact', 'history', periodType, count] as const,
   },
   career: {
     all: ['career'] as const,
     timeline: (year?: number) => ['career', 'timeline', year ?? 'default'] as const,
   },
-  activity: { all: ['activity'] as const },
+  activity: {
+    all: ['activity'] as const,
+    feed: (params: Record<string, string | number | undefined>) =>
+      ['activity', 'feed', params] as const,
+    pr: (id: string) => ['activity', 'pr', id] as const,
+    commit: (id: string) => ['activity', 'commit', id] as const,
+  },
   documents: {
     all: ['documents'] as const,
     list: (params: Record<string, string | number | undefined>) =>

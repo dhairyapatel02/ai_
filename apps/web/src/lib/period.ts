@@ -146,3 +146,33 @@ export function shortPeriodLabel(period: ResolvedPeriod): string {
   const [month, year] = period.label.split(' ');
   return `${(month ?? '').slice(0, 3)} ${year ?? ''}`;
 }
+
+/**
+ * "Try a longer period" (S6/S9 no-data state): the next longer calendar period containing the
+ * current period's end (month → quarter → half → year; custom → quarter). `null` for a year.
+ */
+export function longerPeriod(
+  period: ResolvedPeriod,
+  timezone: string,
+  today: string,
+): { spec: string; label: string } | null {
+  const next: Record<string, PeriodTypeWire | null> = {
+    month: 'quarter',
+    custom: 'quarter',
+    quarter: 'half',
+    half: 'year',
+    year: null,
+  };
+  const type = next[period.type];
+  if (!type) return null;
+  const spec = periodSpecContaining(type, period.endDate);
+  return { spec, label: resolvePeriod(spec, timezone, today).label };
+}
+
+/** True when the period starts before the newest-30-days window that the first backfill imports first. */
+export function startsBeforeRecentWindow(period: ResolvedPeriod, today: string): boolean {
+  const cutoff = new Date(Date.parse(`${today}T00:00:00Z`) - 29 * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  return period.startDate < cutoff;
+}

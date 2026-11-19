@@ -1,18 +1,21 @@
 'use client';
 
 import {
+  ConnectGitHubResult,
+  DisconnectResult,
   IntegrationDto,
   MeDto,
   RepoBulkResult,
   RepositoryDto,
   SettingsDto,
   SyncAccepted,
+  SyncRunDto,
   SyncStatusDto,
   type RepoBulkPatch,
   type SyncStateWire,
   type UpdateSettingsInput,
 } from '@devimpact/shared';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { z } from 'zod';
 
@@ -78,6 +81,12 @@ export function syncPollInterval(state: SyncStateWire | null | undefined): numbe
 
 export function isSyncActive(status: SyncStatusDto | null | undefined): boolean {
   return !!status && (ACTIVE_STATES.has(status.state) || status.state === 'waiting_rate_limit');
+}
+
+/** First backfill still running (the newest 30 days are imported first, FLOWS F2). */
+export function isBackfilling(status: SyncStatusDto | null | undefined): boolean {
+  const run = status?.currentRun;
+  return !!run && run.kind === 'backfill' && isSyncActive(status);
 }
 
 /**
@@ -169,5 +178,64 @@ export function useUpdateRepos() {
     mutationFn: (input: RepoBulkPatch) =>
       apiClient.patch('/repos', { body: input, schema: RepoBulkResult }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: qk.repos.all }),
+  });
+}
+
+/** `PATCH /repos/:id` — the API queues a full-history recompute (KPIs change within a minute). */
+export function useUpdateRepo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, included }: { id: string; included: boolean }) =>
+      apiClient.patch(`/repos/${encodeURIComponent(id)}`, {
+        body: { included },
+        schema: RepositoryDto,
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: qk.repos.all }),
+  });
+}
+
+/** `GET /sync/runs` — cursor pages, newest first (S19 sync history). */
+export function useSyncRuns(integrationId: string | undefined, limit = 10) {
+  return useInfiniteQuery({
+    queryKey: qk.sync.runs(integrationId),
+    queryFn: ({ signal, pageParam }) =>
+      apiClient.getPage('/sync/runs', {
+        schema: SyncRunDto,
+        query: { integrationId, limit, cursor: pageParam },
+        signal,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) =>
+      last.meta.hasMore ? (last.meta.nextCursor ?? undefined) : undefined,
+    enabled: integrationId !== undefined,
+  });
+}
+
+/** `POST /integrations/:id/reconnect` → GitHub authorise URL (FLOWS F3). */
+export async function reconnectUrl(integrationId: string): Promise<string> {
+  const { url } = await apiClient.post(
+    `/integrations/${encodeURIComponent(integrationId)}/reconnect`,
+    {
+      schema: ConnectGitHubResult.pick({ url: true }),
+    },
+  );
+  return url;
+}
+
+/** `DELETE /integrations/:id?purgeData=` (FLOWS F10). Invalidates everything that depends on it. */
+export function useDisconnect() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, purgeData }: { id: string; purgeData: boolean }) =>
+      apiClient.delete(`/integrations/${encodeURIComponent(id)}`, {
+        query: { purgeData },
+        schema: DisconnectResult,
+      }),
+    onSuccess: () =>
+      Promise.all(
+        [...SYNC_DEPENDENT_KEYS, qk.sync.all].map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ),
   });
 }

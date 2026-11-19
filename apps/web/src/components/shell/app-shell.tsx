@@ -10,6 +10,7 @@ import { CommandPalette } from './command-palette';
 import { BottomBar, NavDrawer } from './mobile-nav';
 import { ShellProvider, useShell } from './shell-context';
 import { ShortcutsDialog, useGlobalShortcuts } from './shortcuts';
+import { SyncToaster } from './sync-toaster';
 import { TopBar } from './top-bar';
 
 function ShellFrame({ children, title }: { children: ReactNode; title?: string }) {
@@ -62,6 +63,7 @@ function ShellFrame({ children, title }: { children: ReactNode; title?: string }
       </Suspense>
       <CommandPalette />
       <ShortcutsDialog />
+      <SyncToaster />
     </>
   );
 }

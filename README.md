@@ -391,8 +391,10 @@ app in development mode on :3000 (`ENABLE_DEV_LOGIN=true`; Next 16 keeps dev out
 `.next/dev`, next to the production build) and the production web build on :3001 (to prove the dev
 login is a 404 there), or reuses servers already running locally. The suites cover sign-in,
 onboarding (GitHub App round trip intercepted in the browser), the shell at 1440/768/390 px, theme
-persistence, the ⌘K palette, the period picker and axe-core (0 serious/critical) on the shell,
-sign-in and onboarding:
+persistence, the ⌘K palette, the period picker, the P10 insight journey (dashboard → KPI explain
+drawer → activity filter + item drawer → career year + print view → Sync now → progress →
+completion, with the sync intercepted in the browser) and axe-core (0 serious/critical) on the
+shell, sign-in, onboarding and every insight page in light/dark at 1440 and 390 px:
 
 ```bash
 npm run build && npm run db:deploy && npm run db:seed
@@ -407,8 +409,12 @@ npm run test:e2e
 ```
 
 Traces are off by default; re-run a failing test with `npx playwright test --trace on` to debug.
-Regenerate the Phase 09 screenshots (2× DPR, light/dark, desktop/mobile) into
-`docs/v2/screenshots/p09/` with `SCREENSHOTS=1 npm run test:e2e -- e2e/screenshots.spec.ts`.
+Playwright starts the API with `RATE_LIMIT_DEFAULT_PER_MINUTE=3000` (the axe loops exceed the
+production 300 requests/min); set it yourself when reusing an API you started.
+Regenerate the screenshots (2× DPR, light/dark, desktop/mobile) with
+`SCREENSHOTS=1 npm run test:e2e -- e2e/screenshots.spec.ts` (Phase 09 → `docs/v2/screenshots/p09/`)
+and `SCREENSHOTS=1 npm run test:e2e -- e2e/screenshots-p10.spec.ts` (insight pages →
+`docs/v2/screenshots/p10/`).
 
 Tests never call the real GitHub or Anthropic APIs: `octokit` is stubbed in Jest, GitHub OAuth/REST
 calls go to unroutable `*.github.invalid` hosts answered by a fake (`test/utils/fake-github.ts`),
@@ -442,23 +448,39 @@ apps/web/src/
 │   ├── (auth)/sign-in           # S1 — public
 │   ├── (onboarding)/onboarding  # S2–S5 wizard (connect, pending, repositories, sync)
 │   ├── (system)/integrations/github/callback
-│   ├── (app)/…                  # signed-in pages inside the AppShell (loading/error/not-found)
+│   ├── (app)/…                  # signed-in pages inside the AppShell (loading/error/not-found):
+│   │                            # dashboard, activity, kpis (+ impact), career, settings/integrations …
+│   ├── (print)/career/print     # S10 print view (server-rendered, no shell)
 │   ├── not-found.tsx, global-error.tsx, providers.tsx, layout.tsx, globals.css
 ├── components/
 │   ├── ui/                      # shadcn primitives adapted to the tokens (DESIGN_SYSTEM §5.1)
 │   ├── states/                  # PageHeader, StatCard, DeltaText, ChartCard, EmptyState, ErrorState,
 │   │                            # Banner, skeletons, DataTable, InfoPopover, ConfirmDialog
 │   ├── shell/                   # AppShell, sidebar, top bar, mobile nav, period picker, sync status, ⌘K
-│   └── *.tsx                    # ImpactScoreCard, ActivityHeatmap, SyncStatusBadge, DateRangePicker, …
+│   ├── charts/                  # Recharts plots (loaded with next/dynamic), tooltip, chart table
+│   └── *.tsx                    # ImpactScoreCard, ActivityHeatmap, ActivityChart, Sparkline, MetricRow,
+│                                # ExplainDrawer, ItemDrawer, FeedItemRow, NextStepCard, DateRangePicker, …
 ├── hooks/                       # useEventStream (fetch SSE), useMediaQuery, useIsMobile
 ├── lib/api/                     # apiClient, ApiError, query keys + client, hooks, SSE reader, server client
 ├── lib/period.ts                # global `?period=` URL state (shared period utils)
+├── lib/url-state.ts             # other URL state (`?item=`, `?metric=`, `?type=`, `?repo=`, `?q=`, `?year=`)
+├── lib/charts.ts                # chart helpers: interval, bucketing, ticks, number formats, aria summaries
 └── proxy.ts                     # optimistic route protection (session cookie)
 ```
 
 **Rules:** components never call `fetch` (ESLint `no-restricted-syntax`; use `apiClient` + TanStack
 Query), never `alert()`, never Tailwind palette colours (tokens only, UX-11); every view has loading,
 empty, error and success states.
+
+**Charts (P10, D-026):** Recharts through the shadcn `chart` container and the chart tokens only —
+fixed series colours (Commits `--chart-1`, PRs merged `--chart-2`, Reviews `--chart-3`, single
+series `--chart-5`), every chart in a `role="img"` wrapper with an `aria-label` summary from
+`lib/charts.ts` and a "View as table" toggle, plots loaded with `next/dynamic` behind a skeleton of
+the same height. Turbopack bundles `@devimpact/shared` from its ESM source (`next.config.js`
+`turbopack.resolveAlias`), so unused schemas tree-shake out of the client.
+
+**View tests** mock `@/lib/api/browser` with `test/api-mock.tsx` (route table → the real hooks and
+Zod schemas) and use responses captured from the seeded demo user in `test/fixtures-p10/`.
 
 ### Adding a page
 
@@ -511,7 +533,6 @@ and the live schema is at `/api/docs` outside production.
 | GET    | /api/activity/feed                              | Unified feed (commits, PR events, reviews)             |
 | GET    | /api/activity/prs?role= · /prs/:id              | Authored or reviewed PRs (cycle time, my reviews)      |
 | GET    | /api/activity/reviews · /commits · /commits/:id | Reviews (turnaround) · commits                         |
-| GET    | /api/activity/summary                           | Deprecated v1 summary (`Sunset`, removed in P10)       |
 | GET    | /api/me/usage?month=                            | AI usage vs monthly quota, tokens, estimated cost      |
 | POST   | /api/impact/highlights                          | AI narrative for a period's score (fast, cached; ai)   |
 | GET    | /api/documents?type=&q=&sort=                   | Document library (cursor pagination)                   |

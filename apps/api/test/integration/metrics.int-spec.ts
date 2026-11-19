@@ -898,7 +898,6 @@ describe('Metrics engine API (integration)', () => {
         '/api/career/timeline',
         '/api/activity/feed',
         `/api/activity/prs/${ids.get('P1')!}`,
-        '/api/activity/summary',
       ]) {
         const res = await get(path, as);
         expect([path, res.status]).toEqual([path, 200]);

@@ -557,3 +557,57 @@ Within D-002/D-010/D-020, ADR-0003 and ADR-0010, Phase 09 chose:
 using the catalogue in `components/states` and `lib/api` (README → "Adding a page"); P11 builds
 on `useEventStream` + `parseDocumentEvent`; the redirects and placeholders are removed when the
 designed pages ship.
+
+### D-026 · P10 implementation choices (insight pages) · APPLIED (P10)
+Within D-007/D-010/D-020/D-025, SCREENS S6–S10/S19 and ADR-0010, Phase 10 chose:
+- **"Turn into achievement" before P12:** the item drawer calls `POST /ai/achievement-statement`
+  (authored PRs and own commits only; fast model, quick quota) and shows the drafted title,
+  statement, category and cited refs with **Copy statement** and the line "Saving achievements
+  arrives with the Achievements page." Nothing is saved (there is no achievements endpoint yet).
+  402 shows "Quick AI actions used up for this month — they reset on <date>"; 503 "The AI service is
+  busy". P12 replaces the copy step with the pre-filled S17 dialog.
+- **Charts:** Recharts 3.11 through the shadcn `ChartContainer`, always with the chart tokens and the
+  fixed assignment (Commits `--chart-1`, PRs merged `--chart-2`, Reviews `--chart-3`, single series
+  `--chart-5`, sparklines `--chart-muted` + accent end dot). Stacked segments use a custom shape (4 px
+  rounded top on the top segment only, 2 px surface gap); the impact line has a fixed 0–100 axis with
+  ticks at 40/60/80 and gaps for insufficient months. Every plot sits in a `role="img"` wrapper whose
+  `aria-label` comes from `lib/charts.ts`; tooltips are `aria-hidden`; every chart has a
+  "View as table". Recharts accessibility layer is off (charts are not keyboard-interactive per
+  DESIGN_SYSTEM §10; the table is the accessible path). Sparklines are plain SVG (no Recharts).
+  Plots load with `next/dynamic` behind a skeleton of the same height (no layout shift).
+- **Activity chart data:** the dashboard chart buckets the per-day `/metrics/heatmap` series
+  client-side (day ≤ 45 days, ISO week ≤ 200, calendar month above), reusing the 12-month heatmap
+  response when the period lies inside it (one request instead of three timeseries calls); older
+  periods fetch their own range.
+- **Explain drawer chart:** `GET /metrics/timeseries?interval=month&period=custom:<6 months>`
+  (first day of the month five months before the period end → period end).
+- **URL state:** drawers open from `?item=` (`<type>:<rowId>`, reviews
+  `review:<reviewId>:<pullRequestId>` because review details come from `GET /activity/prs/:id`) and
+  `?metric=`; filters `?type=` / `?repo=` / `?q=` (debounced, `replace`); career `?year=`. Deep-linked
+  sheets open only after hydration (Radix marks siblings `aria-hidden` on open).
+- **Next step:** rules 1–3, 5 and 7 of S6; rules 4 (achievements) and 6 (goals) wait for P12
+  (GAP-16). "Not now" stores `{ rule: expiry }` in `localStorage` (`devimpact.nextStep.dismissed.v1`)
+  for 7 days. The appraisal rule counts merged/reviewed from `/metrics/overview?period=half:…` only
+  when it applies.
+- **KPIs:** no impact donut — the approved S8 design (section scores with weights, header link
+  "Impact score N") replaces the phase file's donut (D-020 design wins).
+- **Dashboard performance:** `dashboard/page.tsx` prefetches overview, impact, 12-month heatmap,
+  sync status, integrations, recent activity and the appraisal/resume lists on the server in parallel
+  and hydrates them; each panel subscribes to its own query; `dashboard/loading.tsx` mirrors the
+  measured layout. Turbopack aliases `@devimpact/shared` to its ESM source
+  (`turbopack.resolveAlias`) and the package declares `"sideEffects": false`; the API keeps the
+  CommonJS `dist/` (PERF-07).
+- **Rate limit for E2E:** the `default` class window reads `RATE_LIMIT_DEFAULT_PER_MINUTE`
+  (default 300, API_CONTRACT_V2 §1.1 unchanged); only the Playwright API server raises it.
+- **Dev server:** `experimental.mcpServer: false` (its log file triggered a Turbopack reload loop);
+  the shared-source alias is skipped in `next dev` (`PHASE_DEVELOPMENT_SERVER`). E2E helper
+  `waitForHydration()` replaces "stat card visible" as the hydration signal.
+- **Sync progress** stays on the polling contract (GAP-11 → P14); a global `SyncToaster` in the shell
+  announces "Sync finished — N new items." once per run the user watched.
+- **Seed:** demo repositories get `lastActivityAt` from their newest PR/review/commit, two GitHub App
+  installations (personal + `acme`) and a three-run sync history (initial backfill, a partial run with
+  a per-repository error, a succeeded run).
+*Consequences:* P11 reuses `ChartCard`/`ChartTable`, the drawers' URL pattern and `useHydrated`; P12
+binds "Turn into achievement" to the S17 dialog, adds Next step rules 4/6 and achievements to the
+feed/timeline; P14 adds `/activity/feed` totals (GAP-14), PR ids on review evidence (GAP-15), the
+shared `exports` map (PERF-07) and, if needed, `/sync/stream` (GAP-11).

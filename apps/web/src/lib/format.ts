@@ -64,3 +64,57 @@ export function formatRelative(
   if (hours < 48) return 'yesterday';
   return formatDate(date, { timeZone: options.timeZone, now });
 }
+
+/** `1 commit`, `3 commits`, `1,284 reviews` — never "1 commits" (BUG-13). */
+export function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
+  return `${formatCount(count)} ${count === 1 ? singular : pluralForm}`;
+}
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** Local calendar date `YYYY-MM-DD` (no time zone shift) → parts. */
+function localDateParts(date: string) {
+  const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth(),
+    day: d.getUTCDate(),
+    weekday: d.getUTCDay(),
+  };
+}
+
+/** `Nov 9` / `Nov 9, 2025` (other year) / with weekday `Mon, Nov 9` for a local date. */
+export function formatLocalDate(
+  date: string,
+  options: { weekday?: boolean; currentYear?: number; withYear?: boolean } = {},
+): string {
+  const p = localDateParts(date);
+  const base = `${MONTHS[p.month] ?? ''} ${p.day}`;
+  const year =
+    options.withYear || (options.currentYear !== undefined && p.year !== options.currentYear)
+      ? `, ${p.year}`
+      : '';
+  return `${options.weekday ? `${WEEKDAYS[p.weekday] ?? ''}, ` : ''}${base}${year}`;
+}
+
+/** `Nov 2026` for a local date. */
+export function formatLocalMonth(date: string, withYear = true): string {
+  const p = localDateParts(date);
+  return withYear ? `${MONTHS[p.month] ?? ''} ${p.year}` : (MONTHS[p.month] ?? '');
+}
+
+/** Local date of an instant in `timeZone`, as `YYYY-MM-DD`. */
+export function localDateKey(value: string | Date, timeZone?: string): string {
+  const p = zonedParts(typeof value === 'string' ? new Date(value) : value, timeZone);
+  return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+}
+
+/** `30 s`, `4 min`, `1 h 5 min` for a duration in seconds. */
+export function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${Math.max(0, Math.round(seconds))} s`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m ? `${h} h ${m} min` : `${h} h`;
+}
