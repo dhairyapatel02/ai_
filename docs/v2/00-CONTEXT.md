@@ -260,3 +260,26 @@ raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
   persistence, ⌘K, the period picker, and onboarding end-to-end. The GitHub App round trip is
   intercepted in the browser. CI also audits web production dependencies.
 - **New env:** `API_INTERNAL_URL` (optional, server-side API base; Compose sets `http://api:4000/api`).
+
+### After Phase 10 (2026-11-18)
+- **Designed insight pages (D-026)** replace the interim views and placeholders: Dashboard (S6:
+  stat cards, activity chart, impact card, heatmap, recent activity, Next step, Create), Activity
+  (S7: URL-synced filters, `?metric=` evidence, item drawer on `?item=` with "Turn into achievement"
+  that drafts and copies a statement until P12), KPIs (S8: five sections, sparklines from
+  `/metrics/trends`, explain drawer on `?metric=`), Impact (S9: explanation, highlights, history,
+  components), Career (S10: `?year=`, milestones, `/career/print`), Settings → Integrations (S19:
+  every connection state, repository manager, sync history, keep/delete disconnect, planned
+  providers). All five states per screen, light/dark, 390 px; axe 0 serious/critical in E2E.
+- **Charts:** Recharts 3.11 via the shadcn `chart` container on the chart tokens (fixed series
+  colours, table toggle, `aria-label` summaries), loaded per route with `next/dynamic`;
+  sparklines are plain SVG. Helpers in `apps/web/src/lib/charts.ts`.
+- **Performance:** the dashboard prefetches its first-paint queries on the server; Turbopack bundles
+  `@devimpact/shared` from its ESM source (`sideEffects: false`), the API still uses `dist/`.
+  Lighthouse on the production dashboard: mobile median 96, desktop 100, accessibility 100, CLS 0.
+- **API:** `GET /activity/summary` is gone (404). No new endpoints. New optional env
+  `RATE_LIMIT_DEFAULT_PER_MINUTE` (default 300; the E2E API server sets 3000). Sync progress is still
+  polling (GAP-11 → P14).
+- **Seed:** repositories carry `lastActivityAt`; the demo integration has two installations and a
+  three-run sync history (one partial with a per-repository error).
+- **Tests:** web Vitest 166 (page views run against `test/api-mock.tsx` + captured API fixtures),
+  API integration 157, Playwright 26 (+ opt-in screenshots for P09 and P10).

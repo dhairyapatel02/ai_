@@ -54,9 +54,9 @@ import {
   useRecentDocuments,
 } from '@/lib/api/metrics-hooks';
 import { bucketActivity, chooseInterval, daysBetween } from '@/lib/charts';
+import { DASHBOARD_FEED } from '@/lib/dashboard';
 import { formatRelative } from '@/lib/format';
 import { formatMetric } from '@/lib/metrics-format';
-import { DASHBOARD_FEED } from '@/lib/dashboard';
 import { appraisalTarget, pickNextStep, readDismissed, type NextStepRule } from '@/lib/next-step';
 import { longerPeriod, startsBeforeRecentWindow, usePeriod } from '@/lib/period';
 import { useSearchParamsState } from '@/lib/url-state';

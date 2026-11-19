@@ -97,6 +97,9 @@ export const envSchema = z
     // BullMQ key prefix. Defaults to "devimpact", or "devimpact-test" when NODE_ENV=test, so test
     // runs never feed a local dev worker (OPS-17).
     QUEUE_PREFIX: optionalString,
+    // Requests per minute per user for the `default` rate-limit class (API_CONTRACT_V2 §1.1).
+    // Raised only for the E2E API server, whose axe loops visit every page in four contexts.
+    RATE_LIMIT_DEFAULT_PER_MINUTE: z.coerce.number().int().min(1).default(300),
     // Sync pauses (WAITING_RATE_LIMIT) when GitHub's remaining budget drops below this (ADR-0007).
     SYNC_RATE_LIMIT_MIN_REMAINING: z.coerce.number().int().min(0).default(200),
     // Worker liveness file touched every few seconds (used by the compose healthcheck).

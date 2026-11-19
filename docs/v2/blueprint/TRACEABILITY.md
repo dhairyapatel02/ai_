@@ -23,14 +23,14 @@ Legend for tables/endpoints: see [DATA_MODEL_V2](DATA_MODEL_V2.md) and [API_CONT
 | F-10 Connect GitHub (App) | M | ADR-0004, ADR-0005 | Integration, GitHubInstallation | `POST /integrations/github/connect`, `/callback` | `/onboarding/connect`, `/onboarding/pending`, `/integrations/github/callback`, `/settings/integrations` | P05, P06, P09 |
 | F-11 Repository selection | M | ADR-0007 | Repository.included | `GET/PATCH /repos` | `/onboarding/repositories`, `/settings/integrations` | P06, P09, P10 |
 | F-12 Initial 12-month backfill | M | ADR-0007 | SyncRun, cursors | `POST /sync` (auto on connect), `SyncRunDto.recentWindowCompletedAt` (A-4) | `/onboarding/sync` | P06 |
-| F-13 Incremental 24 h + manual sync | M | ADR-0007 | Integration.scheduleSlotMinute, SyncRun | `POST /sync` | sync indicator, ⌘K | P06, P09 |
+| F-13 Incremental 24 h + manual sync | M | ADR-0007 | Integration.scheduleSlotMinute, SyncRun | `POST /sync` | sync indicator, ⌘K, `/settings/integrations` (Sync now) | P06, P09, P10 |
 | F-14 Webhooks | M | ADR-0004, ADR-0007 | WebhookDelivery | `POST /webhooks/github` | — | P06 |
 | F-15 Sync status/progress/history | M | ADR-0007 | SyncRun | `GET /sync/status`, `/sync/runs`, `/sync/stream` | `/settings/integrations`, top bar | P06, P10 |
 | F-16 Needs-reconnection + reconnect | M | ADR-0004 | Integration.status | `POST /integrations/:id/reconnect`, `/sync/status` | banner, integrations | P06, P10 |
 | F-17 Disconnect keep/purge | M | ADR-0004, DATA_MODEL §6 | Integration, activity | `DELETE /integrations/:id?purgeData=` | confirm dialog | P05, P06, P10 |
 | F-18 Authored vs reviewed PRs | M | KPI §2.2, ADR-0007 | PullRequest.isAuthoredByUser, PullRequestReview | `/activity/prs?role=` (P06: optional, default `authored`) | activity explorer | P06 |
 | F-20 Stat cards + deltas | M | KPI §3.7 | MetricSnapshot, fact tables | `GET /metrics/overview` | `/dashboard` | P07, P10 |
-| F-21 30-day chart | M | KPI §4 | MetricSnapshot | `GET /metrics/timeseries` | `/dashboard` | P07, P10 |
+| F-21 30-day chart | M | KPI §4 | MetricSnapshot | `GET /metrics/heatmap` (per-day series for the period, bucketed client-side; API_CONTRACT §22) | `/dashboard` | P07, P10 |
 | F-22 Heatmap | S | KPI §4 | MetricSnapshot | `GET /metrics/heatmap` | `/dashboard` | P07, P10 |
 | F-23 Activity feed | M | — | PR, Review, Commit, Achievement | `GET /activity/feed` | `/dashboard` | P07, P10 |
 | F-24 Next best action | S | — | (derived) | overview + feed + me | `/dashboard` | P10 |
@@ -39,7 +39,7 @@ Legend for tables/endpoints: see [DATA_MODEL_V2](DATA_MODEL_V2.md) and [API_CONT
 | F-27 Explain this metric | M | KPI §3, §7 | — | `GET /metrics/definitions`, `/metrics/evidence` (A-2) | drawer on every metric (`?metric=`) | P07, P10 |
 | F-28 Impact score v2 | M | KPI §6, ADR-0008 | ImpactScore | `GET /impact`, `/impact/history` | `/dashboard`, `/kpis/impact` | P07, P10 |
 | F-29 AI impact highlights | S | KPI §8, ADR-0009 | GeneratedDocument (IMPACT_NARRATIVE) | `POST /impact/highlights` | `/kpis/impact` | P08, P10 |
-| F-30 Career timeline | M | KPI §3 (milestones) | PR, Review, Achievement | `GET /career/timeline`, `/metrics/repos` | `/career`, `/career/print` | P07, P10 |
+| F-30 Career timeline | M | KPI §3 (milestones) | PR, Review, Achievement | `GET /career/timeline` | `/career`, `/career/print` | P07, P10 |
 | F-31 Global period + URL state | M | ADR-0006, ADR-0010 | UserSettings.defaultPeriodType | `period` param | top bar | P07 (utils), P09, P10 |
 | F-40 Resume | M | ADR-0009 | GeneratedDocument, DocumentVersion | `POST /documents` (resume) | `/documents/new`, `/documents/new/resume` | P08, P11 |
 | F-41 Appraisal | M | ADR-0009, KPI §8 | same | `POST /documents` (appraisal) | `/documents/new/appraisal` | P08, P11 |
@@ -101,13 +101,13 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | API-01 | 🟠 | ADR-0006 | P05 | |
 | API-02 | 🟠 | ADR-0006 | P05 | |
 | PERF-01 | 🟠 | ADR-0007 (budget ≤ 250) | P06 | |
-| UX-02 | 🟠 | F-70, F-20 | P09, P10 | |
+| UX-02 | 🟠 | F-70, F-20 | P09, P10 | ✅ fixed in P10 (0 px overflow at 390 on every insight page) |
 | UX-03 | 🟠 | F-49 (documents), F-65/F-05 (settings) | P11, P12 | |
 | UX-04 | 🟠 | F-46 | P11 | |
 | UX-05 | 🟠 | F-73 | P09 | |
 | GAP-01 | 🟠 | F-13, F-14 | P06 | |
-| GAP-02 | 🟠 | F-21, F-23 | P10 | |
-| GAP-03 | 🟠 | F-26, F-28, F-30, F-31 | P10 | `DateRangePicker` in P09 |
+| GAP-02 | 🟠 | F-21, F-23 | P10 | ✅ fixed in P10 |
+| GAP-03 | 🟠 | F-26, F-28, F-30, F-31 | P10 | ✅ fixed in P10 (`DateRangePicker` in P09) |
 | GAP-04 | 🟠 | F-49 | P11 | |
 | GAP-05 | 🟠 | F-48 | P11 | |
 | GAP-06 | 🟠 | F-01 | P05, P09 | |
@@ -118,13 +118,13 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | BUG-05 | 🟡 | KPI §2.4, ADR-0006 | P05 (validation), P07 (periods) | inclusive end dates ✅ (P05 + P07 period grammar) |
 | BUG-06 | 🟡 | F-05, KPI §2.4 | P07 | ✅ fixed in P07 |
 | BUG-07 | 🟡 | ADR-0006, F-40–F-42 | P05, P08 | |
-| BUG-08 | 🟡 | F-15 | P06, P10 | |
+| BUG-08 | 🟡 | F-15 | P06, P10 | ✅ fixed (API P06, UI P10) |
 | BUG-09 | 🟡 | F-15 | P06 | progress from planned units |
-| BUG-10 | 🟡 | ADR-0010 | P10 | |
+| BUG-10 | 🟡 | ADR-0010 | P10 | ✅ fixed in P10 |
 | BUG-11 | 🟡 | ADR-0010 | P09 | |
 | BUG-12 | 🟡 | ADR-0006 | P05 | |
 | DATA-06 | 🟡 | F-15, ADR-0007 | P06 | |
-| DATA-07 | 🟡 | F-17 | P06, P10 | |
+| DATA-07 | 🟡 | F-17 | P06, P10 | ✅ fixed (API P05/P06, UI P10) |
 | DATA-08 | 🟡 | ADR-0007, DATA_MODEL | P06 | |
 | DATA-09 | 🟡 | ADR-0008 (recompute flow) | P07 | ✅ fixed in P07 |
 | DATA-10 | ⚪ | DATA_MODEL_V2 (designed in P03) | P06 (implement) | |
@@ -145,7 +145,7 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | UX-07 | 🟡 | F-73 | P09 | |
 | UX-08 | 🟡 | F-73, F-75, F-44 | P09, P11 | |
 | UX-09 | 🟡 | F-74 | P09 | |
-| UX-10 | 🟡 | F-30 | P10 | |
+| UX-10 | 🟡 | F-30 | P10 | ✅ fixed in P10 |
 | UX-11 | 🟡 | F-71 | P04, P09 | |
 | UX-12 | 🟡 | F-44, F-48 | P11 | |
 | GAP-07 | 🟡 | F-05, F-06, F-07, F-65 | P12 | |
@@ -155,11 +155,11 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | DEBT-07 | ⚪ | ADR-0002 | P02, P09 | |
 | DEBT-10 | ⚪ | ADR-0002 (end-state versions) | P05 (Prisma major with auth migrations), P06, P08 (SDK 1.x), P09 (Next/ESLint), P14 (TS 7 evaluation) | added by P02; P06 adopted Prisma 7.10.1 (D-022); P08 adopted `@anthropic-ai/sdk` 1.9.0 (D-024) |
 | SEC-15 | ⚪ | ADR-0003 | P05, P09 | NextAuth route removed |
-| BUG-13 | ⚪ | F-20 (formatting helpers) | P10 | |
+| BUG-13 | ⚪ | F-20 (formatting helpers) | P10 | ✅ fixed in P10 |
 | OPS-15 | ⚪ | ADR-0009 | P08 | ✅ fixed in P08 |
 | AI-09 | ⚪ | F-51 | P08 | ✅ fixed in P08 (`POST /ai/achievement-statement`) |
 | API-06 | ⚪ | ADR-0006 | P05 | `/health`, `/docs` |
-| UX-13 | ⚪ | F-15, F-16 | P10 | |
+| UX-13 | ⚪ | F-15, F-16 | P10 | ✅ fixed in P10 |
 | GAP-10 | ⚪ | — | **WF (v2.1)** | GitLab/Jira/Linear out of v2.0 scope (ADR-0014, D-018); integrations page shows "planned" cards without connect buttons |
 | SEC-16 | 🟡 | F-01, ADR-0003 | P09, P14 | added by P05: legacy-user linking policy |
 | SEC-17 | ⚪ | ADR-0006 (rate classes), ADR-0013 | P15 | added by P05: `trust proxy` per host |
@@ -168,7 +168,7 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | SEC-18 | 🟡 | ADR-0004, ADR-0013 | P15 | added by P06: require webhook secret / App credentials in production env |
 | OPS-18 | 🟡 | DATA_MODEL §6, ARCHITECTURE §2 | P14 | added by P06: retention jobs for `sync_runs`, `webhook_deliveries` |
 | DATA-11 | ⚪ | F-15, F-16, DATA_MODEL §4 | P14 | added by P06: automatic `ERROR` / `SUSPENDED` integration status |
-| GAP-11 | ⚪ | F-15, API_CONTRACT §8 | P10 | added by P06: optional `GET /sync/stream` SSE (polling contract exists) |
+| GAP-11 | ⚪ | F-15, API_CONTRACT §8 | P14 | added by P06: optional `GET /sync/stream` SSE (polling contract exists); P10 kept polling |
 | DEBT-12 | ⚪ | ADR-0002 | P09, P14 | added by P06: ESM `prisma-client` generator, drop root Prisma devDependencies |
 | DATA-12 | 🟡 | F-26, F-28, KPI §3.2 (revert rate) | P14 | added by P07: late reverts refresh the merge period’s cached score |
 | PERF-06 | ⚪ | ADR-0008, ARCHITECTURE_V2 §9 | P14 | added by P07: per-user data version against the score cache-write race |
@@ -179,5 +179,9 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | GAP-12 | ⚪ | F-10 | P14 | added by P09: name the organization on the approval-pending screen |
 | GAP-13 | ⚪ | F-72, IA §3.1 | P11 | added by P09: background-generation signal for the Documents nav spinner |
 | DEBT-13 | ⚪ | DESIGN_SYSTEM §11 | P14 | added by P09: re-sync vendored shadcn sources with the CLI |
+| GAP-14 | ⚪ | F-25 | P14 | added by P10: `total` for `/activity/feed` |
+| GAP-15 | ⚪ | F-27, F-25 | P14 | added by P10: PR id on review evidence items |
+| GAP-16 | ⚪ | F-24, F-60, F-62 | P12 | added by P10: Next step rules 4 and 6 need achievements/goals |
+| PERF-07 | ⚪ | ADR-0010 | P14 | added by P10: shared ESM `exports` map (web already bundles the ESM source) |
 
 Every open ISSUES row with a target of P05 or later is mapped above; one (GAP-10) is won't-fix for v2.0.

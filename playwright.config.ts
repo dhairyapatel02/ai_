@@ -37,6 +37,8 @@ export default defineConfig({
     {
       command: 'node apps/api/dist/main.js',
       url: `${API_URL}/health`,
+      // The P10 axe loops visit every insight page in four browser contexts (> 300 requests/min).
+      env: { RATE_LIMIT_DEFAULT_PER_MINUTE: '3000' },
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
       stdout: 'pipe',

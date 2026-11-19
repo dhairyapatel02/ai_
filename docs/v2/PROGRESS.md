@@ -16,7 +16,7 @@ Every phase session updates this file before opening its PR.
 | 07 | Metrics Engine & Impact Score v2 | ✅ Done | (this PR) | 2026-11-17 | Deterministic `metrics@2.0.0` / `impact@2.0.0`, rollups, metrics/impact/career/activity APIs; p95 ≤ 100 ms |
 | 08 | AI Layer v2 | ✅ Done | (this PR) | 2026-11-17 | Worker generation + Redis Streams SSE, structured output, evidence + citations, cache, quotas, 42 mocked evals; live eval pending (no key, AI-10) |
 | 09 | Frontend Foundation & App Shell | ✅ Done | (this PR) | 2026-11-18 | Next 16 + React 19 + Tailwind 4, tokens/themes, AppShell + ⌘K + period picker, typed apiClient + TanStack Query + fetch-SSE, sign-in + onboarding, axe-clean E2E |
-| 10 | Frontend: Insights Pages | ⏳ Not started | | | |
+| 10 | Frontend: Insights Pages | ✅ Done | (this PR) | 2026-11-18 | Dashboard, Activity (+ drawer), KPIs (+ explain), Impact, Career (+ print), Integrations; Recharts on tokens; Lighthouse mobile 96 / desktop 100, a11y 100 |
 | 11 | Frontend: AI Document Studio | ⏳ Not started | | | |
 | 12 | Product Extensions | ⏳ Not started | | | |
 | 13 | Additional Integrations (optional) | ⏸ Deferred | | | Skipped for v2.0 → v2.1 (D-018) |
@@ -1133,3 +1133,182 @@ UX-02, UX-08, SEC-16 (UI), PERF-05, DEBT-11.
   `devimpact_test` databases, then `npm run db:deploy && npm run db:seed && npm run build`.
   Full-repo ESLint needs `NODE_OPTIONS=--max-old-space-size=6144` in this sandbox (the default heap
   ran out once).
+
+### Phase 10 — Frontend: Insights Pages (2026-11-18)
+**Branch / PR:** `claude/modest-faraday-h9o2wq` → `main` / PR "Phase 10: Frontend Insights Pages"
+(branched from `main@29db548` = P09 merged).
+
+**Summary:**
+- **Dashboard (S6, `/dashboard`):** stat cards from `/metrics/overview` (Commits, PRs merged, PRs
+  reviewed, Impact; neutral deltas, "vs same point last month" for in-progress periods, one shared
+  caption on phones, definition popovers that load `/metrics/definitions` on open), activity chart
+  (stacked columns from the per-day heatmap series, day/week/month, legend, tooltip, table), impact
+  card (band scale, dimension bars, re-weighting note, §6.7 "How is this calculated?", longer-period
+  action), 12-month heatmap (per-day tooltip, monthly table with active days, hatched "still
+  importing" cells during the first backfill), recent activity (`/activity/feed`), Next step
+  (S6 rules 1–3, 5, 7; "Not now" for 7 days), Create list. Empty variants: setup checklist + value
+  cards when not connected (no zero cards, no score), "importing older history" + "Partial — import
+  in progress", "No activity in <period>" with real zeros. Per-widget errors; whole-page error only
+  when every core query fails.
+- **Activity (S7, `/activity`):** unified feed with URL-synced type chips (`?type=`), repository
+  select (`?repo=`), debounced search (`?q=`), day headings, "Show more" + infinite scroll,
+  excluded-repository note, "More history is still importing"; `?metric=` lists the metric evidence
+  (A-2). **ItemDrawer** on `?item=` (PR: state/labels/ref, cycle time, first review, changed lines
+  small/large, approvals, timeline; review: state, turnaround, comments, "never stored"; commit:
+  authored, +/− "context only — never a KPI"), Open on GitHub, **Turn into achievement** (D-026).
+- **KPIs (S8, `/kpis`):** five sections from `/metrics/kpis` + `/metrics/definitions` (anchor tabs,
+  section score + weight from `/impact`), **MetricRow** (Scored / Low sample badges, value + n,
+  delta, 6-period **Sparkline** from one `/metrics/trends` call, "Not enough data · n = x of y
+  needed"), **ExplainDrawer** on `?metric=` (definition, value/n/min n, good range + direction,
+  formula in mono, 6-month column chart + table from `/metrics/timeseries`, caveats, "Why gaming it
+  doesn't help", first 8 evidence records + "Open in Activity", version + time zone). Definitions
+  stay browsable when GitHub isn't connected.
+- **Impact (S9, `/kpis/impact`):** overall (48 px, band), the server's §6.7 explanation, Highlights
+  (`POST /impact/highlights`, cached document re-read through `GET /documents/:id`, evidence links,
+  Regenerate; 402/409/503 inline; disabled when insufficient), 12-month history line (0–100, band
+  ticks, gaps, older-version notes, table), four dimension cards with the components table (value,
+  n, band, adjusted, effective weight or "dropped") linking to the explain drawer.
+- **Career (S10, `/career`, `/career/print`):** `?year=` segmented control, quarters newest first
+  with sticky labels, totals with correct plurals, server milestones, repository groups (3 PRs +
+  "Show N more", labels as tags, "Reviewed N pull requests by teammates"), "and N more" for
+  server-truncated groups, "Still importing" quarters; print view rendered on the server in a
+  `(print)` route group (no shell, black on white in both themes, one quarter per page, refs in mono).
+- **Integrations (S19):** GitHub card with every state (connected + next scheduled sync, syncing
+  with stage + progress bar, paused until HH:MM, needs reconnection → Reconnect, suspended
+  installation names the org, last sync failed → Retry), installations table, Sync now disabled
+  with its reason (409 → "already running", 429 → "You can sync again at HH:MM", needs reauth →
+  reconnect), Manage on GitHub, keep/delete disconnect dialog (FLOWS F10); repository manager
+  (switch per repo, bulk include/exclude, search above 20, inaccessible repos, "KPIs are being
+  recalculated" toasts); sync history (`/sync/runs`, cursor pages, per-run error list); Planned
+  GitLab/Jira/Linear cards without buttons (D-018). Global `SyncToaster`: "Sync finished — N new
+  items."
+- **API:** `GET /activity/summary` removed with its controller/service code, the `DateRangeQuery`
+  schema and its tests (rewritten against `/activity/feed|commits|reviews`; a test asserts 404);
+  API_CONTRACT_V2 §11/§20 updated. **Seed:** repository `lastActivityAt`, two installations and a
+  three-run sync history (D-026).
+- **Performance:** dashboard server prefetch of all first-paint queries, per-panel subscriptions,
+  memoised heatmap/chart, measured `dashboard/loading.tsx`, Recharts per route via `next/dynamic`,
+  `@devimpact/shared` bundled from ESM source (the 546 KB CommonJS zod/schema chunk is gone; PERF-07).
+- **Tests:** web Vitest **166** (29 files; new: six page views via `test/api-mock.tsx` + captured API
+  fixtures covering loading / not connected / syncing / no data / partial / error / success, chart
+  helpers, Next step rules, integration states, plurals); API unit 211 (activity range spec
+  rewritten), API integration **157**; Playwright **26** (+ 9 opt-in screenshot tests): the insight
+  journey and axe 0 serious/critical + 0 px overflow on every P10 page and both drawers and the
+  print view in light/dark × 1440/390.
+
+**Acceptance criteria:**
+- [x] Every page implements the five states per SCREENS.md (component tests with mocked queries:
+  `dashboard-view.test.tsx`, `activity-view.test.tsx`, `kpis-view.test.tsx`, `impact-view.test.tsx`,
+  `career-view.test.tsx`, `integrations-view.test.tsx`).
+- [x] Numbers match the API exactly (tests compare rendered values with the captured responses);
+  labels, definitions, formulas, caveats and anti-gaming text come from `/metrics/definitions`.
+- [x] Charts follow the dataviz rules: validated palette (re-run: all checks pass, light + dark),
+  fixed series colours, legends for ≥ 2 series, `role="img"` + `aria-label` summaries, tables,
+  tooltips supplementary, thin marks, one axis, both themes.
+- [x] 390 px without horizontal scroll, keyboard reachable (drawers trap focus, Escape closes and
+  clears `?item=`), axe 0 serious/critical (E2E, light/dark, desktop/390).
+- [x] Lighthouse ≥ 90 performance + accessibility on the dashboard, seeded data, production build
+  (scores below).
+- [x] E2E insight journey green; 32 screenshots in `docs/v2/screenshots/p10/`.
+- [x] `npm run check`, `test:int`, `test:e2e` green locally (CI runs on the PR).
+
+**Lighthouse (dashboard, demo user, production build `next start`, Lighthouse 12.8.2, Chromium 157):**
+
+| Preset | Performance | Accessibility | Best practices | LCP | TBT | CLS |
+|---|---|---|---|---|---|---|
+| Mobile (default, 4× CPU, slow 4G), 5 runs | 93 · 96 · 97 · 95 · 97 (median **96**) | **100** | 100 | 0.9–1.3 s | 190–330 ms | 0 |
+| Desktop | **100** | **100** | 100 | 0.3 s | 0 ms | 0 |
+
+*Method:* dev login cannot run in a production build, so a session was minted on the dev server
+with a scratch `BETTER_AUTH_SECRET` (the production build refuses the `.env.example` value), the
+local `jwks` rows were deleted so Better Auth regenerated its signing key under that secret, and the
+production build was served on :3000 with the same secret (the API's CORS allow-list is `WEB_URL`).
+The session cookie, renamed to `__Secure-better-auth.session_token` (production uses secure cookie
+names), was added to a persistent headless Chromium started with `--remote-debugging-port=9222`;
+`npx lighthouse http://localhost:3000/dashboard --port=9222 --disable-storage-reset` then measured
+the signed-in page (`--preset=desktop` for desktop). Afterwards the `jwks` rows were deleted again and
+the dev server restarted with the normal `.env`. Before the P10 performance work the mobile score was
+55–87 (TBT 530–1,120 ms).
+
+**Deviations from the phase file:**
+- **No impact donut on KPIs** — the approved S8 design shows section scores, weights and a link to
+  the impact page (D-020 wins over the phase text, D-026).
+- **Dashboard activity chart** uses the per-day `/metrics/heatmap` series (API_CONTRACT §22,
+  SCREENS S6) instead of `/metrics/timeseries` — one request serves chart and heatmap.
+- **Turn into achievement** shows and copies the statement; saving waits for P12 (D-026).
+- **Next step** rules 4 and 6 are skipped until achievements/goals exist (GAP-16, P12).
+- **GAP-11** (`/sync/stream`) not built: progress stays on 2 s polling (retargeted to P14).
+- **Activity count** shows "40+ items" while more pages exist — the feed has no `total` (GAP-14).
+- **Review evidence** in `?metric=` opens on GitHub (no PR id on review evidence items, GAP-15).
+- Redirects in `next.config.js` stay (`/connect`, `/settings` keep redirecting per the brief;
+  `/resume|/appraisal|/promotion` belong to P11). Dashboard, KPIs and career had no redirects.
+- Docker images were not rebuilt locally (sandbox registry limits, as in P05–P09); no Dockerfile
+  change in P10.
+- **New optional env `RATE_LIMIT_DEFAULT_PER_MINUTE`** (API, default 300 = the contract's `default`
+  class): the new axe loops visit every insight page in four browser contexts and exceeded 300
+  requests/min, so `playwright.config.ts` starts the E2E API with 3000. Production behaviour is
+  unchanged.
+
+**Deferred items:** Next step rules 4/6 and achievements in the feed, drawer and timeline → P12
+(GAP-16); saving drafted achievement statements → P12; `/activity/feed` totals (GAP-14), PR ids on
+review evidence (GAP-15), shared ESM `exports` map (PERF-07), `/sync/stream` (GAP-11) → P14.
+
+**New issues found:** GAP-14, GAP-15, GAP-16, PERF-07. Fixed: UX-02, GAP-02, GAP-03, BUG-10, UX-10,
+BUG-13, UX-13 and the UI halves of BUG-08 and DATA-07. Also fixed in passing: hydration mismatches
+from components that render query data inside late-hydrating Suspense boundaries (sidebar sync
+status) and from deep-linked sheets opening during hydration (`useHydrated`).
+
+**Handoff notes for next phases (P11 / P12 / P14):**
+- *New components:* `components/activity-chart.tsx` (`ActivityChart`, `SeriesLegend`),
+  `components/charts/{activity-plot,column-plot,line-plot,chart-tooltip,chart-table}.tsx`,
+  `metric-column-chart.tsx`, `impact-history-chart.tsx`, `sparkline.tsx`, `metric-row.tsx`,
+  `explain-drawer.tsx`, `item-drawer.tsx` (+ achievement draft), `feed-item.tsx` (`FeedItemRow`,
+  `itemParam`/`parseItemParam`, `FEED_ICON`/`FEED_VERB`), `next-step-card.tsx`,
+  `not-connected-state.tsx` (`NotConnectedState`, `useConnected`), `career-milestone.tsx`,
+  `shell/sync-toaster.tsx`, `hooks/use-hydrated.ts`. `ImpactScoreCard` gained period label, Details
+  link, explanation popover, re-weighting note and the insufficient action; `ActivityHeatmap` gained
+  per-day tooltips, the active-days table and `importingBefore`; `StatCard` gained `icon` and
+  `compactComparison`; `DeltaText` says "No change". Removed: `SyncStatusBadge`, `PeriodGate`
+  (component; `InvalidPeriodState` stays), `formatDelta`, `useMetricsRepos`.
+- *Chart conventions:* tokens only; series colours fixed (Commits 1, PRs merged 2, Reviews 3,
+  single series 5, de-emphasis `--chart-muted`); bars ≤ 24 px with 4 px rounded data ends; one axis
+  with three clean ticks (`niceTicks`), compact labels ≥ 10,000 (`formatAxis`); intervals via
+  `chooseInterval` (day ≤ 45, week ≤ 200, month); bucketing via `bucketActivity` (ISO weeks, clipped
+  months); every chart = `ChartCard` (title, description, "View as table" → `ChartTable`) +
+  `role="img"` wrapper with a summary from `activityAriaSummary` / `columnsAriaSummary` /
+  `lineAriaSummary`; plots via `next/dynamic` with `ssr: false` and a same-height skeleton; Recharts
+  `accessibilityLayer={false}`; number formats via `formatUnitValue`.
+- *Query hooks / keys:* `useTimeseries` (`qk.metrics.timeseries(metric, interval, period)`),
+  `useTrends` (`qk.metrics.trends(period, count)`), `useMetricEvidence` / `useMetricEvidenceInfinite`
+  (`qk.metrics.evidence(metric, period, limit)`), `useImpactHistory` (`qk.impact.history`),
+  `useGenerateHighlights`, `useActivityFeed` (infinite, `qk.activity.feed(params)`), `usePullRequest`
+  / `useCommit` (`qk.activity.pr|commit(id)`), `useAchievementStatement`, `useRecentDocuments`,
+  `useDocument` (`qk.documents.detail(id)`), `useSyncRuns` (infinite, `qk.sync.runs`),
+  `useUpdateRepo`, `useDisconnect`, `reconnectUrl()`, `isBackfilling()`; `useOverview` / `useHeatmap`
+  accept `{ enabled }`. URL helpers: `useSearchParamsState()` (`lib/url-state.ts`); period helpers
+  `longerPeriod`, `startsBeforeRecentWindow`.
+- *Server prefetch pattern:* see `app/(app)/dashboard/page.tsx` — `getServerApi()`,
+  `Promise.allSettled`, `queryClient.setQueryData(<same qk key>)`, `<HydrationBoundary>`. Never
+  import constants from a `'use client'` module into a Server Component (they become client
+  references — keep shared constants in `lib/`, e.g. `lib/dashboard.ts`).
+- *P11:* reuse `ChartCard`/`ChartTable`, the drawer URL pattern (`useSearchParamsState`) and
+  `useHydrated` for any sheet opened from the URL. `/documents/new/appraisal?period=` is linked from
+  the dashboard (Next step + header) — prefill the studio period from it.
+- *P12:* bind "Turn into achievement" (`item-drawer.tsx` `AchievementDraft`) to the S17 dialog; add
+  Next step rules 4/6 in `lib/next-step.ts`; achievements already have feed icons/verbs and a
+  drawer placeholder (`type: 'achievement'`); career renders `achievement` items and milestones.
+- *P14:* GAP-11/14/15, PERF-07; the Lighthouse method above is repeatable; the E2E axe loop in
+  `e2e/insights.spec.ts` covers every P10 page (it needs `RATE_LIMIT_DEFAULT_PER_MINUTE` raised when
+  you reuse a locally running API: start it with `RATE_LIMIT_DEFAULT_PER_MINUTE=3000`). `auth.spec`
+  now checks the Bearer header on `/kpis` (the dashboard no longer fetches in the browser).
+- *View tests:* `vi.mock('@/lib/api/browser', …test/api-mock)` + `next/navigation` and
+  `next/dynamic` doubles in `test/navigation-mock.ts`; `setRoutes({ 'GET /path': fixture, 'GET
+  /activity/prs/*': … })`, `pending`, `fail(status, code, details)`; fixtures in
+  `test/fixtures-p10/` were captured from the seeded API on 2026-11-18 (refresh with a script like
+  the one described in the fixtures index if the shapes change; tests pin the clock to
+  `NOW = 2026-11-18T12:00Z`).
+- *Remaining UX polish ideas:* sticky filter row on Activity while scrolling; keyboard shortcuts in
+  the item drawer (J/K next/previous item); a period comparison toggle on the activity chart
+  (previous period in `--chart-4`); expanding "and N more" in career via an endpoint for one
+  repo/quarter; showing the half's numbers in the appraisal Next step before the extra overview call
+  resolves.
