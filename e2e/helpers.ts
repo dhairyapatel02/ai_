@@ -62,3 +62,12 @@ export async function expectNoSeriousA11yViolations(page: Page, label: string): 
 export async function hideDevOverlay(page: Page): Promise<void> {
   await page.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
 }
+
+/**
+ * Waits until the app shell has hydrated. Server-rendered content (the dashboard prefetches its
+ * data, P10) is visible before React attaches handlers, so it is not a hydration signal; the
+ * sidebar sync status reads "Checking sync…" until after hydration (`useHydrated`).
+ */
+export async function waitForHydration(page: Page): Promise<void> {
+  await expect(page.getByTestId('sync-status-sidebar')).not.toHaveText(/Checking sync/);
+}

@@ -599,6 +599,9 @@ Within D-007/D-010/D-020/D-025, SCREENS S6–S10/S19 and ADR-0010, Phase 10 chos
   CommonJS `dist/` (PERF-07).
 - **Rate limit for E2E:** the `default` class window reads `RATE_LIMIT_DEFAULT_PER_MINUTE`
   (default 300, API_CONTRACT_V2 §1.1 unchanged); only the Playwright API server raises it.
+- **Dev server:** `experimental.mcpServer: false` (its log file triggered a Turbopack reload loop);
+  the shared-source alias is skipped in `next dev` (`PHASE_DEVELOPMENT_SERVER`). E2E helper
+  `waitForHydration()` replaces "stat card visible" as the hydration signal.
 - **Sync progress** stays on the polling contract (GAP-11 → P14); a global `SyncToaster` in the shell
   announces "Sync finished — N new items." once per run the user watched.
 - **Seed:** demo repositories get `lastActivityAt` from their newest PR/review/commit, two GitHub App

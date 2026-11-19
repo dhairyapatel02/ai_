@@ -45,7 +45,9 @@ export default defineConfig({
     },
     {
       command: 'npm run dev --workspace=apps/web -- --port 3000',
-      url: `${WEB_URL}/api/health`,
+      // Wait for a compiled page, not just the health route: the first tests otherwise hit the
+      // sign-in page while Turbopack is still compiling it (aborted navigations on a cold start).
+      url: `${WEB_URL}/sign-in`,
       env: {
         ENABLE_DEV_LOGIN: 'true',
         NEXT_TELEMETRY_DISABLED: '1',

@@ -1191,7 +1191,7 @@ UX-02, UX-08, SEC-16 (UI), PERF-05, DEBT-11.
   `@devimpact/shared` bundled from ESM source (the 546 KB CommonJS zod/schema chunk is gone; PERF-07).
 - **Tests:** web Vitest **166** (29 files; new: six page views via `test/api-mock.tsx` + captured API
   fixtures covering loading / not connected / syncing / no data / partial / error / success, chart
-  helpers, Next step rules, integration states, plurals); API unit 211 (activity range spec
+  helpers, Next step rules, integration states, plurals); API unit 210 (activity range spec
   rewritten), API integration **157**; Playwright **26** (+ 9 opt-in screenshot tests): the insight
   journey and axe 0 serious/critical + 0 px overflow on every P10 page and both drawers and the
   print view in light/dark × 1440/390.
@@ -1244,6 +1244,12 @@ the dev server restarted with the normal `.env`. Before the P10 performance work
   `/resume|/appraisal|/promotion` belong to P11). Dashboard, KPIs and career had no redirects.
 - Docker images were not rebuilt locally (sandbox registry limits, as in P05–P09); no Dockerfile
   change in P10.
+- **`next dev` reload loop fixed:** Next 16's dev MCP endpoint writes every log line to
+  `.next/dev/logs/next-development.log`, which the monorepo-rooted Turbopack watcher picked up
+  (endless Fast Refresh reloads, worst with the shared-source alias). `experimental.mcpServer: false`
+  and the `@devimpact/shared` alias apply outside the dev server only (`next.config.js` is now a
+  phase function). E2E waits for a compiled `/sign-in` before starting and uses `waitForHydration()`
+  (server-rendered dashboard content is no longer a hydration signal).
 - **New optional env `RATE_LIMIT_DEFAULT_PER_MINUTE`** (API, default 300 = the contract's `default`
   class): the new axe loops visit every insight page in four browser contexts and exceeded 300
   requests/min, so `playwright.config.ts` starts the E2E API with 3000. Production behaviour is

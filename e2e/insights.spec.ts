@@ -1,6 +1,12 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 
-import { API_URL, expectNoSeriousA11yViolations, hideDevOverlay, signIn } from './helpers';
+import {
+  API_URL,
+  expectNoSeriousA11yViolations,
+  hideDevOverlay,
+  signIn,
+  waitForHydration,
+} from './helpers';
 
 /**
  * P10 insight journey on the seeded demo user: dashboard → KPI explain drawer → activity filter +
@@ -32,6 +38,7 @@ test.describe('insight pages (P10)', () => {
     await expect(page.getByRole('heading', { name: 'Contributions' })).toBeVisible();
     await expect(page.getByTestId('feed-item').first()).toBeVisible();
     await expect(page.getByTestId('next-step')).toBeVisible();
+    await waitForHydration(page);
 
     // KPIs → explain drawer on ?metric= → evidence in Activity.
     await page
