@@ -26,7 +26,7 @@ const DAY = 24 * HOUR;
 /**
  * Rate-limit classes (API_CONTRACT_V2 §1.1). A route belongs to exactly one class; a class is
  * enforced by one or more named windows. Keys are per user (authenticated) or per IP (public).
- * `export` arrives with the export endpoints (P11/P12).
+ * `export` covers document exports (P11); `/me/export` (3 / day) arrives with P12.
  */
 export const RATE_LIMIT_WINDOWS = {
   default: { ttl: MINUTE, limit: 300 },
@@ -35,6 +35,7 @@ export const RATE_LIMIT_WINDOWS = {
   'ai-day': { ttl: DAY, limit: 60 },
   sync: { ttl: HOUR, limit: 6 },
   destructive: { ttl: HOUR, limit: 5 },
+  'export-hour': { ttl: HOUR, limit: 30 },
 } as const;
 type WindowName = keyof typeof RATE_LIMIT_WINDOWS;
 
@@ -46,6 +47,7 @@ export const RATE_LIMIT_CLASSES = {
   // resolved), not by the guard.
   sync: [],
   destructive: ['destructive'],
+  export: ['export-hour'],
   // Signature-gated and answered fast; never throttled (API_CONTRACT_V2 §1.1).
   webhook: [],
   // Concurrent SSE streams per user, enforced by DocumentStreamService (a counter, not a window).
@@ -153,6 +155,10 @@ export class RateLimitGuard extends ThrottlerGuard {
           // The `default` class limit is configurable (E2E raises it; production keeps 300/min).
           ...(name === 'default'
             ? { limit: config.get('RATE_LIMIT_DEFAULT_PER_MINUTE', { infer: true }) }
+            : {}),
+          // Document exports (30/hour by contract); E2E raises it like the default class.
+          ...(name === 'export-hour'
+            ? { limit: config.get('RATE_LIMIT_EXPORT_PER_HOUR', { infer: true }) }
             : {}),
         })),
         storage: new RedisThrottlerStorage(redis),

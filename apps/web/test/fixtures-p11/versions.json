@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "data": [
+    { "number": 3, "source": "ai", "createdAt": "2026-11-15T00:00:00.000Z" },
+    { "number": 2, "source": "user_edit", "createdAt": "2026-11-13T00:00:00.000Z" },
+    { "number": 1, "source": "ai", "createdAt": "2026-11-12T00:00:00.000Z" }
+  ],
+  "meta": { "nextCursor": null, "hasMore": false, "total": 3 }
+}

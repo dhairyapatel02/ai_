@@ -271,7 +271,7 @@ Implementation: `apps/api/src/ai/` (client, structured output, event streams, qu
 | Variable                                           | Default                                | Purpose                                                                                                                                              |
 | -------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ANTHROPIC_API_KEY`                                | —                                      | Without it the app runs; generation answers `503 UPSTREAM_UNAVAILABLE { reason: 'not_configured' }` (cache hits still work)                          |
-| `ANTHROPIC_BASE_URL`                               | Anthropic                              | Test mode: point at a mock (`npm run ai:mock --workspace=apps/api`, port 4010)                                                                       |
+| `ANTHROPIC_BASE_URL`                               | Anthropic                              | Test mode: point at a mock (`npm run ai:mock --workspace=apps/api`, port 4010; `AI_MOCK_CHUNK` / `AI_MOCK_DELAY_MS` slow its stream)                 |
 | `ANTHROPIC_MODEL_DEFAULT` / `ANTHROPIC_MODEL_FAST` | `claude-opus-5-5` / `claude-haiku-5-5` | Documents (resume, appraisal, promotion) / quick actions (highlights, achievement statements, digest summary, repair). Model ids live only in config |
 | `AI_EFFORT_DEFAULT` / `AI_EFFORT_FAST`             | `medium` / `low`                       | `output_config.effort` (thinking is adaptive)                                                                                                        |
 | `AI_FALLBACKS_ENABLED`                             | `true`                                 | Server-side refusal fallback on the default tier                                                                                                     |
@@ -308,6 +308,20 @@ Implementation: `apps/api/src/ai/` (client, structured output, event streams, qu
   sections, lengths, banned phrases, prompt-injection and redaction checks, plus negative controls).
   `npm run eval:live` (needs `ANTHROPIC_API_KEY`) runs them against the real API and writes
   [`docs/v2/evals/REPORT.md`](docs/v2/evals/REPORT.md).
+
+### Document exports
+
+`GET /api/documents/:id/export?format=md|txt|pdf|docx&version=&citations=true|false`
+([ADR-0012](docs/v2/blueprint/adr/ADR-0012-exports.md), D-027). One export-blocks IR
+(`packages/shared/src/documents/export.ts`, also used by the web's Copy as Markdown / plain text)
+feeds four renderers in `apps/api/src/exports/`: Markdown and plain text (escaped, numbered evidence
+notes), **PDF** with `@react-pdf/renderer` (A4, Letter for `America/*` time zones) and **DOCX** with
+`docx` (Word heading styles). PDF fonts are Instrument Sans and JetBrains Mono from the
+`@fontsource/*` API dependencies, read from `node_modules` at render time — no network access, and
+they ship in the Docker image with the other production dependencies. Filenames are
+`<type>-<period>-v<N>.<ext>` (e.g. `appraisal-2026-H2-v1.pdf`); resume exports omit citations
+unless `citations=true`. Exports use the `export` rate class: 30 per hour per user
+(`RATE_LIMIT_EXPORT_PER_HOUR`).
 
 ### Local webhook forwarding
 
@@ -393,8 +407,12 @@ login is a 404 there), or reuses servers already running locally. The suites cov
 onboarding (GitHub App round trip intercepted in the browser), the shell at 1440/768/390 px, theme
 persistence, the ⌘K palette, the period picker, the P10 insight journey (dashboard → KPI explain
 drawer → activity filter + item drawer → career year + print view → Sync now → progress →
-completion, with the sync intercepted in the browser) and axe-core (0 serious/critical) on the
-shell, sign-in, onboarding and every insight page in light/dark at 1440 and 390 px:
+completion, with the sync intercepted in the browser), the P11 document studio (resume generate →
+stream → edit → autosave version → restore → MD/PDF/DOCX downloads → library → delete; appraisal
+and promotion; leaving mid-stream and coming back) and axe-core (0 serious/critical) on the shell,
+sign-in, onboarding, every insight page and every document page in light/dark at 1440 and 390 px.
+Documents are generated against the fake Anthropic API, which Playwright starts on :4010
+(`npm run ai:mock`, slowed with `AI_MOCK_CHUNK=6 AI_MOCK_DELAY_MS=25` so streaming is visible):
 
 ```bash
 npm run build && npm run db:deploy && npm run db:seed
@@ -410,11 +428,15 @@ npm run test:e2e
 
 Traces are off by default; re-run a failing test with `npx playwright test --trace on` to debug.
 Playwright starts the API with `RATE_LIMIT_DEFAULT_PER_MINUTE=3000` (the axe loops exceed the
-production 300 requests/min); set it yourself when reusing an API you started.
+production 300 requests/min), `RATE_LIMIT_EXPORT_PER_HOUR=1000` and
+`ANTHROPIC_BASE_URL=http://127.0.0.1:4010 ANTHROPIC_API_KEY=mock`; set them yourself when reusing an
+API you started (a reused `next dev` also needs the placeholder `GITHUB_SIGNIN_*` / `GOOGLE_*` ids
+from `playwright.config.ts` for the sign-in test).
 Regenerate the screenshots (2× DPR, light/dark, desktop/mobile) with
 `SCREENSHOTS=1 npm run test:e2e -- e2e/screenshots.spec.ts` (Phase 09 → `docs/v2/screenshots/p09/`)
-and `SCREENSHOTS=1 npm run test:e2e -- e2e/screenshots-p10.spec.ts` (insight pages →
-`docs/v2/screenshots/p10/`).
+, `SCREENSHOTS=1 npm run test:e2e -- e2e/screenshots-p10.spec.ts` (insight pages →
+`docs/v2/screenshots/p10/`) and `SCREENSHOTS=1 npm run test:e2e -- e2e/screenshots-p11.spec.ts`
+(document studio + exported PDF first pages via `pdftoppm` → `docs/v2/screenshots/p11/`).
 
 Tests never call the real GitHub or Anthropic APIs: `octokit` is stubbed in Jest, GitHub OAuth/REST
 calls go to unroutable `*.github.invalid` hosts answered by a fake (`test/utils/fake-github.ts`),
@@ -449,7 +471,8 @@ apps/web/src/
 │   ├── (onboarding)/onboarding  # S2–S5 wizard (connect, pending, repositories, sync)
 │   ├── (system)/integrations/github/callback
 │   ├── (app)/…                  # signed-in pages inside the AppShell (loading/error/not-found):
-│   │                            # dashboard, activity, kpis (+ impact), career, settings/integrations …
+│   │                            # dashboard, activity, kpis (+ impact), career, settings/integrations,
+│   │                            # documents (library, new/{appraisal,promotion,resume}, [id] viewer) …
 │   ├── (print)/career/print     # S10 print view (server-rendered, no shell)
 │   ├── not-found.tsx, global-error.tsx, providers.tsx, layout.tsx, globals.css
 ├── components/
@@ -458,9 +481,11 @@ apps/web/src/
 │   │                            # Banner, skeletons, DataTable, InfoPopover, ConfirmDialog
 │   ├── shell/                   # AppShell, sidebar, top bar, mobile nav, period picker, sync status, ⌘K
 │   ├── charts/                  # Recharts plots (loaded with next/dynamic), tooltip, chart table
+│   ├── documents/               # DocumentRenderer, DocumentEditor (next/dynamic), ResumeBullets,
+│   │                            # StreamingStatus, VersionList, RenameDialog, StatusBadge
 │   └── *.tsx                    # ImpactScoreCard, ActivityHeatmap, ActivityChart, Sparkline, MetricRow,
 │                                # ExplainDrawer, ItemDrawer, FeedItemRow, NextStepCard, DateRangePicker, …
-├── hooks/                       # useEventStream (fetch SSE), useMediaQuery, useIsMobile
+├── hooks/                       # useEventStream (fetch SSE), useDocumentStream, useMediaQuery, useIsMobile
 ├── lib/api/                     # apiClient, ApiError, query keys + client, hooks, SSE reader, server client
 ├── lib/period.ts                # global `?period=` URL state (shared period utils)
 ├── lib/url-state.ts             # other URL state (`?item=`, `?metric=`, `?type=`, `?repo=`, `?q=`, `?year=`)
@@ -479,8 +504,15 @@ series `--chart-5`), every chart in a `role="img"` wrapper with an `aria-label` 
 the same height. Turbopack bundles `@devimpact/shared` from its ESM source (`next.config.js`
 `turbopack.resolveAlias`), so unused schemas tree-shake out of the client.
 
+**Document studio (P11, D-027):** library, studios and the viewer/editor live under
+`app/(app)/documents/`; hooks in `lib/api/document-hooks.ts`, streaming in
+`hooks/use-document-stream.ts` (SSE with `Last-Event-ID` resume, then polling), copy in
+`lib/documents.ts`. The editor is structured per-claim fields (citations stay attached), loaded with
+`next/dynamic` only in edit mode.
+
 **View tests** mock `@/lib/api/browser` with `test/api-mock.tsx` (route table → the real hooks and
-Zod schemas) and use responses captured from the seeded demo user in `test/fixtures-p10/`.
+Zod schemas) and use responses captured from the seeded demo user in `test/fixtures-p10/` and
+`test/fixtures-p11/`.
 
 ### Adding a page
 
@@ -535,13 +567,14 @@ and the live schema is at `/api/docs` outside production.
 | GET    | /api/activity/reviews · /commits · /commits/:id | Reviews (turnaround) · commits                         |
 | GET    | /api/me/usage?month=                            | AI usage vs monthly quota, tokens, estimated cost      |
 | POST   | /api/impact/highlights                          | AI narrative for a period's score (fast, cached; ai)   |
-| GET    | /api/documents?type=&q=&sort=                   | Document library (cursor pagination)                   |
+| GET    | /api/documents?type=&q=&sort=&status=           | Document library (cursor pagination)                   |
 | POST   | /api/documents/preview-evidence                 | Evidence + engine metrics a document would use (no AI) |
 | POST   | /api/documents                                  | Create (200 cache hit / 201 pending + streamUrl; ai)   |
 | GET    | /api/documents/:id?version= · /:id/stream       | Document + version + cited evidence · SSE events       |
 | PATCH  | /api/documents/:id                              | Edit title/content (new version; 409 stale)            |
 | POST   | /api/documents/:id/regenerate · /cancel         | Next version or one section (ai) · cancel              |
 | GET    | /api/documents/:id/versions · POST …/:n/restore | Version history · restore                              |
+| GET    | /api/documents/:id/export?format=&version=      | Download md / txt / pdf / docx (export, 30/h)          |
 | DELETE | /api/documents/:id                              | Delete document and versions                           |
 | POST   | /api/ai/achievement-statement                   | Statement for one of your PRs/commits (fast; ai)       |
 

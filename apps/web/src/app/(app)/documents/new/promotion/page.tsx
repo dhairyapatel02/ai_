@@ -1,7 +1,7 @@
-import { PromotionStudio } from './promotion-studio';
+import { StudioView } from '../studio-view';
 
 export const metadata = { title: 'New promotion packet' };
 
-export default function PromotionPage() {
-  return <PromotionStudio />;
+export default function Page() {
+  return <StudioView type="promotion" />;
 }

@@ -39,10 +39,11 @@ export const ok =
   () =>
     data;
 
-export function setRoutes(table: Record<string, Handler | { data: unknown; meta?: unknown }>) {
+/** Values: a handler, an envelope-like `{ data, meta }`, or any plain response body. */
+export function setRoutes(table: Record<string, Handler | object>) {
   routes.clear();
   for (const [key, value] of Object.entries(table)) {
-    routes.set(key, typeof value === 'function' ? value : () => value);
+    routes.set(key, typeof value === 'function' ? (value as Handler) : () => value);
   }
 }
 
@@ -98,6 +99,14 @@ export const apiClient = {
         nextCursor: null,
         hasMore: false,
       },
+    };
+  },
+  /** File downloads: the handler returns `{ blob, filename }`. */
+  async download(path: string, options: { query?: Query } = {}) {
+    calls.push({ method: 'GET', path, query: options.query });
+    return (await find('GET', path)(options.query, undefined)) as {
+      blob: Blob;
+      filename: string | null;
     };
   },
   async requestWithMeta<T>(

@@ -7,6 +7,7 @@ import {
   DocumentSummary,
   DocumentVersionListItem,
   DocumentVersionQuery,
+  ExportQuery,
   IdParams,
   PreviewEvidenceResponse,
   RegenerateDocumentInput,
@@ -20,6 +21,7 @@ import { z } from 'zod';
 import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
 import { RawResponse, withMeta } from '../common/envelope.interceptor';
 import { ApiDoc, ZodBody, ZodParams, ZodQuery } from '../common/zod-validation';
+import { DocumentExportsService } from '../exports/document-exports.service';
 import { RateLimit } from '../throttle/rate-limit';
 import { DocumentStreamService } from './document-stream.service';
 import { DocumentsService } from './documents.service';
@@ -32,6 +34,7 @@ export class DocumentsController {
   constructor(
     private readonly documents: DocumentsService,
     private readonly streams: DocumentStreamService,
+    private readonly exports: DocumentExportsService,
   ) {}
 
   @Get()
@@ -106,6 +109,32 @@ export class DocumentsController {
     @Res() res: Response,
   ): Promise<void> {
     await this.streams.stream(user.id, params.id, lastEventId, req, res);
+  }
+
+  @Get(':id/export')
+  @RawResponse()
+  @RateLimit('export')
+  @ApiDoc({
+    summary:
+      'Export a version as Markdown, plain text, PDF or DOCX (file download; resume omits citations unless citations=true)',
+    tags: ['documents'],
+    rateLimit: 'export',
+  })
+  async export(
+    @CurrentUser() user: AuthUser,
+    @ZodParams(IdParams) params: { id: string },
+    @ZodQuery(ExportQuery) query: ExportQuery,
+    @Res() res: Response,
+  ): Promise<void> {
+    const file = await this.exports.export(user.id, params.id, query);
+    // `filename` is built from fixed parts and an ASCII slug (exportFilename) — never user text.
+    res.status(200);
+    res.setHeader('Content-Type', file.contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+    res.setHeader('Content-Length', String(file.body.length));
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.end(file.body);
   }
 
   @Post(':id/cancel')

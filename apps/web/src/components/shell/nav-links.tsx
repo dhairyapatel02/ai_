@@ -4,6 +4,8 @@ import { LoaderCircle } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 
+import { useHydrated } from '@/hooks/use-hydrated';
+import { useActiveDocuments } from '@/lib/api/document-hooks';
 import { cn } from '@/lib/utils';
 
 import { hrefWithPeriod, isNavItemActive, NAV_GROUPS } from './nav-config';
@@ -12,7 +14,7 @@ import { StatusDot, useSyncDescriptor } from './sync-status';
 /**
  * Grouped navigation (IA §3.1): small group labels, `aria-current="page"` on the active item
  * (child routes keep the parent active), `?period` carried between Overview pages, and state
- * badges only — an attention dot on Integrations.
+ * badges only — an attention dot on Integrations, a spinner on Documents while a generation runs.
  */
 export function NavLinks({
   collapsed = false,
@@ -26,6 +28,7 @@ export function NavLinks({
   const pathname = usePathname();
   const period = useSearchParams().get('period');
   const sync = useSyncDescriptor();
+  const generating = useDocumentsGenerating();
 
   return (
     <div className="flex flex-col gap-4">
@@ -45,6 +48,7 @@ export function NavLinks({
             {group.items.map((item) => {
               const active = isNavItemActive(item.href, pathname);
               const attention = item.href === '/settings/integrations' && sync.attention;
+              const busy = item.href === '/documents' && generating;
               return (
                 <Link
                   key={item.href}
@@ -63,6 +67,7 @@ export function NavLinks({
                   <span className={cn('flex-1 truncate', collapsed && 'sr-only')}>
                     {item.label}
                   </span>
+                  {busy ? <NavSpinner /> : null}
                   {attention ? (
                     <>
                       <StatusDot tone={sync.tone} />
@@ -79,7 +84,22 @@ export function NavLinks({
   );
 }
 
-/** Spinner badge for background work (e.g. a generation running) — P11 wires it to Documents. */
+/** A generation is running in the background (after hydration: query data is client-only here). */
+export function useDocumentsGenerating(): boolean {
+  const hydrated = useHydrated();
+  const active = useActiveDocuments({ enabled: hydrated });
+  return hydrated && (active.data?.items.length ?? 0) > 0;
+}
+
+/** Spinner badge for background work: a document generation running (IA §3.1, GAP-13). */
 export function NavSpinner() {
-  return <LoaderCircle className="size-3.5 animate-spin text-primary" aria-label="In progress" />;
+  return (
+    <>
+      <LoaderCircle
+        className="size-3.5 shrink-0 animate-spin text-primary motion-reduce:animate-none"
+        aria-hidden="true"
+      />
+      <span className="sr-only">(writing a document)</span>
+    </>
+  );
 }

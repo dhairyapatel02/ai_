@@ -116,7 +116,13 @@ export type TitledClaim = z.infer<typeof TitledClaim>;
 export const PlainItem = z.object({ id: ItemId, text: z.string().min(1).max(1000) });
 export type PlainItem = z.infer<typeof PlainItem>;
 
-export const ResumeBulletItem = ClaimItem.extend({ theme: z.string().min(1).max(80) });
+export const ResumeBulletItem = ClaimItem.extend({
+  theme: z.string().min(1).max(80),
+  /** User curation (S16 bullet cards, D-027): kept at the top / marked as already used. */
+  pinned: z.boolean().optional(),
+  used: z.boolean().optional(),
+});
+export type ResumeBulletItem = z.infer<typeof ResumeBulletItem>;
 
 export const ResumeContent = z.object({
   format: z.enum(['bullets', 'narrative']),
@@ -227,8 +233,34 @@ export const DocumentSummary = z.object({
 });
 export type DocumentSummary = z.infer<typeof DocumentSummary>;
 
+/** `status` filter values (comma list): the Documents nav spinner asks for `pending,streaming` (GAP-13). */
+const StatusList = z
+  .string()
+  .trim()
+  .max(60)
+  .transform((value, ctx) => {
+    const parts = [
+      ...new Set(
+        value
+          .split(',')
+          .map((p) => p.trim())
+          .filter(Boolean),
+      ),
+    ];
+    const parsed = z.array(DocumentStatusWire).min(1).safeParse(parts);
+    if (!parsed.success) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Expected pending, streaming, ready, failed or cancelled',
+      });
+      return z.NEVER;
+    }
+    return parsed.data;
+  });
+
 export const DocumentListQuery = PageQuery.extend({
   type: DocumentTypeWire.optional(),
+  status: StatusList.optional(),
   q: z.string().trim().max(100).optional(),
   sort: z.enum(['-createdAt', '-updatedAt', 'title']).default('-createdAt'),
 });
@@ -392,3 +424,19 @@ export const UsageResponse = z.object({
   ),
 });
 export type UsageResponse = z.infer<typeof UsageResponse>;
+
+// ── Exports (§13.2, ADR-0012) ───────────────────────────────────────────────────────────────
+
+export const ExportFormatWire = z.enum(['md', 'txt', 'pdf', 'docx']);
+export type ExportFormatWire = z.infer<typeof ExportFormatWire>;
+
+/** `GET /documents/:id/export?format=&version=&citations=` — `citations` defaults per type. */
+export const ExportQuery = z.strictObject({
+  format: ExportFormatWire,
+  version: z.coerce.number().int().min(1).optional(),
+  citations: z
+    .enum(['true', 'false'])
+    .transform((v) => v === 'true')
+    .optional(),
+});
+export type ExportQuery = z.infer<typeof ExportQuery>;

@@ -1,7 +1,7 @@
-import { AppraisalStudio } from './appraisal-studio';
+import { StudioView } from '../studio-view';
 
 export const metadata = { title: 'New appraisal' };
 
-export default function AppraisalPage() {
-  return <AppraisalStudio />;
+export default function Page() {
+  return <StudioView type="appraisal" />;
 }

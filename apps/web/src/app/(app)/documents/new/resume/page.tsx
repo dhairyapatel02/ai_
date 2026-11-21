@@ -1,7 +1,7 @@
-import { ResumeStudio } from './resume-studio';
+import { StudioView } from '../studio-view';
 
-export const metadata = { title: 'New resume' };
+export const metadata = { title: 'New resume bullets' };
 
-export default function ResumePage() {
-  return <ResumeStudio />;
+export default function Page() {
+  return <StudioView type="resume" />;
 }
