@@ -1,0 +1,117 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": "cmwpwcgj000snjp7dovydigc8",
+      "type": "promotion",
+      "title": "Promotion packet · Senior engineer → Staff engineer",
+      "status": "ready",
+      "currentVersion": 1,
+      "period": {
+        "spec": "custom:2025-11-22..2026-11-21",
+        "type": "custom",
+        "startDate": "2025-11-22",
+        "endDate": "2026-11-19",
+        "timezone": "Europe/London",
+        "periodDays": 365,
+        "inProgress": true,
+        "label": "Nov 22, 2025 – Nov 21, 2026"
+      },
+      "model": "claude-opus-5-5",
+      "citationCoverage": 1,
+      "flags": { "uncited": 0, "invalid": 0 },
+      "errorCode": null,
+      "createdAt": "2026-11-19T00:00:00.000Z",
+      "updatedAt": "2026-11-19T00:00:00.000Z"
+    },
+    {
+      "id": "cmwpwcgis00sljp7d537e8cdk",
+      "type": "resume",
+      "title": "Resume · backend · Nov 22, 2025 – Nov 21, 2026",
+      "status": "ready",
+      "currentVersion": 1,
+      "period": {
+        "spec": "custom:2025-11-22..2026-11-21",
+        "type": "custom",
+        "startDate": "2025-11-22",
+        "endDate": "2026-11-18",
+        "timezone": "Europe/London",
+        "periodDays": 365,
+        "inProgress": true,
+        "label": "Nov 22, 2025 – Nov 21, 2026"
+      },
+      "model": "claude-opus-5-5",
+      "citationCoverage": 1,
+      "flags": { "uncited": 0, "invalid": 0 },
+      "errorCode": null,
+      "createdAt": "2026-11-18T00:00:00.000Z",
+      "updatedAt": "2026-11-18T00:00:00.000Z"
+    },
+    {
+      "id": "cmwpwcght00sgjp7di02uliov",
+      "type": "appraisal",
+      "title": "Appraisal · H1 2026",
+      "status": "ready",
+      "currentVersion": 3,
+      "period": {
+        "spec": "half:2026-H1",
+        "type": "half",
+        "startDate": "2026-01-01",
+        "endDate": "2026-06-30",
+        "timezone": "Europe/London",
+        "periodDays": 181,
+        "inProgress": false,
+        "label": "H1 2026"
+      },
+      "model": "claude-opus-5-5",
+      "citationCoverage": 0.92,
+      "flags": { "uncited": 1, "invalid": 0 },
+      "errorCode": null,
+      "createdAt": "2026-11-12T00:00:00.000Z",
+      "updatedAt": "2026-11-15T00:00:00.000Z"
+    },
+    {
+      "id": "cmwpwcggm00sdjp7dtmgtnmtu",
+      "type": "promotion",
+      "title": "Promotion (imported)",
+      "status": "ready",
+      "currentVersion": 1,
+      "period": null,
+      "model": "unknown",
+      "citationCoverage": null,
+      "flags": null,
+      "errorCode": null,
+      "createdAt": "2026-05-05T10:00:00.000Z",
+      "updatedAt": "2026-05-05T10:00:00.000Z"
+    },
+    {
+      "id": "cmwpwcggi00sbjp7dxrbpmowg",
+      "type": "appraisal",
+      "title": "Appraisal (imported)",
+      "status": "ready",
+      "currentVersion": 1,
+      "period": null,
+      "model": "unknown",
+      "citationCoverage": null,
+      "flags": null,
+      "errorCode": null,
+      "createdAt": "2026-05-05T10:00:00.000Z",
+      "updatedAt": "2026-05-05T10:00:00.000Z"
+    },
+    {
+      "id": "cmwpwcggd00s9jp7drxho5euz",
+      "type": "resume",
+      "title": "Resume (imported)",
+      "status": "ready",
+      "currentVersion": 1,
+      "period": null,
+      "model": "unknown",
+      "citationCoverage": null,
+      "flags": null,
+      "errorCode": null,
+      "createdAt": "2026-05-05T10:00:00.000Z",
+      "updatedAt": "2026-05-05T10:00:00.000Z"
+    }
+  ],
+  "meta": { "nextCursor": null, "hasMore": false, "total": 6 }
+}

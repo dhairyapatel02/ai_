@@ -14,6 +14,8 @@ import { defineConfig, devices } from '@playwright/test';
  *   tests never follow them (no real GitHub/Google calls).
  * - Web production build (`next start`, :3001) with ENABLE_DEV_LOGIN=true — proves the dev login
  *   returns 404 in production.
+ * - Fake Anthropic Messages API (`npm run ai:mock`, :4010, P11): the API generates documents
+ *   against it, slowed down so the streaming viewer is observable. No real Anthropic call.
  */
 const WEB_URL = process.env.E2E_WEB_URL ?? 'http://localhost:3000';
 const WEB_PROD_URL = process.env.E2E_WEB_PROD_URL ?? 'http://localhost:3001';
@@ -35,10 +37,25 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {
+      command: 'npm run ai:mock --workspace=apps/api -- 4010',
+      port: 4010,
+      env: { AI_MOCK_CHUNK: '6', AI_MOCK_DELAY_MS: '25' },
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+      stdout: 'pipe',
+    },
+    {
       command: 'node apps/api/dist/main.js',
       url: `${API_URL}/health`,
-      // The P10 axe loops visit every insight page in four browser contexts (> 300 requests/min).
-      env: { RATE_LIMIT_DEFAULT_PER_MINUTE: '3000' },
+      // The P10 axe loops visit every insight page in four browser contexts (> 300 requests/min);
+      // P11 downloads every export format several times. Generation uses the fake Anthropic API.
+      env: {
+        RATE_LIMIT_DEFAULT_PER_MINUTE: '3000',
+        RATE_LIMIT_EXPORT_PER_HOUR: '1000',
+        ANTHROPIC_BASE_URL: 'http://127.0.0.1:4010',
+        ANTHROPIC_API_KEY: 'mock',
+        RUN_WORKER_IN_API: 'true',
+      },
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
       stdout: 'pipe',

@@ -66,6 +66,13 @@ function retryAfter(res: Response, details: unknown): number | null {
   return typeof fromDetails === 'number' ? fromDetails : null;
 }
 
+/** `attachment; filename="appraisal-2026-H2-v1.pdf"` → the name, if it is a plain file name. */
+export function filenameFrom(header: string | null): string | null {
+  const match = header ? /filename="([^"]+)"/i.exec(header) : null;
+  const name = match?.[1] ?? null;
+  return name && /^[A-Za-z0-9._-]{1,120}$/.test(name) ? name : null;
+}
+
 async function toApiError(res: Response): Promise<ApiError> {
   const raw: unknown = await res.json().catch(() => null);
   const parsed = ErrorEnvelope.safeParse(raw);
@@ -195,6 +202,43 @@ export function createApiClient(config: ApiClientConfig) {
       return {
         items,
         meta: pageMeta.success ? pageMeta.data : { nextCursor: null, hasMore: false },
+      };
+    },
+    /**
+     * File download (not enveloped, e.g. `GET /documents/:id/export`): the body as a Blob and the
+     * filename from `Content-Disposition` (ASCII `filename="…"` only; null when absent/unsafe).
+     */
+    async download(path: string, options: Pick<RequestOptions<never>, 'query' | 'signal'> = {}) {
+      const url = `${config.baseUrl}${path}${toQueryString(options.query)}`;
+      const attempt = async (forceRefresh: boolean) => {
+        const token = await config.getToken({ forceRefresh });
+        return doFetch(url, {
+          method: 'GET',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          signal: options.signal,
+          credentials: 'omit',
+          cache: 'no-store',
+        });
+      };
+      let res: Response;
+      try {
+        res = await attempt(false);
+        if (res.status === 401) {
+          res = await attempt(true);
+          if (res.status === 401) config.onUnauthenticated?.();
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') throw error;
+        throw new ApiError({
+          code: 'NETWORK_ERROR',
+          message: 'The DevImpact API did not respond',
+          status: 0,
+        });
+      }
+      if (!res.ok) throw await toApiError(res);
+      return {
+        blob: await res.blob(),
+        filename: filenameFrom(res.headers.get('content-disposition')),
       };
     },
     /** Raw access to `meta` for endpoints that add fields to it (e.g. `recomputeQueued`). */

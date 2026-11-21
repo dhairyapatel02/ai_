@@ -1,0 +1,48 @@
+{
+  "success": true,
+  "data": {
+    "document": {
+      "id": "cmwpwcggi00sbjp7dxrbpmowg",
+      "type": "appraisal",
+      "title": "Appraisal (imported)",
+      "status": "ready",
+      "currentVersion": 1,
+      "period": null,
+      "model": "unknown",
+      "citationCoverage": null,
+      "flags": null,
+      "errorCode": null,
+      "createdAt": "2026-05-05T10:00:00.000Z",
+      "updatedAt": "2026-05-05T10:00:00.000Z",
+      "options": {
+        "dateRange": { "to": "2026-11-21T00:00:00.000Z", "from": "2026-05-23T00:00:00.000Z" }
+      },
+      "evidenceRefs": [],
+      "evidence": []
+    },
+    "version": {
+      "number": 1,
+      "source": "ai",
+      "createdAt": "2026-05-05T10:00:00.000Z",
+      "content": {
+        "raw": {
+          "metrics": {
+            "prCount": 66,
+            "reviewCount": 91,
+            "commitsCount": 463,
+            "featuresShipped": 6
+          },
+          "areasOfImpact": ["Reliability", "Developer experience"],
+          "executiveSummary": "Dana delivered the payments reliability roadmap and became the go-to reviewer for API changes.",
+          "keyContributions": [
+            { "title": "Idempotent payments", "evidence": "Payments: idempotent intent creation" },
+            { "title": "Refunds API", "evidence": "Refunds API (partial + full)" }
+          ],
+          "growthAndLearning": ["Led first incident review"],
+          "goalsForNextPeriod": ["Own the billing platform roadmap"]
+        },
+        "legacy": true
+      }
+    }
+  }
+}

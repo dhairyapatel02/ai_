@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { errJson, okJson } from '../../../test/fixtures';
-import { createApiClient, toQueryString } from './client';
+import { createApiClient, filenameFrom, toQueryString } from './client';
 import { ApiError } from './errors';
 
 function setup(responses: Response[], token = 'jwt-1') {
@@ -142,5 +142,43 @@ describe('apiClient', () => {
       '?types=a%2Cb&n=2&on=false',
     );
     expect(toQueryString(undefined)).toBe('');
+  });
+});
+
+describe('apiClient.download', () => {
+  it('returns the blob and the server filename; refreshes once on 401; maps errors', async () => {
+    const file = new Response('%PDF-1.4', {
+      status: 200,
+      headers: {
+        'content-type': 'application/pdf',
+        'content-disposition': 'attachment; filename="appraisal-2026-H2-v1.pdf"',
+      },
+    });
+    const { client, fetchMock } = setup([new Response(null, { status: 401 }), file]);
+    const { blob, filename } = await client.download('/documents/cm1/export', {
+      query: { format: 'pdf', version: undefined },
+    });
+    expect(filename).toBe('appraisal-2026-H2-v1.pdf');
+    expect(await blob.text()).toBe('%PDF-1.4');
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(
+      'https://api.test/api/documents/cm1/export?format=pdf',
+    );
+    expect((fetchMock.mock.calls[1]?.[1]?.headers as Record<string, string>).Authorization).toBe(
+      'Bearer jwt-1-refreshed',
+    );
+
+    const failing = setup([errJson(409, 'GENERATION_IN_PROGRESS')]);
+    await expect(failing.client.download('/documents/cm1/export')).rejects.toMatchObject({
+      code: 'GENERATION_IN_PROGRESS',
+    });
+  });
+
+  it('accepts only plain ASCII file names from Content-Disposition', () => {
+    expect(filenameFrom('attachment; filename="resume-2025-11-22_2026-11-21-v2.docx"')).toBe(
+      'resume-2025-11-22_2026-11-21-v2.docx',
+    );
+    expect(filenameFrom('attachment; filename="../../etc/passwd"')).toBeNull();
+    expect(filenameFrom('attachment')).toBeNull();
+    expect(filenameFrom(null)).toBeNull();
   });
 });
