@@ -1,0 +1,68 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`exports > serializes Markdown with escaped model text 1`] = `
+"# Appraisal · H2 2026
+
+_Appraisal · H2 2026 · Version 3_
+
+## Executive summary
+
+I focused on \\*reliability\\* \\[link\\](javascript:alert(1)).[^1][^2]
+
+## Key contributions
+
+- **CSV export** — Streamed exports.[^1]
+
+## Metrics
+
+| Metric | Value |
+| --- | ---: |
+| PRs merged | 33 |
+
+_Calculated by DevImpact from your GitHub data — not written by AI._
+
+## Areas of impact
+
+- Reliability work.
+
+## Growth
+
+- Took on larger changes.[^1]
+
+## Next goals
+
+- Lead a design review.
+
+[^1]: \`PR-acme/infra#306\` — CSV export streaming <https://github.com/acme/infra/pull/306>
+[^2]: \`PR-acme/web-app#137\`
+"
+`;
+
+exports[`exports > serializes plain text 1`] = `
+"Appraisal · H2 2026
+Appraisal · H2 2026 · Version 3
+
+EXECUTIVE SUMMARY
+I focused on *reliability* [link](javascript:alert(1)). [1, 2]
+
+KEY CONTRIBUTIONS
+• CSV export: Streamed exports. [1]
+
+METRICS
+PRs merged: 33
+Calculated by DevImpact from your GitHub data — not written by AI.
+
+AREAS OF IMPACT
+• Reliability work.
+
+GROWTH
+• Took on larger changes. [1]
+
+NEXT GOALS
+• Lead a design review.
+
+EVIDENCE
+[1] PR-acme/infra#306 — CSV export streaming — https://github.com/acme/infra/pull/306
+[2] PR-acme/web-app#137
+"
+`;

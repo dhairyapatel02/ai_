@@ -14,3 +14,5 @@ export * from './periods';
 export * from './metrics/catalogue';
 export * from './api/metrics';
 export * from './api/documents';
+export * from './documents/render';
+export * from './documents/export';
