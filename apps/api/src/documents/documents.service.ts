@@ -94,6 +94,9 @@ export class DocumentsService {
     const where: Prisma.GeneratedDocumentWhereInput = {
       userId,
       type: query.type ? toTypeEnum(query.type) : { in: [...LIBRARY_TYPES] },
+      ...(query.status
+        ? { status: { in: query.status.map((s) => s.toUpperCase() as DocumentStatus) } }
+        : {}),
       ...(query.q ? { title: { contains: query.q, mode: 'insensitive' } } : {}),
     };
     // user-scope: `where` / the document was scoped by userId above.

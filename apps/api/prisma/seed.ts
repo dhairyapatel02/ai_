@@ -32,6 +32,7 @@ import { scheduleSlotFor } from '../src/integrations/integration.mapper';
 import { MetricsRepository } from '../src/metrics/metrics.repository';
 import { RollupService } from '../src/metrics/rollup.service';
 import { createPrismaClient } from '../src/prisma/create-client';
+import { seedDocuments } from './seed-documents';
 
 import type { PrismaService } from '../src/prisma/prisma.service';
 
@@ -771,12 +772,21 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
         promptVersion: 0,
         model: 'unknown',
         inputHash: `legacy:${doc.type}`,
+        createdAt: at(200, 10),
+        updatedAt: at(200, 10),
         versions: {
-          create: { version: 1, source: 'AI', content: { legacy: true, raw: doc.content } },
+          create: {
+            version: 1,
+            source: 'AI',
+            content: { legacy: true, raw: doc.content },
+            createdAt: at(200, 10),
+          },
         },
       },
     });
   }
+
+  const v2Documents = await seedDocuments(prisma, demo.id, anchor);
 
   return {
     user: demo.email,
@@ -786,7 +796,7 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
     reviews: reviewCount,
     issues: issues.length,
     snapshots: snapshot.snapshots,
-    documents: 3,
+    documents: 3 + v2Documents,
   };
 }
 
