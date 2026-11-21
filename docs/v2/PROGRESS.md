@@ -17,7 +17,7 @@ Every phase session updates this file before opening its PR.
 | 08 | AI Layer v2 | ✅ Done | (this PR) | 2026-11-17 | Worker generation + Redis Streams SSE, structured output, evidence + citations, cache, quotas, 42 mocked evals; live eval pending (no key, AI-10) |
 | 09 | Frontend Foundation & App Shell | ✅ Done | (this PR) | 2026-11-18 | Next 16 + React 19 + Tailwind 4, tokens/themes, AppShell + ⌘K + period picker, typed apiClient + TanStack Query + fetch-SSE, sign-in + onboarding, axe-clean E2E |
 | 10 | Frontend: Insights Pages | ✅ Done | (this PR) | 2026-11-18 | Dashboard, Activity (+ drawer), KPIs (+ explain), Impact, Career (+ print), Integrations; Recharts on tokens; Lighthouse mobile 96 / desktop 100, a11y 100 |
-| 11 | Frontend: AI Document Studio | ⏳ Not started | | | |
+| 11 | Frontend: AI Document Studio | ✅ Done | (this PR) | 2026-11-21 | Library, picker, 3 studios, streaming viewer/editor (structured fields), versions, citations, exports MD/TXT/PDF/DOCX (`@react-pdf/renderer` + `docx`), Documents nav spinner; axe-clean E2E |
 | 12 | Product Extensions | ⏳ Not started | | | |
 | 13 | Additional Integrations (optional) | ⏸ Deferred | | | Skipped for v2.0 → v2.1 (D-018) |
 | 14 | Hardening | ⏳ Not started | | | |
@@ -1318,3 +1318,157 @@ status) and from deep-linked sheets opening during hydration (`useHydrated`).
   (previous period in `--chart-4`); expanding "and N more" in career via an endpoint for one
   repo/quarter; showing the half's numbers in the appraisal Next step before the extra overview call
   resolves.
+
+### Phase 11 — Frontend: AI Document Studio (2026-11-21)
+**Branch / PR:** `claude/beautiful-galileo-nj9vgc` → `main` / PR "Phase 11: Frontend AI Document Studio"
+(branched from `main@7f1c633` = P10 merged).
+
+**Summary:**
+- **Library (S11, `/documents`):** type chips (`?type=`), debounced search (`?q=`), sort (`?sort=`
+  updated/created/title), cursor pages ("Show more"), status badges (Queued / Writing with spinner /
+  Failed / Cancelled), "N uncited" badges (A-5), evidence %, usage meter (`QuotaMeter`, `/me/usage`),
+  "New document" menu, row menu (Open, Rename dialog, Duplicate options, Retry for failed/cancelled,
+  Delete with a 7 s Undo toast), empty states (no integration / no documents / no match), stacked rows
+  on phones. First page + usage are prefetched on the server.
+- **Type picker (S12) and studios (S13–S15):** designed copy; period presets per type (appraisal
+  month/quarter/half/year/last 12 months/custom with the in-progress note; resume/promotion last 12
+  months by default) pre-filled from `?period=`; resume role / format / length / job description
+  (GAP-08 UI); appraisal self-reflection; promotion current/target role (pre-filled from Profile,
+  validated, focus on the first invalid field) and ladder text; character counters; debounced
+  (400 ms) evidence preview with counts, "Most significant work", engine metrics, import-in-progress
+  and redaction notes, "Not enough evidence" (Generate disabled with the reason); footer "Uses 1 of N
+  generations left this month · same inputs reuse the last result for free"; 402 copy names the reset
+  date + See plan; 429 names the retry time; 200 cached → viewer + "Reused your last result — no
+  generation used." `?from=` duplicates options, `?regenerate=` runs F6 "Change options and
+  regenerate".
+- **Viewer / editor (S16, `/documents/:id`):** server-prefetched detail + versions; header (type,
+  period · vN · edited · model, status, coverage badge), `DocumentRenderer` per type (section order
+  from shared `SECTION_SPECS`, claims with `EvidenceChip` popovers — title, kind, repo, date, GitHub,
+  Details → Activity drawer — wavy underline + "No evidence linked" for flagged claims, flags banner,
+  engine tables with "Engine" badge and the calculator note), v0.1 imports as readable read-only
+  sections (UX-04), resume bullet cards (theme, Copy, Pin, Mark as used, Move up/down — persisted in
+  content), streaming (`StreamingStatus` "Writing section 2 of 5 · Key contributions", Stop, draft text
+  with caret, reserved skeletons, one polite live region), failed / cancelled banners with Try again /
+  Generate again, version list (View `?version=N` read-only with "Restore this version", Restore),
+  Regenerate menu (whole with confirmation, change options, one section), Export menu (Copy as
+  Markdown / plain text client-side from the shared IR; Download PDF / DOCX / Markdown), Rename,
+  Delete (confirmation), 404 "This document was deleted". Edit mode = `DocumentEditor` (structured
+  fields, `next/dynamic`), autosave 900 ms, version-conflict dialog.
+- **Shell:** Documents nav spinner (sidebar + bottom bar) and a global `DocumentToaster` ("Appraisal
+  ready — 96% of claims cited. [Open]") from `GET /documents?status=pending,streaming` (GAP-13).
+- **API:** `GET /documents/:id/export?format=md|txt|pdf|docx&version=&citations=` (ADR-0012) in
+  `apps/api/src/exports/` — ownership through `DocumentsService.get`, 409 while generating / without
+  content, safe ASCII filenames, `export` rate class 30/h (`RATE_LIMIT_EXPORT_PER_HOUR`); additive
+  `status` filter on `GET /documents`; CORS exposes `Content-Disposition`. **Shared:**
+  `documents/render.ts` (section specs, `documentSections`, legacy sections, `formatMetricValue`,
+  immutable edit helpers) and `documents/export.ts` (IR, Markdown/plain-text serializers, filename);
+  `ResumeBulletItem.pinned/used`; `ExportQuery`. **Seed:** three v2 documents (D-027).
+- **Removed:** interim studios (`studio-shell.tsx`, `*-studio.tsx`), the library placeholder,
+  `DocumentPreview`, `GenerateButton` (+ tests), the polling `useGenerateDocument` in `lib/documents.ts`.
+  `/resume|/appraisal|/promotion` still redirect to the studios.
+- **Fixed in passing:** `cn()` dropped `text-caption`/`text-md` next to a text colour (every Badge
+  inherited its parent's font size) — UX-14.
+- **Tests:** web Vitest **208** (32 files; new: library, studios, viewer views against
+  `test/fixtures-p11` captured from the seeded API; `useDocumentStream` incl. delta/section/done,
+  error, cancelled, Last-Event-ID resume, polling fallback; studio/copy helpers; `apiClient.download`);
+  shared **83** (render/export IR, Markdown/plain-text snapshots, escaping, filenames, status filter);
+  API unit 210; API integration **164** (+7 `exports.int-spec.ts`: PDF magic bytes + pdfjs text
+  extraction, DOCX ZIP + `word/document.xml` text, md/txt footnotes, resume citations off/on, Letter
+  paper for `America/*`, versions, 404 for unknown versions and other users, 400 format/unknown keys,
+  401, legacy export, 409 in progress / not ready, 30/h rate limit, status filter); Playwright **34**
+  (+4 P11 journeys: resume generate → stream → edit → autosave v2 → restore v3 → MD/PDF/DOCX downloads
+  → library → delete; appraisal + promotion generate + export; leave mid-stream and return; citation
+  popover/flags; axe 0 serious/critical + 0 px overflow on library, picker, 3 studios, viewer, citation
+  popover, older version and editor × light/dark × 1440/390), against the fake Anthropic API started by
+  `playwright.config.ts`.
+- **Security review** (`security-review` skill, focus on exports, ownership and injection): no
+  HIGH/MEDIUM findings. Verified: export/version reads go through `{ id, userId }`; filenames contain
+  only enums, an integer and a `[A-Za-z0-9_-]` slug (client accepts only `^[A-Za-z0-9._-]{1,120}$`);
+  Markdown export escapes link/HTML/emphasis/heading syntax and control/bidi characters and prints
+  only http(s) URLs; PDF/DOCX render text runs and http(s) links only; LLM and user text is rendered as
+  React text everywhere (no `dangerouslySetInnerHTML`); citation links pass `isHttpUrl`.
+
+**Acceptance criteria:**
+- [x] All three document types can be generated, streamed, edited, versioned, exported (MD, PDF,
+  DOCX) and deleted (E2E: resume full journey; appraisal + promotion generate/export; edit/version/
+  restore/delete paths are type-independent and covered by view tests for appraisal and resume).
+- [x] Every button in the studio has a working handler (reviewed against SCREENS S11–S16 and the
+  prototype actions cancel-gen, regen-section, doc-edit, restore, copy-md/txt, download, rename-doc,
+  confirm-delete-doc; view tests click each).
+- [x] Citations render and resolve (popover from `document.evidence`); uncited/invalid claims are
+  flagged (underline, chip, banner, library badge).
+- [x] Navigating away mid-stream and back shows the document (in progress or saved) — E2E.
+- [x] Exported PDF/DOCX open correctly: magic bytes + text extraction in integration tests; first
+  pages rendered to PNG in `docs/v2/screenshots/p11/export-*-pdf.png`.
+- [x] Quota/rate-limit errors show designed messaging (studio footer + banner; view tests).
+- [x] Mobile 390 px usable; axe 0 serious/critical; `npm run check`, `test:int`, `test:e2e` green
+  locally (CI runs on the PR).
+
+**Deviations from the phase file / design:**
+- **Editor = structured per-claim fields**, not per-section rich text (D-027): the stored schema is
+  plain-text claims with citations; DESIGN_SYSTEM §5.2 allows "Tiptap or contenteditable" — the
+  decision keeps citations attached and adds no dependency.
+- **Versions** are a card in the aside (with a View/Restore list and `?version=`), as in the S16
+  wireframe, not a separate drawer.
+- **Rename** is a dialog (the prototype hinted at inline title editing); delete in the library uses
+  the S11 Undo toast, in the viewer the S16 confirmation dialog.
+- **Section regenerate** still runs the full prompt server-side (AI-12 → P14); the UI shows only
+  the target section as "Rewriting…" and keeps the rest.
+- **Exports** render in the API process (DEBT-14 → P14). Promotion "Areas to strengthen" from the
+  prototype has no field in the P08 schema, so it is not shown.
+- **`ResumeContent.bullets[].pinned/used`** are additive schema fields (API_CONTRACT §22 A-6).
+- Docker images not rebuilt locally (as in P05–P10). The API image needs no Dockerfile change:
+  `@react-pdf/renderer`, `docx`, `react` and the `@fontsource/*` fonts are regular API dependencies.
+
+**Deferred items:** section-scoped prompts (AI-12), durable soft delete (GAP-17), off-loop PDF
+rendering (DEBT-14) → P14; achievements in evidence/citations (GAP-18), "Turn into achievement"
+dialog, plan & usage page → P12; shareable links → v2.1.
+
+**New issues found:** UX-14 (fixed), GAP-17, GAP-18, DEBT-14. Fixed: BUG-14 (rest), UX-03
+(documents), UX-04, GAP-04, GAP-05, UX-08 (rest), UX-12, GAP-08 (UI), GAP-13.
+
+**Handoff notes for next phases (P12 / P14):**
+- *Editor choice:* see D-027 — `components/documents/document-editor.tsx` (default export, loaded
+  with `next/dynamic` from the viewer). Autosave lives in the viewer (`document-view.tsx`:
+  `persist`, `baseRef`, conflict dialog).
+- *Export renderer:* IR + serializers in `packages/shared/src/documents/export.ts`; API renderers
+  `apps/api/src/exports/{pdf,docx,fonts,document-exports.service}.ts`. To change a template, edit
+  `SECTION_SPECS` (order/labels) or the block → PDF/DOCX mapping; the Markdown snapshot test in
+  `packages/shared/src/documents/documents.test.ts` and `exports.int-spec.ts` guard the output.
+  ESM-only packages load through `common/native-require.ts`; Jest uses `test/esm-transform.cjs`.
+- *New components:* `components/documents/{document-renderer,document-editor,resume-bullets,
+  streaming-status,version-list,rename-dialog,status-badge}.tsx`, `components/quota-meter.tsx`
+  (reuse on the P12 plan page), `components/evidence-chip.tsx` (now `EvidenceChip` with popover +
+  `NoEvidenceChip`), `components/shell/document-toaster.tsx`, `NavSpinner` +
+  `useDocumentsGenerating` in `shell/nav-links.tsx`, `hooks/use-document-stream.ts`.
+- *Hooks / keys:* `lib/api/document-hooks.ts` — `useDocumentLibrary` (`qk.documents.library`),
+  `useActiveDocuments` (`qk.documents.active`), `useDocumentDetail` (`qk.documents.detail(id,
+  version)`, `poll`), `useDocumentVersions` (`qk.documents.versions`), `useUsage` (`qk.usage.month`),
+  `usePreviewEvidence` (`qk.documents.preview`), `useCreateDocument`, `useUpdateDocument`,
+  `useRestoreVersion`, `useRegenerateDocument` / `useRegenerateAny`, `useCancelDocument`,
+  `useDeleteDocument`, `useExportDocument` (+ `saveBlob`), `useDebouncedValue`;
+  `apiClient.download()` + `filenameFrom()`; copy helpers in `lib/documents.ts`, studio helpers in
+  `lib/studio.ts`.
+- *SSE consumer:* `useDocumentStream(id, { status, type, onTerminal })` → `phase`, `content`,
+  `currentKey`, `draft`, `step`, `error`, `done`, `fallback`. Reconnects with `Last-Event-ID` up to 5×,
+  then the viewer polls every 2 s; a finished document opens no stream.
+- *API gaps worked around:* no section-scoped generation (UI-only "Rewriting…"); no server soft
+  delete (client timer); `preview-evidence` returns no "would be cached" hint (studio can't say "this
+  reuses your last result" before Generate — it says so after the 200).
+- *Feed back to the AI layer (P14):* AI-12 section prompts (only the target section's schema +
+  previous content as context would cut cost/latency); a `cached` hint on `preview-evidence`; delta
+  events carry no `index`, so array sections show the draft below the last finished item.
+- *P12:* bind `ACHIEVEMENT_SOURCE` (evidence chips already handle `ACH-` refs without a Details
+  link — GAP-18); the plan page can reuse `QuotaMeter` and `useUsage`; `notifyDocumentReady` settings
+  could gate `DocumentToaster`.
+- *Local AI / E2E:* `playwright.config.ts` starts `npm run ai:mock` (`AI_MOCK_CHUNK=6`,
+  `AI_MOCK_DELAY_MS=25`) and the API with `ANTHROPIC_BASE_URL=http://127.0.0.1:4010`. When reusing a
+  local API, start it with those vars plus `RATE_LIMIT_DEFAULT_PER_MINUTE=3000
+  RATE_LIMIT_EXPORT_PER_HOUR=1000`, and a local `next dev` needs the placeholder
+  `GITHUB_SIGNIN_*`/`GOOGLE_*` ids for `auth.spec`. The `ai` class allows 60 generations/day per
+  user — flush `rl:*` keys in Redis when rerunning the suite many times.
+- *Screenshots:* `SCREENSHOTS=1 npm run test:e2e -- e2e/screenshots-p11.spec.ts` (needs `pdftoppm`
+  for the PDF pages), then quantize (PIL `quantize(128, MEDIANCUT, no dither)`; 13 MB → 4.5 MB).
+- *Remaining UX polish ideas:* drag-and-drop reordering for bullet cards (buttons today); a
+  diff view between versions; inline title editing; per-claim "Link an achievement" once P12 lands;
+  keyboard shortcut for Export; reserve space for engine sections during streaming.
