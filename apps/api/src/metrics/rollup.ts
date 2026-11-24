@@ -40,6 +40,8 @@ export function rollupDays(
   fromDate: string,
   toDate: string,
   timeZone: string,
+  /** Local `occurredOn` dates of the user's achievements (counter only; not an "active" day). */
+  achievementDates: readonly string[] = [],
 ): DailyCounters[] {
   const days = new Map<string, DailyCounters>();
   const reviewedPrs = new Map<string, Set<string>>();
@@ -87,6 +89,15 @@ export function rollupDays(
       reviewedPrs.set(row.date, prs);
     }
     prs.add(r.pullRequestId);
+  }
+  for (const date of achievementDates) {
+    if (date < fromDate || date > toDate) continue;
+    let row = days.get(date);
+    if (!row) {
+      row = emptyCounters(date);
+      days.set(date, row);
+    }
+    row.achievements++;
   }
   for (const [date, prs] of reviewedPrs) {
     const row = days.get(date);

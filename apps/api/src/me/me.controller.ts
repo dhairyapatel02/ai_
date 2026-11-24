@@ -9,22 +9,50 @@ import {
   UsageResponse,
   UserDto,
 } from '@devimpact/shared';
-import { Controller, Delete, Get, HttpCode, Patch } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Patch, Res } from '@nestjs/common';
 import { z } from 'zod';
 
 import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
-import { withMeta } from '../common/envelope.interceptor';
+import { RawResponse, withMeta } from '../common/envelope.interceptor';
 import { ApiDoc, ZodBody, ZodQuery } from '../common/zod-validation';
 import { RateLimit } from '../throttle/rate-limit';
 import { UsageService } from '../usage/usage.service';
+import { DataExportService } from './data-export.service';
 import { MeService } from './me.service';
+
+import type { Response } from 'express';
 
 @Controller('me')
 export class MeController {
   constructor(
     private readonly me: MeService,
     private readonly usageService: UsageService,
+    private readonly dataExport: DataExportService,
   ) {}
+
+  @Get('export')
+  @RawResponse()
+  @RateLimit('data-export')
+  @ApiDoc({
+    summary:
+      'Download all your data as one JSON file (streamed attachment devimpact-export-<date>.json; no tokens or secrets)',
+    tags: ['me'],
+    rateLimit: 'data-export',
+  })
+  async export(@CurrentUser() user: AuthUser, @Res() res: Response) {
+    // Filename = fixed ASCII parts + a local date (safe in Content-Disposition without escaping).
+    const filename = await this.dataExport.filename(user.id);
+    res.status(200);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    try {
+      await this.dataExport.stream(user.id, res);
+    } finally {
+      res.end();
+    }
+  }
 
   @Get('usage')
   @ApiDoc({

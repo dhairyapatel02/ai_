@@ -36,8 +36,11 @@ export class RollupService {
     if (toDate < fromDate) toDate = fromDate;
 
     const { start, endExclusive } = localRangeToUtc(fromDate, toDate, timezone);
-    const facts = await this.repo.loadFacts(userId, start, endExclusive);
-    const rows = rollupDays(facts, fromDate, toDate, timezone);
+    const [facts, achievementDates] = await Promise.all([
+      this.repo.loadFacts(userId, start, endExclusive),
+      this.repo.achievementDates(userId, fromDate, toDate),
+    ]);
+    const rows = rollupDays(facts, fromDate, toDate, timezone, achievementDates);
     const snapshots = await this.repo.replaceSnapshots(
       userId,
       timezone,

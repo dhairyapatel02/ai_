@@ -21,8 +21,13 @@ const USER_OWNED = [
   'metricSnapshot',
   'userSettings',
   'aiUsage',
+  'achievement',
+  'goal',
+  'digestDelivery',
   // No userId column: every access must follow a `{ id, userId }` document lookup (justified).
   'documentVersion',
+  'achievementEvidence',
+  'goalAchievement',
 ];
 const SRC = path.resolve(__dirname, '../../src');
 

@@ -179,6 +179,9 @@ model User {
   impactScores ImpactScore[]
   snapshots    MetricSnapshot[]
   legacyScores ImpactScoreLegacy[]
+  achievements Achievement[]
+  goals        Goal[]
+  digests      DigestDelivery[]
 
   @@map("users")
 }
@@ -386,6 +389,8 @@ model Commit {
   integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   repository  Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
 
+  evidence    AchievementEvidence[]
+
   @@unique([userId, sha]) // de-duplicates forks/mirrors
   @@index([userId, authoredAt])
   @@index([repositoryId, authoredAt])
@@ -436,6 +441,7 @@ model PullRequest {
   integration Integration         @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   repository  Repository          @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
   reviews     PullRequestReview[]
+  evidence    AchievementEvidence[]
 
   @@unique([userId, repositoryId, number]) // natural key (matches legacy rows)
   @@unique([userId, externalId])
@@ -463,6 +469,8 @@ model PullRequestReview {
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   pullRequest PullRequest @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+
+  evidence    AchievementEvidence[]
 
   @@unique([userId, externalId])
   @@index([userId, submittedAt])
@@ -695,4 +703,133 @@ model ImpactScore {
   @@unique([userId, periodType, periodStart, periodEnd, scoreVersion])
   @@index([userId, periodStart, periodEnd])
   @@map("impact_scores")
+}
+
+// ───────────── Career OS (migration P12-1 `career_os`) ─────────────
+enum AchievementCategory {
+  DELIVERY
+  QUALITY
+  MENTORING
+  INCIDENT
+  LEADERSHIP
+  LEARNING
+  COLLABORATION
+  OTHER
+}
+
+enum AchievementSource {
+  MANUAL
+  FROM_ACTIVITY
+  SUGGESTED
+}
+
+enum EvidenceKind {
+  PULL_REQUEST
+  COMMIT
+  REVIEW
+}
+
+enum GoalStatus {
+  ACTIVE
+  ACHIEVED
+  MISSED
+  ARCHIVED
+}
+
+enum GoalComparator {
+  LTE
+  GTE
+}
+
+enum DigestStatus {
+  SENT
+  SKIPPED
+  FAILED
+}
+
+/// Manual wins (F-60). Private to the user (no visibility column in v2.0; share links are v2.1).
+model Achievement {
+  id          String              @id @default(cuid())
+  userId      String              @map("user_id")
+  title       String              @db.VarChar(200)
+  description String? // ≤ 5000 chars
+  impact      String? // ≤ 1000 chars
+  category    AchievementCategory
+  occurredOn  DateTime            @map("occurred_on") @db.Date
+  links       Json                @default("[]") // [{ url, label }] ≤ 10
+  source      AchievementSource   @default(MANUAL)
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  evidence    AchievementEvidence[]
+  goals       GoalAchievement[]
+
+  @@index([userId, occurredOn])
+  @@map("achievements")
+}
+
+/// Links an achievement to one of the user's own PRs, commits or reviews.
+/// CHECK (exactly one of pull_request_id, commit_id, review_id is non-null) — raw SQL in the migration.
+model AchievementEvidence {
+  id            String             @id @default(cuid())
+  achievementId String             @map("achievement_id")
+  kind          EvidenceKind
+  pullRequestId String?            @map("pull_request_id")
+  commitId      String?            @map("commit_id")
+  reviewId      String?            @map("review_id")
+  achievement   Achievement        @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  pullRequest   PullRequest?       @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+  commit        Commit?            @relation(fields: [commitId], references: [id], onDelete: Cascade)
+  review        PullRequestReview? @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([achievementId])
+  @@index([pullRequestId])
+  @@index([commitId])
+  @@index([reviewId])
+  @@map("achievement_evidence")
+}
+
+model Goal {
+  id           String            @id @default(cuid())
+  userId       String            @map("user_id")
+  title        String            @db.VarChar(200)
+  description  String?
+  status       GoalStatus        @default(ACTIVE)
+  startDate    DateTime          @map("start_date") @db.Date
+  targetDate   DateTime?         @map("target_date") @db.Date
+  metricKey    String?           @map("metric_key") // KPI_METHODOLOGY key
+  comparator   GoalComparator?
+  targetValue  Float?            @map("target_value")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievements GoalAchievement[]
+
+  @@index([userId, status])
+  @@map("goals")
+}
+
+model GoalAchievement {
+  goalId        String      @map("goal_id")
+  achievementId String      @map("achievement_id")
+  goal          Goal        @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@id([goalId, achievementId])
+  @@index([achievementId])
+  @@map("goal_achievements")
+}
+
+/// One weekly digest per user and local week (job id `digest:<userId>:<weekStart>`).
+model DigestDelivery {
+  id        String       @id @default(cuid())
+  userId    String       @map("user_id")
+  weekStart DateTime     @map("week_start") @db.Date // local Monday
+  status    DigestStatus
+  error     String?
+  sentAt    DateTime     @default(now()) @map("sent_at")
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@map("digest_deliveries")
 }

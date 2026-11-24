@@ -1,6 +1,6 @@
 /**
- * Achievements as AI evidence (ADR-0009, `ACH-<id>` refs). The journal is built in P12; P08 only
- * defines the interface. P12 binds `ACHIEVEMENT_SOURCE` to a Prisma-backed implementation.
+ * Achievements as AI evidence (ADR-0009, `ACH-<id>` refs). `ACHIEVEMENT_SOURCE` is bound to
+ * `PrismaAchievementSource` in EvidenceModule (P12); `NoAchievementSource` remains for unit tests.
  */
 export interface AchievementRecord {
   id: string;
@@ -20,7 +20,7 @@ export interface AchievementSource {
 
 export const ACHIEVEMENT_SOURCE = Symbol('ACHIEVEMENT_SOURCE');
 
-/** Default until P12: no achievements. */
+/** No achievements (unit tests, eval harness). */
 export class NoAchievementSource implements AchievementSource {
   listForPeriod(): Promise<AchievementRecord[]> {
     return Promise.resolve([]);

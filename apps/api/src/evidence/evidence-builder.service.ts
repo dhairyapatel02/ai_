@@ -10,6 +10,7 @@ import {
 import { Inject, Injectable } from '@nestjs/common';
 
 import { AppException } from '../common/app-exception';
+import { assertWithinHistory } from '../entitlements/entitlements';
 import { ImpactScoreService } from '../metrics/impact-score.service';
 import { MetricsRepository } from '../metrics/metrics.repository';
 import { PrismaService } from '../prisma/prisma.service';
@@ -114,8 +115,10 @@ export class EvidenceBuilder {
       }
     }
     try {
+      const period = resolvePeriod(effective, settings.timezone, today);
+      assertWithinHistory(settings.plan, period.startDate, today);
       return {
-        period: resolvePeriod(effective, settings.timezone, today),
+        period,
         timezone: settings.timezone,
         today,
         redactPrivateRepos: privacy?.aiRedactPrivateRepos ?? false,

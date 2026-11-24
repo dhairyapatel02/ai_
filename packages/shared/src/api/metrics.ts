@@ -410,6 +410,8 @@ export const CareerQuarter = z.object({
     }),
   ),
   milestones: z.array(CareerMilestone),
+  /** "Beyond code" group (P12, §22 A-7): the quarter's achievements, newest first. */
+  achievements: z.array(CareerItem).default([]),
   totals: z.object({
     prsMerged: z.number().int(),
     prsReviewed: z.number().int(),

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PeriodType, Prisma, ScoreStatus, SyncStatus } from '@prisma/client';
+import { PeriodType, type Plan, Prisma, ScoreStatus, SyncStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -17,6 +17,7 @@ import type { DailyCounters } from './rollup';
 export interface UserMetricSettings {
   timezone: string;
   defaultPeriodType: PeriodType;
+  plan: Plan;
 }
 
 const dateOnly = (date: string) => new Date(`${date}T00:00:00.000Z`);
@@ -27,13 +28,14 @@ export class MetricsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async settings(userId: string): Promise<UserMetricSettings> {
-    const row = await this.prisma.userSettings.findUnique({
-      where: { userId },
-      select: { timezone: true, defaultPeriodType: true },
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { plan: true, settings: { select: { timezone: true, defaultPeriodType: true } } },
     });
     return {
-      timezone: row?.timezone ?? 'UTC',
-      defaultPeriodType: row?.defaultPeriodType ?? 'MONTH',
+      timezone: user?.settings?.timezone ?? 'UTC',
+      defaultPeriodType: user?.settings?.defaultPeriodType ?? 'MONTH',
+      plan: user?.plan ?? 'FREE',
     };
   }
 
@@ -120,6 +122,21 @@ export class MetricsRepository {
         authoredAt: c.authored_at,
       })),
     };
+  }
+
+  /** Local `occurredOn` dates of the user's achievements in `[fromDate, toDate]` (one per row). */
+  async achievementDates(userId: string, fromDate: string, toDate: string): Promise<string[]> {
+    const rows = await this.prisma.achievement.findMany({
+      where: {
+        userId,
+        occurredOn: {
+          gte: new Date(`${fromDate}T00:00:00Z`),
+          lte: new Date(`${toDate}T00:00:00Z`),
+        },
+      },
+      select: { occurredOn: true },
+    });
+    return rows.map((r) => r.occurredOn.toISOString().slice(0, 10));
   }
 
   /** Earliest activity timestamp of the user (bounds a full-history recompute). */

@@ -15,6 +15,9 @@
  * stub (both must never count) — and the daily `MetricSnapshot` rows are computed by the real
  * rollup service. Impact scores are not seeded: `GET /impact` computes them deterministically.
  * The user's time zone is Europe/London (DST transitions inside the data).
+ *
+ * P12: achievements, goals, digest settings + a delivered digest (`seed-career-os.ts`), and the
+ * disposable `delete-me@devimpact.dev` user for the account-deletion E2E.
  */
 import {
   DocumentType,
@@ -32,6 +35,7 @@ import { scheduleSlotFor } from '../src/integrations/integration.mapper';
 import { MetricsRepository } from '../src/metrics/metrics.repository';
 import { RollupService } from '../src/metrics/rollup.service';
 import { createPrismaClient } from '../src/prisma/create-client';
+import { seedAchievements, seedGoalsAndDigests, seedThrowawayUser } from './seed-career-os';
 import { seedDocuments } from './seed-documents';
 
 import type { PrismaService } from '../src/prisma/prisma.service';
@@ -686,6 +690,9 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
     },
   });
 
+  // P12: achievements before the rollup (snapshot `achievements` counter).
+  const achievementIds = await seedAchievements(prisma, demo.id, anchor);
+
   // Daily snapshots via the real rollup service (KPI §4); impact scores are computed lazily.
   const rollups = new RollupService(new MetricsRepository(prisma as PrismaService));
   const snapshot = await rollups.recompute(demo.id, at(DAYS + 7, 0), today, today);
@@ -787,6 +794,8 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
   }
 
   const v2Documents = await seedDocuments(prisma, demo.id, anchor);
+  const goals = await seedGoalsAndDigests(prisma, demo.id, anchor, achievementIds);
+  const throwaway = await seedThrowawayUser(prisma, anchor);
 
   return {
     user: demo.email,
@@ -797,6 +806,9 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
     issues: issues.length,
     snapshots: snapshot.snapshots,
     documents: 3 + v2Documents,
+    achievements: achievementIds.length,
+    goals,
+    throwawayUser: throwaway.email,
   };
 }
 

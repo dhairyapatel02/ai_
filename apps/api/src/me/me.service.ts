@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { IntegrationStatus, PeriodType, type Prisma, type UserSettings } from '@prisma/client';
+import Redis from 'ioredis';
 
+import { DocEventsService } from '../ai/doc-events.service';
 import { AppException } from '../common/app-exception';
 import { limitsFor } from '../entitlements/entitlements';
 import { toIntegrationSummary } from '../integrations/integration.mapper';
@@ -8,6 +10,7 @@ import { IntegrationsService } from '../integrations/integrations.service';
 import { MetricsQueueService } from '../metrics/metrics-queue.service';
 import { MetricsRepository } from '../metrics/metrics.repository';
 import { PrismaService } from '../prisma/prisma.service';
+import { REDIS_CLIENT } from '../redis/redis.module';
 
 import type {
   Entitlements,
@@ -68,11 +71,15 @@ function toSettingsDto(s: UserSettings): SettingsDto {
 
 @Injectable()
 export class MeService {
+  private readonly logger = new Logger(MeService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly integrations: IntegrationsService,
     private readonly metricsQueue: MetricsQueueService,
     private readonly metrics: MetricsRepository,
+    private readonly docEvents: DocEventsService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
   /** A valid JWT for a deleted account must not keep working (tokens live ≤ 15 min). */
@@ -186,7 +193,9 @@ export class MeService {
 
   /**
    * `DELETE /me` (F-03): the typed email must match; GitHub tokens are revoked (best effort),
-   * then the user row is deleted and every user-owned row cascades (sessions and accounts too).
+   * then the user row is deleted and every user-owned row cascades (sessions and accounts too, so
+   * every Better Auth session ends; outstanding API JWTs fail on the next request because the
+   * user no longer exists). Redis state keyed by the user or their documents is removed after.
    */
   async deleteAccount(userId: string, confirmEmail: string): Promise<{ deleted: true }> {
     const user = await this.user(userId);
@@ -201,8 +210,45 @@ export class MeService {
         ],
       });
     }
+    const documents = await this.prisma.generatedDocument.findMany({
+      where: { userId },
+      select: { id: true },
+    });
     await this.integrations.revokeAllTokens(userId);
     await this.prisma.user.delete({ where: { id: userId } });
+    await this.purgeRedis(
+      userId,
+      documents.map((d) => d.id),
+    );
     return { deleted: true };
+  }
+
+  /** Best effort: the account is already gone; leftovers would expire on their own TTLs. */
+  private async purgeRedis(userId: string, documentIds: string[]): Promise<void> {
+    try {
+      await Promise.all(documentIds.map((id) => this.docEvents.clear(id)));
+      await this.metricsQueue.cancelForUser(userId);
+      // Keys of the shared client carry its `devimpact:` prefix; SCAN patterns don't apply it.
+      const prefix = 'devimpact:';
+      const keys: string[] = [`sse:${userId}`];
+      let cursor = '0';
+      do {
+        const [next, found] = await this.redis.scan(
+          cursor,
+          'MATCH',
+          `${prefix}rl:*:user:${userId}`,
+          'COUNT',
+          500,
+        );
+        cursor = next;
+        keys.push(...found.map((k) => k.slice(prefix.length)));
+      } while (cursor !== '0');
+      await this.redis.del(...keys);
+    } catch (error) {
+      this.logger.warn(
+        { userId, err: (error as Error).name },
+        'Redis cleanup after deletion failed',
+      );
+    }
   }
 }

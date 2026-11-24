@@ -30,3 +30,12 @@ export const apiClient = createApiClient({
     window.location.assign(`/sign-in?${params.toString()}`);
   },
 });
+
+/**
+ * Client for public endpoints (no session needed, e.g. `POST /notifications/unsubscribe` from an
+ * email link): never sends a token and never redirects to sign-in.
+ */
+export const publicApiClient = createApiClient({
+  baseUrl: publicEnv.NEXT_PUBLIC_API_URL,
+  getToken: () => Promise.resolve(null),
+});

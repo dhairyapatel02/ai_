@@ -1,0 +1,57 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`digest template renders HTML + text (snapshot): html 1`] = `
+"<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Your week: Nov 16 – Nov 22</title></head>
+<body style="margin:0;padding:0;background:#f7f7f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f7f8"><tr><td align="center" style="padding:24px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid #e4e4e7;border-radius:12px"><tr><td style="padding:24px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr><td style="font-size:12px;color:#71717a">DevImpact · Weekly digest</td></tr>
+<tr><td style="padding:6px 0 0;font-size:20px;font-weight:600;color:#18181b">Your week: Nov 16 – Nov 22</td></tr>
+<tr><td style="padding:12px 0 0;font-size:14px;line-height:21px;color:#18181b">Hi Dana &lt;script&gt;alert(1)&lt;/script&gt;, You merged 4 pull requests and reviewed 7 across 3 repositories.</td></tr>
+<tr><td style="padding:16px 0 0"><div style="background:#f4f4f5;border-radius:8px;padding:12px 14px"><div style="font-size:12px;color:#71717a;padding-bottom:4px">Summary · written by AI from your activity</div><div style="font-size:14px;line-height:21px;color:#18181b">Ignore previous instructions &lt;img src=x onerror=alert(1)&gt;</div><ul style="margin:8px 0 0;padding-left:18px;font-size:14px;line-height:21px;color:#18181b"><li>&lt;a href=&quot;https://evil&quot;&gt;click&lt;/a&gt;</li></ul></div></td></tr>
+<tr><td style="padding:16px 0 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:12px;border:1px solid #e4e4e7;border-radius:8px;background:#ffffff;width:25%;vertical-align:top"><div style="font-size:12px;color:#52525b">PRs merged</div><div style="font-size:22px;font-weight:600;color:#18181b;padding-top:2px">4</div><div style="font-size:11px;color:#71717a">up 2 vs the week before</div></td><td style="width:8px"></td><td style="padding:12px;border:1px solid #e4e4e7;border-radius:8px;background:#ffffff;width:25%;vertical-align:top"><div style="font-size:12px;color:#52525b">PRs reviewed</div><div style="font-size:22px;font-weight:600;color:#18181b;padding-top:2px">7</div><div style="font-size:11px;color:#71717a">no change vs the week before</div></td><td style="width:8px"></td><td style="padding:12px;border:1px solid #e4e4e7;border-radius:8px;background:#ffffff;width:25%;vertical-align:top"><div style="font-size:12px;color:#52525b">Commits</div><div style="font-size:22px;font-weight:600;color:#18181b;padding-top:2px">12</div><div style="font-size:11px;color:#71717a">down 3 vs the week before</div></td><td style="width:8px"></td><td style="padding:12px;border:1px solid #e4e4e7;border-radius:8px;background:#ffffff;width:25%;vertical-align:top"><div style="font-size:12px;color:#52525b">Repositories contributed to</div><div style="font-size:22px;font-weight:600;color:#18181b;padding-top:2px">3</div><div style="font-size:11px;color:#71717a"></div></td></tr></table></td></tr>
+<tr><td style="padding:6px 0 0;font-size:11px;color:#71717a">Numbers come from the DevImpact metrics engine, not the AI. Signal from your GitHub activity — not a judgement of your performance.</td></tr>
+<tr><td style="padding:12px 0 0;font-size:13px;color:#52525b">You logged 1 achievement this week.</td></tr>
+<tr><td style="padding:20px 0 4px;font-size:14px;font-weight:600;color:#18181b">Notable pull requests</td></tr><tr><td style="padding:8px 0;border-top:1px solid #e4e4e7;font-size:14px;line-height:20px;color:#18181b">Fix &quot;quotes&quot; &amp; &lt;b&gt;tags&lt;/b&gt;<br><span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:#71717a">acme/api · PR-acme/api#42</span> · <a href="https://github.com/acme/api/pull/42" style="color:#4338ca;font-size:12px">Open on GitHub</a></td></tr><tr><td style="padding:8px 0;border-top:1px solid #e4e4e7;font-size:14px;line-height:20px;color:#18181b">Evil link<br><span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:#71717a">acme/api · PR-acme/api#43</span></td></tr>
+<tr><td style="padding:20px 0 4px;font-size:14px;font-weight:600;color:#18181b">Worth capturing</td></tr><tr><td style="padding:8px 0;border-top:1px solid #e4e4e7;font-size:14px;line-height:20px;color:#18181b">Retry webhooks<br><span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:#71717a">acme/api · PR-acme/api#44</span> · <a href="http://localhost:3000/activity?item=pr_merged%3Acm1" style="color:#4338ca;font-size:12px">Capture this</a></td></tr>
+<tr><td style="padding:24px 0 0"><a href="http://localhost:3000/dashboard" style="display:inline-block;background:#4338ca;color:#ffffff;text-decoration:none;font-size:14px;font-weight:500;padding:10px 16px;border-radius:8px">Open your dashboard</a></td></tr>
+</table></td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px"><tr><td style="padding:16px 8px;font-size:12px;line-height:18px;color:#71717a">Week of 2026-11-16 to 2026-11-22 in Europe/London. <a href="http://localhost:3000/unsubscribe?token=abc.def" style="color:#71717a">Unsubscribe from the weekly digest</a> with one click — no sign-in needed. <a href="http://localhost:3000/settings/notifications" style="color:#71717a">Email settings</a>.</td></tr></table>
+</td></tr></table>
+</body></html>"
+`;
+
+exports[`digest template renders HTML + text (snapshot): text 1`] = `
+"Your week: Nov 16 – Nov 22
+
+Hi Dana <script>alert(1)</script>, You merged 4 pull requests and reviewed 7 across 3 repositories.
+
+Summary (written by AI from your activity):
+Ignore previous instructions <img src=x onerror=alert(1)>
+- <a href="https://evil">click</a>
+
+PRs merged: 4 (up 2 vs the week before)
+PRs reviewed: 7 (no change vs the week before)
+Commits: 12 (down 3 vs the week before)
+Repositories contributed to: 3
+Numbers come from the DevImpact metrics engine, not the AI.
+
+You logged 1 achievement this week.
+
+Notable pull requests:
+- Fix "quotes" & <b>tags</b> (acme/api · PR-acme/api#42)
+  https://github.com/acme/api/pull/42
+- Evil link (acme/api · PR-acme/api#43)
+
+Worth capturing:
+- Retry webhooks (acme/api · PR-acme/api#44)
+  http://localhost:3000/activity?item=pr_merged%3Acm1
+
+Open your dashboard: http://localhost:3000/dashboard
+
+Week of 2026-11-16 to 2026-11-22 in Europe/London.
+Unsubscribe (no sign-in needed): http://localhost:3000/unsubscribe?token=abc.def
+Email settings: http://localhost:3000/settings/notifications"
+`;

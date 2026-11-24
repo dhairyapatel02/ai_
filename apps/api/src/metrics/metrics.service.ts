@@ -46,6 +46,7 @@ import { Injectable } from '@nestjs/common';
 import { inputsHashOf } from '../ai/hash';
 import { AppException } from '../common/app-exception';
 import { decodeOffsetCursor, encodeOffsetCursor } from '../common/pagination';
+import { assertWithinHistory } from '../entitlements/entitlements';
 import { PrismaService } from '../prisma/prisma.service';
 import { evidenceRefs } from './evidence';
 import { roundScore } from './impact';
@@ -104,16 +105,16 @@ export class MetricsService {
         ? 'month'
         : (settings.defaultPeriodType.toLowerCase() as 'month' | 'quarter' | 'half' | 'year');
     const effective = spec ?? periodSpecContaining(type, today);
+    let period: ResolvedPeriod;
     try {
-      return {
-        timezone: settings.timezone,
-        today,
-        period: resolvePeriod(effective, settings.timezone, today),
-      };
+      period = resolvePeriod(effective, settings.timezone, today);
     } catch (error) {
       if (error instanceof PeriodError) throw invalidPeriod(effective, error.message);
       throw error;
     }
+    // PRD §6 history window (FREE 12 / PRO 36 months): 403 ENTITLEMENT_REQUIRED before any work.
+    assertWithinHistory(settings.plan, period.startDate, today);
+    return { timezone: settings.timezone, today, period };
   }
 
   // ── Definitions ────────────────────────────────────────────────────────────────────────

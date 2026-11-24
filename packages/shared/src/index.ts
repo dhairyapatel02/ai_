@@ -16,3 +16,4 @@ export * from './api/metrics';
 export * from './api/documents';
 export * from './documents/render';
 export * from './documents/export';
+export * from './api/career-os';
