@@ -1,16 +1,8 @@
-import { Shield } from 'lucide-react';
-
-import { ComingSoon } from '@/components/coming-soon';
+import { PrivacyView } from './privacy-view';
 
 export const metadata = { title: 'Privacy & data' };
 
-// SCREENS S22 — arrives in P12 (export, delete account, AI redaction).
+// SCREENS S22 — repositories counted, AI redaction, export, account deletion (F-03, F-04, F-76).
 export default function PrivacyPage() {
-  return (
-    <ComingSoon
-      title="Privacy & data"
-      icon={Shield}
-      description="Data export, AI redaction and account deletion settings are being built."
-    />
-  );
+  return <PrivacyView />;
 }

@@ -83,7 +83,7 @@ export function useGlobalShortcuts() {
         s.setShortcutsOpen(true);
       } else if (key === 'a') {
         event.preventDefault();
-        router.push('/achievements');
+        s.openAchievement();
       } else if (event.key === '[') {
         event.preventDefault();
         s.toggleCollapsed();

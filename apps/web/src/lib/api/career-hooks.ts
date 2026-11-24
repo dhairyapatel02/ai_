@@ -25,8 +25,8 @@ import {
 } from '@tanstack/react-query';
 import { z } from 'zod';
 
-import { saveBlob } from './document-hooks';
 import { apiClient, publicApiClient } from './browser';
+import { saveBlob } from './document-hooks';
 import { qk } from './query-keys';
 
 /**
@@ -42,7 +42,10 @@ export interface AchievementListParams {
 
 const PAGE = 30;
 
-export function useAchievements(params: AchievementListParams, options: { enabled?: boolean } = {}) {
+export function useAchievements(
+  params: AchievementListParams,
+  options: { enabled?: boolean } = {},
+) {
   const key = { category: params.category, period: params.period, q: params.q || undefined };
   return useInfiniteQuery({
     queryKey: qk.achievements.list(key),
@@ -64,7 +67,10 @@ export function useAchievement(id: string | null) {
   return useQuery({
     queryKey: qk.achievements.detail(id ?? ''),
     queryFn: ({ signal }) =>
-      apiClient.get(`/achievements/${encodeURIComponent(id ?? '')}`, { schema: AchievementDto, signal }),
+      apiClient.get(`/achievements/${encodeURIComponent(id ?? '')}`, {
+        schema: AchievementDto,
+        signal,
+      }),
     enabled: id !== null,
   });
 }
@@ -104,7 +110,10 @@ export function useDeleteAchievement() {
   });
 }
 
-export function useGoals(params: { status?: GoalStatusWire } = {}, options: { enabled?: boolean } = {}) {
+export function useGoals(
+  params: { status?: GoalStatusWire } = {},
+  options: { enabled?: boolean } = {},
+) {
   const key = { status: params.status };
   return useQuery({
     queryKey: qk.goals.list(key),
@@ -128,7 +137,10 @@ export function useSaveGoal() {
   return useMutation({
     mutationFn: (vars: { id?: string; body: GoalInput | UpdateGoalInput }) =>
       vars.id
-        ? apiClient.patch(`/goals/${encodeURIComponent(vars.id)}`, { body: vars.body, schema: GoalDto })
+        ? apiClient.patch(`/goals/${encodeURIComponent(vars.id)}`, {
+            body: vars.body,
+            schema: GoalDto,
+          })
         : apiClient.post('/goals', { body: vars.body, schema: GoalDto }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: qk.goals.all });
@@ -190,6 +202,9 @@ export function useDeleteAccount() {
 export function useUnsubscribe() {
   return useMutation({
     mutationFn: (token: string) =>
-      publicApiClient.post('/notifications/unsubscribe', { body: { token }, schema: UnsubscribeResponse }),
+      publicApiClient.post('/notifications/unsubscribe', {
+        body: { token },
+        schema: UnsubscribeResponse,
+      }),
   });
 }

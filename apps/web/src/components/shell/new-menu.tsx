@@ -3,6 +3,7 @@
 import { Award, FileText, ListChecks, Plus, Target, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
+import { useShell } from '@/components/shell/shell-context';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import {
 
 /** Top bar "New" menu (IA §3.2): documents, achievement, goal. Hidden below 768 px. */
 export function NewMenu() {
+  const shell = useShell();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -43,18 +45,22 @@ export function NewMenu() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/achievements">
-            <Award aria-hidden="true" />
-            Achievement
-            <DropdownMenuShortcut>A</DropdownMenuShortcut>
-          </Link>
+        <DropdownMenuItem
+          onSelect={() => {
+            shell.openAchievement();
+          }}
+        >
+          <Award aria-hidden="true" />
+          Achievement
+          <DropdownMenuShortcut>A</DropdownMenuShortcut>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/goals">
-            <Target aria-hidden="true" />
-            Goal
-          </Link>
+        <DropdownMenuItem
+          onSelect={() => {
+            shell.setGoalDialogOpen(true);
+          }}
+        >
+          <Target aria-hidden="true" />
+          Goal
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -155,6 +155,9 @@ describe('Next step rules (S6, F-24)', () => {
     lastSyncFailed: false,
     appraisalPeriods: [],
     newestResumeAt: undefined,
+    prsMergedInPeriod: null,
+    recentAchievements: null,
+    goalsCount: null,
     dismissed: {},
     now: Date.parse('2026-11-18T12:00:00Z'),
   };
@@ -177,6 +180,36 @@ describe('Next step rules (S6, F-24)', () => {
       }).rule,
     ).toBe('resume');
     expect(pickNextStep({ ...base, appraisalPeriods: ['half:2026-H2'] }).rule).toBe('impact');
+  });
+
+  it('rule 4 "Capture a recent win" and rule 6 "Set a goal" (GAP-16)', () => {
+    const done = { ...base, appraisalPeriods: ['half:2026-H2'] };
+    expect(pickNextStep({ ...done, prsMergedInPeriod: 3, recentAchievements: 0 }).rule).toBe(
+      'achievement',
+    );
+    expect(pickNextStep({ ...done, prsMergedInPeriod: 2, recentAchievements: 0 }).rule).toBe(
+      'impact',
+    );
+    expect(pickNextStep({ ...done, prsMergedInPeriod: 5, recentAchievements: 1 }).rule).toBe(
+      'impact',
+    );
+    // Rule 4 comes before the resume rule; rule 6 after it.
+    expect(
+      pickNextStep({
+        ...done,
+        prsMergedInPeriod: 5,
+        recentAchievements: 0,
+        newestResumeAt: '2026-06-01T00:00:00Z',
+      }).rule,
+    ).toBe('achievement');
+    expect(
+      pickNextStep({ ...done, goalsCount: 0, newestResumeAt: '2026-06-01T00:00:00Z' }).rule,
+    ).toBe('resume');
+    expect(pickNextStep({ ...done, goalsCount: 0 }).rule).toBe('goal');
+    expect(pickNextStep({ ...done, goalsCount: 2 }).rule).toBe('impact');
+    expect(
+      pickNextStep({ ...done, goalsCount: 0, dismissed: { goal: base.now + 1000 } }).rule,
+    ).toBe('impact');
   });
 
   it('appraisal rule only applies within 60 days of the end; quarter users get the quarter', () => {

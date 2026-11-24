@@ -88,7 +88,10 @@ export const qk = {
     list: (params: Record<string, string | undefined>) => ['goals', 'list', params] as const,
     detail: (id: string) => ['goals', 'detail', id] as const,
   },
-  entitlements: { all: ['entitlements'] as const, detail: () => ['entitlements', 'detail'] as const },
+  entitlements: {
+    all: ['entitlements'] as const,
+    detail: () => ['entitlements', 'detail'] as const,
+  },
   sessions: { all: ['sessions'] as const, list: () => ['sessions', 'list'] as const },
 } as const;
 

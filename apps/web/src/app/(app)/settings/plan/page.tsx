@@ -1,16 +1,8 @@
-import { CircleGauge } from 'lucide-react';
-
-import { ComingSoon } from '@/components/coming-soon';
+import { PlanView } from './plan-view';
 
 export const metadata = { title: 'Plan & usage' };
 
-// SCREENS S23 — arrives in P12 (no billing, D-014).
+// SCREENS S23 — plan, AI usage meters, plans table, "contact us to upgrade" (no billing, D-014).
 export default function PlanPage() {
-  return (
-    <ComingSoon
-      title="Plan & usage"
-      icon={CircleGauge}
-      description="Your plan and AI usage meters are being built."
-    />
-  );
+  return <PlanView />;
 }

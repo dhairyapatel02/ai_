@@ -1,16 +1,8 @@
-import { Bell } from 'lucide-react';
-
-import { ComingSoon } from '@/components/coming-soon';
+import { NotificationsView } from './notifications-view';
 
 export const metadata = { title: 'Notifications' };
 
-// SCREENS S21 — arrives in P12.
+// SCREENS S21 — notification preferences + weekly digest (F-63, F-65).
 export default function NotificationsPage() {
-  return (
-    <ComingSoon
-      title="Notifications"
-      icon={Bell}
-      description="Weekly digest and sync emails are being built."
-    />
-  );
+  return <NotificationsView />;
 }

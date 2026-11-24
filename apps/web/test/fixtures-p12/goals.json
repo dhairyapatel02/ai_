@@ -1,0 +1,89 @@
+{
+  "data": [
+    {
+      "id": "cmwuv0n3m00sxz17d2dcfbt1v",
+      "title": "Grow as a mentor on the payments team",
+      "description": "Tracked through mentoring and leadership achievements.",
+      "status": "active",
+      "startDate": "2026-07-01",
+      "targetDate": "2026-12-31",
+      "metricTarget": null,
+      "achievementIds": ["cmwuv0mxw00mtz17d2p8iycw2", "cmwuv0my500mxz17dkemfg18p"],
+      "progress": {
+        "current": null,
+        "target": null,
+        "status": "no_metric",
+        "evaluatedPeriod": null
+      },
+      "createdAt": "2026-10-27T00:00:00.000Z",
+      "updatedAt": "2026-11-24T15:38:48.178Z"
+    },
+    {
+      "id": "cmwuv0n3j00swz17doo3q0h06",
+      "title": "Merge more small, focused PRs",
+      "description": "Split work into reviewable changes.",
+      "status": "active",
+      "startDate": "2026-07-01",
+      "targetDate": "2026-12-31",
+      "metricTarget": {
+        "metricKey": "prs_merged",
+        "comparator": "gte",
+        "targetValue": 11
+      },
+      "achievementIds": [],
+      "progress": {
+        "current": 5,
+        "target": 11,
+        "status": "not_met",
+        "evaluatedPeriod": {
+          "spec": "month:2026-10",
+          "type": "month",
+          "startDate": "2026-10-01",
+          "endDate": "2026-10-31",
+          "timezone": "Europe/London",
+          "periodDays": 31,
+          "inProgress": false,
+          "label": "October 2026"
+        }
+      },
+      "createdAt": "2026-10-26T00:00:00.000Z",
+      "updatedAt": "2026-11-24T15:38:48.175Z"
+    },
+    {
+      "id": "cmwuv0n3i00svz17d5pf8njye",
+      "title": "Review teammates' PRs within a day",
+      "description": "Keep the review queue short so nobody waits overnight.",
+      "status": "active",
+      "startDate": "2026-07-01",
+      "targetDate": "2026-12-31",
+      "metricTarget": {
+        "metricKey": "review_turnaround_median_hours",
+        "comparator": "lte",
+        "targetValue": 15
+      },
+      "achievementIds": [],
+      "progress": {
+        "current": 9.5,
+        "target": 15,
+        "status": "met",
+        "evaluatedPeriod": {
+          "spec": "month:2026-10",
+          "type": "month",
+          "startDate": "2026-10-01",
+          "endDate": "2026-10-31",
+          "timezone": "Europe/London",
+          "periodDays": 31,
+          "inProgress": false,
+          "label": "October 2026"
+        }
+      },
+      "createdAt": "2026-10-25T00:00:00.000Z",
+      "updatedAt": "2026-11-24T15:38:48.174Z"
+    }
+  ],
+  "meta": {
+    "nextCursor": null,
+    "hasMore": false,
+    "total": 3
+  }
+}

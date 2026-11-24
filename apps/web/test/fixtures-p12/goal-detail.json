@@ -1,0 +1,57 @@
+{
+  "data": {
+    "id": "cmwuv0n3m00sxz17d2dcfbt1v",
+    "title": "Grow as a mentor on the payments team",
+    "description": "Tracked through mentoring and leadership achievements.",
+    "status": "active",
+    "startDate": "2026-07-01",
+    "targetDate": "2026-12-31",
+    "metricTarget": null,
+    "achievementIds": ["cmwuv0mxw00mtz17d2p8iycw2", "cmwuv0my500mxz17dkemfg18p"],
+    "progress": {
+      "current": null,
+      "target": null,
+      "status": "no_metric",
+      "evaluatedPeriod": null
+    },
+    "createdAt": "2026-10-27T00:00:00.000Z",
+    "updatedAt": "2026-11-24T15:38:48.178Z",
+    "achievements": [
+      {
+        "id": "cmwuv0mxw00mtz17d2p8iycw2",
+        "ref": "ACH-cmwuv0mxw00mtz17d2p8iycw2",
+        "title": "Mentored two new engineers through their first on-call rotation",
+        "description": "Weekly pairing sessions and a written runbook walkthrough.",
+        "impact": "Both now handle payments alerts on their own.",
+        "category": "mentoring",
+        "occurredOn": "2026-10-15",
+        "links": [],
+        "source": "manual",
+        "evidence": [],
+        "goalIds": ["cmwuv0n3m00sxz17d2dcfbt1v"],
+        "createdAt": "2026-10-15T17:00:00.000Z",
+        "updatedAt": "2026-10-15T17:00:00.000Z"
+      },
+      {
+        "id": "cmwuv0my500mxz17dkemfg18p",
+        "ref": "ACH-cmwuv0my500mxz17dkemfg18p",
+        "title": "Wrote the ledger batching design doc",
+        "description": null,
+        "impact": "Adopted by two teams as the template for write-path changes.",
+        "category": "leadership",
+        "occurredOn": "2026-07-27",
+        "links": [
+          {
+            "url": "https://example.com/docs/ledger-batching",
+            "label": "Design doc"
+          }
+        ],
+        "source": "manual",
+        "evidence": [],
+        "goalIds": ["cmwuv0n3m00sxz17d2dcfbt1v"],
+        "createdAt": "2026-07-27T17:00:00.000Z",
+        "updatedAt": "2026-07-27T17:00:00.000Z"
+      }
+    ]
+  }
+}

@@ -6,7 +6,8 @@ import { NextResponse, type NextRequest } from 'next/server';
  * visitor is sent to /sign-in. The session itself is validated by Better Auth on every API call
  * (`/api/auth/token`), and the NestJS API verifies the resulting JWT — this is UX, not security.
  */
-const PUBLIC_PATHS = ['/sign-in'];
+// `/unsubscribe` works from an email link without signing in (S24, F-63).
+const PUBLIC_PATHS = ['/sign-in', '/unsubscribe'];
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;

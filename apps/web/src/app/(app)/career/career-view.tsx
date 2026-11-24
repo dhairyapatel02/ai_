@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CATEGORY_LABEL } from '@/lib/achievements';
 import { isBackfilling, useMe, useSyncStatus } from '@/lib/api/hooks';
 import { useCareerTimeline } from '@/lib/api/metrics-hooks';
 import {
@@ -29,6 +30,8 @@ import { useSearchParamsState } from '@/lib/url-state';
 import { cn } from '@/lib/utils';
 
 import { parseYear } from './year';
+
+import type { AchievementCategoryWire } from '@devimpact/shared';
 
 const SHOWN = 3;
 
@@ -146,8 +149,8 @@ export function CareerView() {
                 `${timeline.data.year}-${String(q.quarter * 3).padStart(2, '0')}-31` <
                   importingBefore
               }
-              onOpen={(id) => {
-                url.set({ item: `pr_merged:${id}` });
+              onOpen={(id, type = 'pr_merged') => {
+                url.set({ item: `${type}:${id}` });
               }}
             />
           ))}
@@ -173,7 +176,7 @@ function Quarter({
   quarter: CareerQuarter;
   year: number;
   importing: boolean;
-  onOpen: (id: string) => void;
+  onOpen: (id: string, type?: 'pr_merged' | 'achievement') => void;
 }) {
   const label = `Q${quarter.quarter} ${year}`;
   const empty = isEmptyQuarter(quarter);
@@ -206,6 +209,45 @@ function Quarter({
                 {quarter.milestones.slice(0, 4).map((m, i) => (
                   <CareerMilestone key={`${m.kind}-${i}`} milestone={m} />
                 ))}
+              </div>
+            ) : null}
+            {quarter.achievements.length ? (
+              <div className="flex flex-col gap-1" data-testid="beyond-code">
+                <h3 className="flex items-center gap-1.5 text-sm font-medium">
+                  <Award className="size-4 text-subtle-foreground" aria-hidden="true" />
+                  Beyond code
+                </h3>
+                <ul className="flex flex-col">
+                  {quarter.achievements.map((item) => (
+                    <li key={item.id} className="flex items-start gap-2.5 py-1.5 pl-1">
+                      <Award
+                        className="mt-0.5 size-4 shrink-0 text-subtle-foreground"
+                        aria-hidden="true"
+                      />
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <button
+                          type="button"
+                          className="cursor-pointer text-left hover:underline"
+                          onClick={() => {
+                            onOpen(item.id, 'achievement');
+                          }}
+                        >
+                          {item.title}
+                        </button>
+                        <span className="flex flex-wrap items-center gap-1.5">
+                          {item.tags.slice(0, 1).map((t) => (
+                            <Badge key={t} variant="outline">
+                              {CATEGORY_LABEL[t as AchievementCategoryWire] ?? t}
+                            </Badge>
+                          ))}
+                          <span className="text-caption text-subtle-foreground">
+                            {formatLocalDate(item.date, { currentYear: year })}
+                          </span>
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ) : null}
             {quarter.repos.map((repo) => (

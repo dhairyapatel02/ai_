@@ -33,6 +33,7 @@ export function isEmptyQuarter(q: CareerQuarter): boolean {
   return (
     q.repos.length === 0 &&
     q.milestones.length === 0 &&
+    q.achievements.length === 0 &&
     q.totals.prsMerged === 0 &&
     q.totals.prsReviewed === 0
   );

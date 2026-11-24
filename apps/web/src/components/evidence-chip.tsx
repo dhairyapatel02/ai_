@@ -23,10 +23,14 @@ const KIND_LABEL: Record<EvidenceItem['kind'], string> = {
   achievement: 'Achievement',
 };
 
-/** Activity drawer link for an evidence record (S7 `?item=`), where one exists. */
-function detailsHref(item: EvidenceItem): string | null {
+/**
+ * Drawer link for an evidence record (S7 `?item=`), where one exists: PRs and commits open the
+ * Activity drawer, achievements (`ACH-…`, GAP-18) the drawer on the Achievements page.
+ */
+export function detailsHref(item: EvidenceItem): string | null {
   if (item.kind === 'pull_request') return `/activity?item=pr_merged:${item.id}`;
   if (item.kind === 'commit') return `/activity?item=commit:${item.id}`;
+  if (item.kind === 'achievement') return `/achievements?item=achievement:${item.id}`;
   return null;
 }
 
