@@ -63,6 +63,19 @@ export const qk = {
       ['documents', 'list', params] as const,
     detail: (id: string, version?: number) =>
       ['documents', 'detail', id, version ?? 'current'] as const,
+    /** Every cached version of one document (invalidate after edits, restore, regenerate). */
+    one: (id: string) => ['documents', 'detail', id] as const,
+    versions: (id: string) => ['documents', 'versions', id] as const,
+    /** Library pages (S11): type, search, sort. */
+    library: (params: Record<string, string | undefined>) =>
+      ['documents', 'library', params] as const,
+    /** Documents still generating (Documents nav spinner, GAP-13). */
+    active: () => ['documents', 'active'] as const,
+    preview: (options: Record<string, unknown>) => ['documents', 'preview', options] as const,
+  },
+  usage: {
+    all: ['usage'] as const,
+    month: () => ['usage', 'month', 'current'] as const,
   },
 } as const;
 

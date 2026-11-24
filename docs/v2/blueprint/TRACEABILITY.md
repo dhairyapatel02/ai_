@@ -41,16 +41,16 @@ Legend for tables/endpoints: see [DATA_MODEL_V2](DATA_MODEL_V2.md) and [API_CONT
 | F-29 AI impact highlights | S | KPI §8, ADR-0009 | GeneratedDocument (IMPACT_NARRATIVE) | `POST /impact/highlights` | `/kpis/impact` | P08, P10 |
 | F-30 Career timeline | M | KPI §3 (milestones) | PR, Review, Achievement | `GET /career/timeline` | `/career`, `/career/print` | P07, P10 |
 | F-31 Global period + URL state | M | ADR-0006, ADR-0010 | UserSettings.defaultPeriodType | `period` param | top bar | P07 (utils), P09, P10 |
-| F-40 Resume | M | ADR-0009 | GeneratedDocument, DocumentVersion | `POST /documents` (resume) | `/documents/new`, `/documents/new/resume` | P08, P11 |
-| F-41 Appraisal | M | ADR-0009, KPI §8 | same | `POST /documents` (appraisal) | `/documents/new/appraisal` | P08, P11 |
-| F-42 Promotion | M | ADR-0009 | same | `POST /documents` (promotion) | `/documents/new/promotion` | P08, P11 |
-| F-43 Evidence preview | M | ADR-0009 | — | `POST /documents/preview-evidence` | creation flows | P08, P11 |
-| F-44 Streaming, cancel, resume | M | ADR-0009 | GeneratedDocument.status | `GET /documents/:id/stream`, `/cancel` | viewer | P08, P11 |
-| F-45 Citations + flags | M | ADR-0009 | evidenceRefs, citationCoverage | document content, `GET /documents/:id` `evidence` (A-3) | `/documents/:id` | P08, P11 |
-| F-46 Edit, versions, restore | M | ADR-0009 | DocumentVersion | `PATCH /documents/:id`, `/versions`, `/restore` | `/documents/:id` | P08, P11 |
-| F-47 Regenerate (doc / section) | M/S | ADR-0009 | DocumentVersion | `POST /documents/:id/regenerate` | viewer | P08, P11 |
-| F-48 Documents library | M | — | GeneratedDocument | `GET /documents` (+ `flags`, A-5), `DELETE` | `/documents` | P11 |
-| F-49 Exports | M | ADR-0012 | DocumentVersion | `GET /documents/:id/export` | viewer | P11 |
+| F-40 Resume | M | ADR-0009 | GeneratedDocument, DocumentVersion | `POST /documents` (resume) | `/documents/new`, `/documents/new/resume` | P08, P11 ✅ |
+| F-41 Appraisal | M | ADR-0009, KPI §8 | same | `POST /documents` (appraisal) | `/documents/new/appraisal` | P08, P11 ✅ |
+| F-42 Promotion | M | ADR-0009 | same | `POST /documents` (promotion) | `/documents/new/promotion` | P08, P11 ✅ |
+| F-43 Evidence preview | M | ADR-0009 | — | `POST /documents/preview-evidence` | creation flows | P08, P11 ✅ |
+| F-44 Streaming, cancel, resume | M | ADR-0009 | GeneratedDocument.status | `GET /documents/:id/stream`, `/cancel` | viewer | P08, P11 ✅ |
+| F-45 Citations + flags | M | ADR-0009 | evidenceRefs, citationCoverage | document content, `GET /documents/:id` `evidence` (A-3) | `/documents/:id` | P08, P11 ✅ |
+| F-46 Edit, versions, restore | M | ADR-0009 | DocumentVersion | `PATCH /documents/:id`, `/versions`, `/restore` | `/documents/:id` | P08, P11 ✅ |
+| F-47 Regenerate (doc / section) | M/S | ADR-0009 | DocumentVersion | `POST /documents/:id/regenerate` | viewer | P08, P11 ✅ |
+| F-48 Documents library | M | — | GeneratedDocument | `GET /documents` (+ `flags`, A-5), `DELETE` | `/documents` | P11 ✅ |
+| F-49 Exports | M | ADR-0012 | DocumentVersion | `GET /documents/:id/export` (+ client copy) | viewer | P11 ✅ |
 | F-50 Result caching | M | ADR-0009 | inputHash | `POST /documents` (200 cached) | — | P08 |
 | F-51 Achievement statement | S | ADR-0009 | (AiUsage) | `POST /ai/achievement-statement` | activity drawer, achievements | P08, P10, P12 |
 | F-60 Achievements journal | M | — | Achievement, AchievementEvidence | `/achievements` CRUD | `/achievements`, ⌘K, dashboard | P12 |
@@ -81,7 +81,7 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | SEC-01 | 🔴 | F-01, ADR-0003 | P05 | `x-user-id` removed |
 | SEC-02 | 🔴 | F-02, ADR-0003 | P05 | dev-login gated, web-only |
 | SEC-03 | 🔴 | F-10, ADR-0005 | P05 | plaintext columns dropped |
-| BUG-14 | 🔴 | F-40 | P02 hotfix, P11 | |
+| BUG-14 | 🔴 | F-40 | P02 hotfix, P11 | ✅ P11: resume bullet cards in the designed viewer |
 | DATA-01 | 🔴 | F-18, ADR-0007, DATA_MODEL §5 | P06 | stub migration + purge |
 | UX-01 | 🔴 | F-70 | P09 | |
 | SEC-04 | 🟠 | F-10, ADR-0004 | P05 | signed single-use state |
@@ -102,14 +102,14 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | API-02 | 🟠 | ADR-0006 | P05 | |
 | PERF-01 | 🟠 | ADR-0007 (budget ≤ 250) | P06 | |
 | UX-02 | 🟠 | F-70, F-20 | P09, P10 | ✅ fixed in P10 (0 px overflow at 390 on every insight page) |
-| UX-03 | 🟠 | F-49 (documents), F-65/F-05 (settings) | P11, P12 | |
-| UX-04 | 🟠 | F-46 | P11 | |
+| UX-03 | 🟠 | F-49 (documents), F-65/F-05 (settings) | P11, P12 | ✅ documents part P11 (copy + downloads); settings → P12 |
+| UX-04 | 🟠 | F-46 | P11 | ✅ fixed in P11 (`DocumentRenderer`, legacy sections) |
 | UX-05 | 🟠 | F-73 | P09 | |
 | GAP-01 | 🟠 | F-13, F-14 | P06 | |
 | GAP-02 | 🟠 | F-21, F-23 | P10 | ✅ fixed in P10 |
 | GAP-03 | 🟠 | F-26, F-28, F-30, F-31 | P10 | ✅ fixed in P10 (`DateRangePicker` in P09) |
-| GAP-04 | 🟠 | F-49 | P11 | |
-| GAP-05 | 🟠 | F-48 | P11 | |
+| GAP-04 | 🟠 | F-49 | P11 | ✅ fixed in P11 (`GET /documents/:id/export`) |
+| GAP-05 | 🟠 | F-48 | P11 | ✅ fixed in P11 (`/documents`) |
 | GAP-06 | 🟠 | F-01 | P05, P09 | |
 | SEC-11 | 🟡 | ADR-0009 | P08 | ✅ fixed in P08 (evidence delimiting + injection eval) |
 | SEC-12 | 🟡 | ADR-0006 | P05 | |
@@ -143,13 +143,13 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | PERF-05 | ⚪ | ADR-0010 (RSC shells, code splitting) | P09 | added by P02 |
 | UX-06 | 🟡 | F-26, F-27 | P07, P10 | ✅ current UI fixed in P07; drawers P10 |
 | UX-07 | 🟡 | F-73 | P09 | |
-| UX-08 | 🟡 | F-73, F-75, F-44 | P09, P11 | |
+| UX-08 | 🟡 | F-73, F-75, F-44 | P09, P11 | ✅ P09 forms + P11 streaming progress |
 | UX-09 | 🟡 | F-74 | P09 | |
 | UX-10 | 🟡 | F-30 | P10 | ✅ fixed in P10 |
 | UX-11 | 🟡 | F-71 | P04, P09 | |
-| UX-12 | 🟡 | F-44, F-48 | P11 | |
+| UX-12 | 🟡 | F-44, F-48 | P11 | ✅ fixed in P11 (server-side generation, replay on return, E2E) |
 | GAP-07 | 🟡 | F-05, F-06, F-07, F-65 | P12 | |
-| GAP-08 | 🟡 | F-40 | P08, P11 | API ✅ P08 (`format` honoured); UI P11 |
+| GAP-08 | 🟡 | F-40 | P08, P11 | ✅ API P08, UI P11 |
 | GAP-09 | 🟡 | ADR-0006, ADR-0010 | P02, P05, P09 | |
 | DEBT-06 | 🟡 | ADR-0010 | P09 | |
 | DEBT-07 | ⚪ | ADR-0002 | P02, P09 | |
@@ -174,14 +174,18 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | PERF-06 | ⚪ | ADR-0008, ARCHITECTURE_V2 §9 | P14 | added by P07: per-user data version against the score cache-write race |
 | AI-10 | 🟡 | F-40–F-42, ADR-0009 (model tier revisit) | P14 | added by P08: live eval + Opus/Sonnet comparison need a key |
 | AI-11 | ⚪ | ADR-0009 (prompt caching) | P14 | added by P08: verify cache reads live |
-| AI-12 | ⚪ | F-47 | P11/P14 | added by P08: section regenerate costs a full generation |
+| AI-12 | ⚪ | F-47 | P14 | added by P08: section regenerate costs a full generation (unchanged in P11) |
 
 | GAP-12 | ⚪ | F-10 | P14 | added by P09: name the organization on the approval-pending screen |
-| GAP-13 | ⚪ | F-72, IA §3.1 | P11 | added by P09: background-generation signal for the Documents nav spinner |
+| GAP-13 | ⚪ | F-72, IA §3.1 | P11 | ✅ fixed in P11: `GET /documents?status=pending,streaming` |
 | DEBT-13 | ⚪ | DESIGN_SYSTEM §11 | P14 | added by P09: re-sync vendored shadcn sources with the CLI |
 | GAP-14 | ⚪ | F-25 | P14 | added by P10: `total` for `/activity/feed` |
 | GAP-15 | ⚪ | F-27, F-25 | P14 | added by P10: PR id on review evidence items |
 | GAP-16 | ⚪ | F-24, F-60, F-62 | P12 | added by P10: Next step rules 4 and 6 need achievements/goals |
 | PERF-07 | ⚪ | ADR-0010 | P14 | added by P10: shared ESM `exports` map (web already bundles the ESM source) |
+| UX-14 | ⚪ | DESIGN_SYSTEM §5.1 | P11 | ✅ added + fixed in P11: tailwind-merge kept token font sizes |
+| GAP-17 | ⚪ | F-48 | P14 | added by P11: durable (server) soft delete for library Undo |
+| GAP-18 | ⚪ | F-43, F-45, F-60 | P12 | added by P11: achievements in evidence packs and citation links |
+| DEBT-14 | ⚪ | F-49, ADR-0012 | P14 | added by P11: render PDFs off the API event loop |
 
 Every open ISSUES row with a target of P05 or later is mapped above; one (GAP-10) is won't-fix for v2.0.

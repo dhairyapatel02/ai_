@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 
 import { AppSidebar } from './app-sidebar';
 import { CommandPalette } from './command-palette';
+import { DocumentToaster } from './document-toaster';
 import { BottomBar, NavDrawer } from './mobile-nav';
 import { ShellProvider, useShell } from './shell-context';
 import { ShortcutsDialog, useGlobalShortcuts } from './shortcuts';
@@ -64,6 +65,7 @@ function ShellFrame({ children, title }: { children: ReactNode; title?: string }
       <CommandPalette />
       <ShortcutsDialog />
       <SyncToaster />
+      <DocumentToaster />
     </>
   );
 }

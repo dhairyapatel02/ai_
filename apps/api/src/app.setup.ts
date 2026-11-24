@@ -47,6 +47,8 @@ export function configureApp(
       'RateLimit-Remaining',
       'RateLimit-Reset',
       'Retry-After',
+      // Export downloads read the server's filename (API_CONTRACT_V2 §13.2).
+      'Content-Disposition',
     ],
     maxAge: 600,
   });

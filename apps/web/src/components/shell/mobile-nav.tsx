@@ -18,7 +18,7 @@ import { signOut } from '@/lib/sign-out';
 import { cn } from '@/lib/utils';
 
 import { BOTTOM_BAR, hrefWithPeriod, isNavItemActive } from './nav-config';
-import { NavLinks } from './nav-links';
+import { NavLinks, NavSpinner, useDocumentsGenerating } from './nav-links';
 import { useShell } from './shell-context';
 import { SyncStatus } from './sync-status';
 
@@ -85,6 +85,7 @@ export function BottomBar() {
   const pathname = usePathname();
   const period = useSearchParams().get('period');
   const { setNavOpen } = useShell();
+  const generating = useDocumentsGenerating();
   return (
     <nav
       aria-label="Primary"
@@ -102,7 +103,14 @@ export function BottomBar() {
               active && 'font-medium text-accent-foreground',
             )}
           >
-            <item.icon className="size-5" aria-hidden="true" />
+            <span className="relative">
+              <item.icon className="size-5" aria-hidden="true" />
+              {item.href === '/documents' && generating ? (
+                <span className="absolute -top-1 -right-2">
+                  <NavSpinner />
+                </span>
+              ) : null}
+            </span>
             {item.label}
           </Link>
         );

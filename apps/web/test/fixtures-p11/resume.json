@@ -1,0 +1,186 @@
+{
+  "success": true,
+  "data": {
+    "document": {
+      "id": "cmwpwcgis00sljp7d537e8cdk",
+      "type": "resume",
+      "title": "Resume · backend · Nov 22, 2025 – Nov 21, 2026",
+      "status": "ready",
+      "currentVersion": 1,
+      "period": {
+        "spec": "custom:2025-11-22..2026-11-21",
+        "type": "custom",
+        "startDate": "2025-11-22",
+        "endDate": "2026-11-18",
+        "timezone": "Europe/London",
+        "periodDays": 365,
+        "inProgress": true,
+        "label": "Nov 22, 2025 – Nov 21, 2026"
+      },
+      "model": "claude-opus-5-5",
+      "citationCoverage": 1,
+      "flags": { "uncited": 0, "invalid": 0 },
+      "errorCode": null,
+      "createdAt": "2026-11-18T00:00:00.000Z",
+      "updatedAt": "2026-11-18T00:00:00.000Z",
+      "options": {
+        "role": "backend",
+        "type": "resume",
+        "format": "bullets",
+        "length": "standard",
+        "period": "custom:2025-11-22..2026-11-21"
+      },
+      "evidenceRefs": [
+        "PR-acme/web-app#134",
+        "PR-acme/web-app#137",
+        "PR-acme/payments-api#263",
+        "PR-acme/payments-api#248",
+        "PR-acme/payments-api#256",
+        "PR-acme/infra#304",
+        "PR-acme/web-app#127",
+        "PR-acme/payments-api#258",
+        "PR-acme/design-system#152",
+        "PR-acme/payments-api#265",
+        "PR-acme/payments-api#247",
+        "PR-acme/web-app#141",
+        "PR-acme/web-app#126",
+        "PR-acme/infra#302",
+        "PR-acme/design-system#157",
+        "PR-acme/infra#305",
+        "PR-acme/web-app#135",
+        "PR-acme/infra#308",
+        "PR-acme/payments-api#249",
+        "PR-acme/payments-api#252",
+        "PR-acme/design-system#147",
+        "PR-acme/infra#306",
+        "PR-acme/design-system#155",
+        "PR-acme/payments-api#260",
+        "PR-acme/web-app#124",
+        "PR-acme/infra#311",
+        "PR-acme/web-app#132",
+        "PR-acme/web-app#136",
+        "PR-acme/design-system#149",
+        "PR-acme/payments-api#246",
+        "PR-acme/payments-api#261",
+        "PR-acme/web-app#125",
+        "PR-acme/infra#307",
+        "PR-acme/web-app#139",
+        "PR-acme/web-app#131",
+        "PR-acme/design-system#153",
+        "PR-acme/design-system#151",
+        "PR-acme/infra#310",
+        "PR-acme/payments-api#257",
+        "PR-acme/payments-api#264"
+      ],
+      "evidence": [
+        {
+          "ref": "PR-acme/web-app#134",
+          "kind": "pull_request",
+          "id": "cmwpwcgbp00ekjp7dksty2tjo",
+          "title": "Invoice PDF export",
+          "repo": "acme/web-app",
+          "url": "https://github.com/acme/web-app/pull/134",
+          "occurredAt": "2026-09-01T08:00:00.000Z"
+        },
+        {
+          "ref": "PR-acme/web-app#137",
+          "kind": "pull_request",
+          "id": "cmwpwcgbp00eujp7d0b9xofy6",
+          "title": "Terraform: split staging and prod state",
+          "repo": "acme/web-app",
+          "url": "https://github.com/acme/web-app/pull/137",
+          "occurredAt": "2026-09-30T23:00:00.000Z"
+        },
+        {
+          "ref": "PR-acme/payments-api#263",
+          "kind": "pull_request",
+          "id": "cmwpwcgbp00esjp7dartre8jg",
+          "title": "Ledger write batching",
+          "repo": "acme/payments-api",
+          "url": "https://github.com/acme/payments-api/pull/263",
+          "occurredAt": "2026-09-26T14:00:00.000Z"
+        },
+        {
+          "ref": "PR-acme/payments-api#248",
+          "kind": "pull_request",
+          "id": "cmwpwcgbp00dgjp7dg6ngbj5z",
+          "title": "Payments: idempotent intent creation",
+          "repo": "acme/payments-api",
+          "url": "https://github.com/acme/payments-api/pull/248",
+          "occurredAt": "2026-03-19T06:00:00.000Z"
+        },
+        {
+          "ref": "PR-acme/payments-api#256",
+          "kind": "pull_request",
+          "id": "cmwpwcgbp00e4jp7d7m2m3de6",
+          "title": "Monthly report timezone fix",
+          "repo": "acme/payments-api",
+          "url": "https://github.com/acme/payments-api/pull/256",
+          "occurredAt": "2026-06-28T22:00:00.000Z"
+        },
+        {
+          "ref": "PR-acme/infra#304",
+          "kind": "pull_request",
+          "id": "cmwpwcgbp00e1jp7dk0syb34x",
+          "title": "Checkout v2 behind feature flag",
+          "repo": "acme/infra",
+          "url": "https://github.com/acme/infra/pull/304",
+          "occurredAt": "2026-06-16T20:00:00.000Z"
+        }
+      ]
+    },
+    "version": {
+      "number": 1,
+      "source": "user_edit",
+      "createdAt": "2026-11-18T00:00:00.000Z",
+      "content": {
+        "format": "bullets",
+        "bullets": [
+          {
+            "id": "b1",
+            "text": "Hardened invoice PDF export in a high-volume payments platform.",
+            "theme": "Reliability",
+            "pinned": true,
+            "citations": ["PR-acme/web-app#134"]
+          },
+          {
+            "id": "b2",
+            "text": "Shipped terraform: split staging and prod state in a high-volume payments platform.",
+            "theme": "Delivery",
+            "citations": ["PR-acme/web-app#137"]
+          },
+          {
+            "id": "b3",
+            "text": "Sped up ledger write batching in a high-volume payments platform.",
+            "used": true,
+            "theme": "Performance",
+            "citations": ["PR-acme/payments-api#263"]
+          },
+          {
+            "id": "b4",
+            "text": "Delivered payments: idempotent intent creation in a high-volume payments platform.",
+            "theme": "Delivery",
+            "citations": ["PR-acme/payments-api#248"]
+          },
+          {
+            "id": "b5",
+            "text": "Improved monthly report timezone fix in a high-volume payments platform.",
+            "theme": "Quality",
+            "citations": ["PR-acme/payments-api#256"]
+          },
+          {
+            "id": "b6",
+            "text": "Reviewed and landed checkout v2 behind feature flag in a high-volume payments platform.",
+            "theme": "Collaboration",
+            "citations": ["PR-acme/infra#304"]
+          }
+        ],
+        "summary": {
+          "id": "s1",
+          "text": "Backend engineer focused on payment reliability and fast, careful reviews.",
+          "citations": ["PR-acme/web-app#134"]
+        }
+      }
+    }
+  }
+}

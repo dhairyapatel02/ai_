@@ -283,3 +283,27 @@ raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
   three-run sync history (one partial with a per-repository error).
 - **Tests:** web Vitest 166 (page views run against `test/api-mock.tsx` + captured API fixtures),
   API integration 157, Playwright 26 (+ opt-in screenshots for P09 and P10).
+
+### After Phase 11 (2026-11-21)
+- **Designed document studio (D-027)** replaces the interim studios and placeholders: Documents
+  library (S11: filters/search/sort in the URL, cursor pages, status + "N uncited" badges, usage
+  meter, rename / duplicate options / retry / delete with Undo), type picker (S12), Resume /
+  Appraisal / Promotion studios (S13–S15: options per API_CONTRACT §13.1, `?period=` pre-fill,
+  debounced evidence preview, quota and rate-limit copy) and the viewer/editor `/documents/:id`
+  (S16: streaming with "Writing section N of M", Stop, polite announcements, reconnect + polling
+  fallback; citations with popovers, flags, engine tables, readable v0.1 imports; structured
+  per-claim editor with 900 ms autosave and version conflicts; versions with `?version=` and
+  restore; regenerate whole / options / section; resume bullet cards with copy / pin / used /
+  reorder; rename; delete). Documents nav spinner + "ready" toast while a generation runs elsewhere.
+- **Exports (ADR-0012):** `GET /documents/:id/export?format=md|txt|pdf|docx&version=&citations=`
+  from one export-blocks IR in `packages/shared` (also used for client-side copy); PDF via
+  `@react-pdf/renderer` 4.9.0 with embedded Instrument Sans / JetBrains Mono (`@fontsource/*`, local
+  files), DOCX via `docx` 9.16.0; filenames `<type>-<period>-v<N>.<ext>`; `export` rate class 30/h.
+- **API (additive):** `GET /documents?status=` filter; CORS exposes `Content-Disposition`;
+  `ResumeContent.bullets[].pinned/used` (API_CONTRACT §22 A-6). **New optional env**
+  `RATE_LIMIT_EXPORT_PER_HOUR` (default 30; E2E 1000). The AI mock takes `AI_MOCK_CHUNK` /
+  `AI_MOCK_DELAY_MS`.
+- **Seed:** three v2 documents (appraisal with three versions and one uncited claim, curated resume,
+  promotion packet) next to the three v0.1 imports.
+- **Tests:** web Vitest 208, shared 83, API unit 210, API integration 164, Playwright 34 (+ opt-in
+  screenshots for P09–P11). Playwright now starts the fake Anthropic API (:4010) for generation.

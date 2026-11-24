@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AiCoreModule } from '../ai/ai.module';
 import { EvidenceModule } from '../evidence/evidence.module';
+import { DocumentExportsService } from '../exports/document-exports.service';
 import { UsageModule } from '../usage/usage.module';
 import { AiUtilitiesController, ImpactHighlightsController } from './ai-actions.controller';
 import { DigestSummaryService } from './digest-summary.service';
@@ -31,6 +32,6 @@ export class AiGenerationModule {}
 @Module({
   imports: [AiGenerationModule],
   controllers: [DocumentsController, ImpactHighlightsController, AiUtilitiesController],
-  providers: [DocumentsService, DocumentStreamService, QuickActionsService],
+  providers: [DocumentsService, DocumentStreamService, QuickActionsService, DocumentExportsService],
 })
 export class DocumentsModule {}

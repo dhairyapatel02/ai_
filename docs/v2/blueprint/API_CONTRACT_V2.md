@@ -332,7 +332,7 @@ are `MetricValue[]`.
 
 | Method & path | Auth / rate | Request | Response `data` | Errors |
 |---|---|---|---|---|
-| `GET /documents` | user · default | `PageQuery & { type?: DocumentType, q?: string(≤100), sort?: '-createdAt'\|'-updatedAt'\|'title' }` | `DocumentSummary[]`, `meta: PageMeta (total)` | 400, 401 |
+| `GET /documents` | user · default | `PageQuery & { type?: DocumentType, q?: string(≤100), sort?: '-createdAt'\|'-updatedAt'\|'title', status?: DocumentStatus[] (comma list, A-6) }` | `DocumentSummary[]`, `meta: PageMeta (total)` | 400, 401 |
 | `POST /documents/preview-evidence` | user · default | `DocumentOptions` | `{ period, counts: { prsMerged, prsReviewed, commits, repos, achievements }, topEvidence: EvidenceItem[] (≤ 25), metrics: MetricValue[], estimatedQuotaCost: 1 }` (no AI) | 400, 401 |
 | `POST /documents` | user · ai | `DocumentOptions & { regenerate?: boolean }` | Cache hit: `200 { document: DocumentSummary, cached: true }`. Else `201 { document: DocumentSummary (status 'pending'), streamUrl: '/api/documents/:id/stream' }` | 400, 401, 402 `QUOTA_EXCEEDED`, 409 (insufficient evidence: `CONFLICT` details `{ reason: 'no_evidence' }`), 429 |
 | `GET /documents/:id` | user · default | `?version=` (default current) | `{ document: DocumentSummary & { options, evidenceRefs }, version: { number, source, createdAt, content } \| null }` | 401, 404 |
@@ -343,7 +343,7 @@ are `MetricValue[]`.
 | `POST /documents/:id/versions/:n/restore` | user · default | — | `{ document, version }` (new version, source `restore`) | 401, 404, 409 |
 | `POST /documents/:id/regenerate` | user · ai | `{ options?: Partial<DocumentOptions>, section?: string /* S: single section */ }` | `201 { document (status 'pending', next version), streamUrl }` | 400, 401, 402, 404, 409, 429 |
 | `DELETE /documents/:id` | user · default | — | `{ deleted: true }` | 401, 404 |
-| `GET /documents/:id/export` | user · export | `?format=md\|txt\|pdf\|docx&version=` | **File** with `Content-Disposition: attachment; filename="<type>-<period>-v<n>.<ext>"`; MIME `text/markdown`, `text/plain`, `application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | 400, 401, 404, 409 (document not ready) |
+| `GET /documents/:id/export` | user · export | `?format=md\|txt\|pdf\|docx&version=&citations=true\|false` (A-6) | **File** with `Content-Disposition: attachment; filename="<type>-<period>-v<n>.<ext>"` (ASCII: type with `-`, period slug `2026-H2` / `2025-11-22_2026-11-21` / `undated`), `Cache-Control: private, no-store`; MIME `text/markdown; charset=utf-8`, `text/plain; charset=utf-8`, `application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`. Citations become numbered evidence notes (default on, off for resume) | 400, 401, 404 (incl. unknown `version`), 409 `GENERATION_IN_PROGRESS` (no `version` while generating) / `CONFLICT { reason: 'not_ready' }` (no saved version) , 429 |
 
 ### 13.3 SSE event contract (`GET /documents/:id/stream`)
 Each event has `id: <redis-stream-id>` (resumable with `Last-Event-ID`), `event:` and JSON `data:`.
@@ -501,6 +501,7 @@ to this contract (allowed without a DECISIONS entry; noted in PROGRESS.md). Owni
 | A-3 | `GET /documents/:id` response adds `evidence: EvidenceItem[]` (every ref cited in the version, deduplicated) | Citation popovers and the Evidence panel need titles/URLs, not just refs (S16) | P08 |
 | A-4 | `SyncRunDto` adds optional `recentWindowCompletedAt: Timestamp \| null` — set when the newest-30-days slice of a backfill is persisted and rolled up | Onboarding "Your dashboard is ready — older history still loading" moment and the backfill banner (S5, S6, FLOWS F2) | P06 |
 | A-5 | `DocumentSummary` adds optional `flags: { uncited: number, invalid: number } \| null` (null while not `ready`) | Library shows "N uncited" badges without opening each document (S11) | P08 |
+| A-6 | P11 refinements: `GET /documents` accepts `status=pending,streaming,…` (the Documents nav spinner asks for `status=pending,streaming&limit=5`, GAP-13); `GET /documents/:id/export` takes `citations=true\|false` and documents its 409 codes and filename slug (row above); the export rate class is `30 / hour` per user (`RATE_LIMIT_EXPORT_PER_HOUR`); CORS exposes `Content-Disposition`; `ResumeContent.bullets[]` gains optional `pinned` / `used` booleans (user curation, D-027) | Library spinner (IA §3.1), export menu (S16), resume bullet cards (S16) | P11 |
 
 No breaking changes. `GET /metrics/heatmap` also feeds the dashboard activity chart for the selected
 period (per-day `commits`, `prsMerged`, `reviews`; week/month buckets summed client-side), so no

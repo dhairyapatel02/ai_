@@ -611,3 +611,67 @@ Within D-007/D-010/D-020/D-025, SCREENS S6–S10/S19 and ADR-0010, Phase 10 chos
 binds "Turn into achievement" to the S17 dialog, adds Next step rules 4/6 and achievements to the
 feed/timeline; P14 adds `/activity/feed` totals (GAP-14), PR ids on review evidence (GAP-15), the
 shared `exports` map (PERF-07) and, if needed, `/sync/stream` (GAP-11).
+
+### D-027 · P11 implementation choices (document studio, exports) · APPLIED (P11)
+Within D-009/D-010/D-012/D-020, ADR-0010/0012 and SCREENS S11–S16, Phase 11 chose:
+- **Editor: structured per-claim fields, not Tiptap.** Stored content is plain-text claims, each
+  with its own `citations` (and engine sections that must stay read-only). Rich text would add
+  formatting the schema can't store and would detach citations from their claims; a
+  contenteditable section would have to be re-parsed into claims. `DocumentEditor` renders one
+  auto-growing textarea per claim (plus a title input for titled items), keeps each claim's
+  evidence, shows engine sections as read-only, and is loaded with `next/dynamic` only in edit
+  mode (a separate ~2.5 KB chunk; no editor dependency). Autosave 900 ms after typing →
+  `PATCH { baseVersion, content }` ("Saving…" → "Saved · vN"); empty claims are not sent;
+  `409 VERSION_CONFLICT` opens "A newer version exists (vN)" with Reload / Save mine as a new
+  version.
+- **Exports (ADR-0012):** one export-blocks IR in `packages/shared/src/documents/export.ts`
+  (`toExportDocument` → headings, paragraphs, lists, metric tables, notes, numbered evidence
+  footnotes), shared by the API renderers and the client's Copy as Markdown / plain text.
+  Markdown escapes model and user text (no links, HTML, emphasis or headings can be injected) and
+  only prints http(s) URLs. PDF: **`@react-pdf/renderer` 4.9.0** (exact pin), loaded lazily
+  through Node's `require(esm)`; fonts **`@fontsource/instrument-sans` 5.3.0** (400/500/600, Latin +
+  Latin Extended as a fallback family) and **`@fontsource/jetbrains-mono` 5.3.0** (refs) read from
+  `node_modules` (OFL-1.1, API dependencies, so they ship in the Docker image; never fetched at
+  render time); hyphenation off; A4, or US Letter when the document's time zone is in
+  `America/*`; light palette from the tokens; footer "Written with DevImpact from GitHub activity"
+  + page numbers. DOCX: **`docx` 9.16.0** with Word's Title/Heading 2 styles, Calibri/Consolas,
+  bullet numbering, a two-column metrics table, an "Evidence" list with hyperlinks, page-number
+  footer (editable in Word / Google Docs). Templates per type come from the section order
+  (appraisal: summary → key contributions → metrics (engine) → areas of impact → growth → next
+  goals; promotion: why ready → leadership → technical impact → business value → mentorship →
+  supporting data; resume: summary → bullets, citations omitted unless `citations=true`).
+  Filenames `<type>-<period slug>-v<N>.<ext>` built from fixed parts (ASCII only) and sent as
+  `Content-Disposition: attachment; filename="…"`; the export rate class is 30/hour/user
+  (`RATE_LIMIT_EXPORT_PER_HOUR`, E2E raises it). Jest transpiles the `@react-pdf/*` ESM
+  dependency tree with a small esbuild transformer (`apps/api/test/esm-transform.cjs`, they use
+  `import.meta.url`); PDF text in tests is read with `pdfjs-dist` 6.5.438 in a child process.
+- **Bullet curation persists in content:** `ResumeBulletItem` gains optional `pinned` / `used`
+  (additive; model output never sets them). Pin moves a bullet up with the other pinned ones,
+  Move up/down reorders the array, Mark as used dims it; each action is a `PATCH` (a `user_edit`
+  version, merged by the 30 s autosave window).
+- **Streaming consumer:** `useDocumentStream` on top of `useEventStream` builds partial content
+  in the stored shape from `section` events and shows `delta` text for the section being written
+  (caret, soft background); sections still to come keep their space with skeletons. "Writing
+  section N of M · <label>" counts the model-written sections; one polite live region announces
+  each section and the result. `done` → refetch detail/versions/lists/usage + toast "<Type>
+  ready — N% of claims cited."; `error` → danger banner ("Nothing was counted against your
+  quota") + Try again; `cancelled` → neutral banner + Generate again. Reconnect with
+  `Last-Event-ID` (5 tries); after that the viewer polls `GET /documents/:id` every 2 s.
+  Reopening a generating document replays its stream (kept 1 h).
+- **Documents nav spinner (GAP-13):** additive `GET /documents?status=pending,streaming&limit=5`
+  (polled every 4 s only while non-empty) feeds the sidebar / bottom-bar spinner and a global
+  `DocumentToaster` ("Appraisal ready — 96% of claims cited. [Open]") for generations that
+  finish while the user is elsewhere.
+- **Library delete with Undo:** the row hides at once and `DELETE` runs after 7 s unless Undo is
+  pressed (S11); the viewer deletes after a confirmation dialog (S16). A durable server soft
+  delete is GAP-17 (P14).
+- **Studio URL contract:** `?period=` pre-fills (Overview links), `?from=<id>` duplicates a
+  document's options (library "Duplicate options"), `?regenerate=<id>` regenerates that document
+  with changed options (F6 "Change options and regenerate"). The viewer keeps the selected
+  version in `?version=` (IA §6).
+- **Seed:** three v2 documents (appraisal for the previous half with v1 AI / v2 edit / v3 AI and
+  one uncited claim; a curated 12-month resume; a promotion packet) built from the demo user's own
+  merged PRs and the real impact-score service, so the designed states exist without AI.
+*Consequences:* P12 binds achievements into evidence (GAP-18) and the plan page can reuse
+`QuotaMeter`; P14 owns section-scoped prompts (AI-12), the durable soft delete (GAP-17) and
+off-loop PDF rendering (DEBT-14).
