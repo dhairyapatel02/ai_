@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { IntegrationStatus } from '@prisma/client';
 
 import { TokenCipher, TokenCipherService } from '../crypto/token-cipher';
+import { NotificationProducer } from '../email/notification-producer';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProviderAuthError } from '../providers/provider.errors';
 import { ACTIVITY_PROVIDER } from '../providers/providers.module';
@@ -26,6 +27,7 @@ export class IntegrationTokensService {
     private readonly prisma: PrismaService,
     private readonly cipher: TokenCipherService,
     @Inject(ACTIVITY_PROVIDER) private readonly provider: ActivityProvider,
+    private readonly notifications: NotificationProducer,
   ) {}
 
   /** A usable access token; refreshes when it expires within 10 minutes. */
@@ -148,7 +150,7 @@ export class IntegrationTokensService {
     integrationId: string,
     reason: ReauthReason,
   ): Promise<void> {
-    await this.prisma.integration.updateMany({
+    const { count } = await this.prisma.integration.updateMany({
       where: { id: integrationId, userId, status: IntegrationStatus.ACTIVE },
       data: {
         status: IntegrationStatus.NEEDS_REAUTH,
@@ -160,5 +162,7 @@ export class IntegrationTokensService {
       },
     });
     this.logger.warn({ integrationId, reason }, 'Integration needs reconnection');
+    // "Sync problems" email (F-65) — only on the transition, preference checked by the worker.
+    if (count > 0) await this.notifications.syncProblem(userId, integrationId, 'needs_reauth');
   }
 }

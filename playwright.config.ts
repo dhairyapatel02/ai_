@@ -52,6 +52,7 @@ export default defineConfig({
       env: {
         RATE_LIMIT_DEFAULT_PER_MINUTE: '3000',
         RATE_LIMIT_EXPORT_PER_HOUR: '1000',
+        RATE_LIMIT_DATA_EXPORT_PER_DAY: '1000',
         ANTHROPIC_BASE_URL: 'http://127.0.0.1:4010',
         ANTHROPIC_API_KEY: 'mock',
         RUN_WORKER_IN_API: 'true',

@@ -323,6 +323,48 @@ they ship in the Docker image with the other production dependencies. Filenames 
 unless `citations=true`. Exports use the `export` rate class: 30 per hour per user
 (`RATE_LIMIT_EXPORT_PER_HOUR`).
 
+### Email, weekly digest and notifications
+
+Emails go through one `EmailTransport` (P12, D-028), chosen with `EMAIL_TRANSPORT`:
+
+| Value               | Use                                                         | Needs                                 |
+| ------------------- | ----------------------------------------------------------- | ------------------------------------- |
+| `console` (default) | Development: the worker prints each email's text to its log | —                                     |
+| `smtp`              | Any SMTP provider (nodemailer; SES SMTP credentials work)   | `SMTP_URL=smtps://user:pass@host:465` |
+| `resend`            | Resend HTTP API                                             | `RESEND_API_KEY`                      |
+| `memory`            | Tests only (refused in production)                          | —                                     |
+
+Set `EMAIL_FROM` to a verified sender. The worker (or the API with `RUN_WORKER_IN_API=true`)
+consumes the `email` queue: the hourly scheduler `email-digest-fanout` queues a weekly digest for
+every user who opted in (Settings → Notifications) once their local day and hour arrive, for the
+last complete Monday–Sunday week in their time zone; each user and week is sent once
+(`digest_deliveries`). Numbers come from the metrics engine; the optional summary uses the fast AI
+model and is skipped when AI is unavailable. "Sync problems" and "Document ready" emails follow the
+same toggles. `DIGEST_ENABLED=false` stops digests. Every email has an unsubscribe link signed with
+`UNSUBSCRIBE_TOKEN_SECRET` (`openssl rand -base64 48`; required in production) that works without
+signing in (`/unsubscribe`). Preview last week's digest from Settings → Notifications
+(`POST /api/notifications/digest/preview`, nothing is sent).
+
+### Plans and limits (admin)
+
+No billing in v2.0 (D-014). New users are on FREE (12-month history, 15 generations + 100 quick
+actions a month, 1 GitHub connection); PRO raises them to 36 months, 150 and 1,000. Limits live in
+`apps/api/src/entitlements/entitlements.ts` (override with `ENTITLEMENTS_JSON`). Assign a plan:
+
+```bash
+npm run plan:set --workspace=apps/api -- someone@example.com PRO
+```
+
+Periods older than the plan's history window answer `403 ENTITLEMENT_REQUIRED`; history beyond the
+previous window is imported by the next backfill.
+
+### Your data: export and deletion
+
+`GET /api/me/export` streams every record of the user as `devimpact-export-<date>.json` (no tokens
+or secrets; 3 a day, `RATE_LIMIT_DATA_EXPORT_PER_DAY`). `DELETE /api/me { confirmEmail }` revokes the
+GitHub token, deletes the account with every row it owns (sessions included) and clears its Redis
+state. Both are in Settings → Privacy & data.
+
 ### Local webhook forwarding
 
 GitHub cannot reach `localhost`. Either:
@@ -354,6 +396,8 @@ curl -i -X POST http://localhost:4000/api/webhooks/github -H 'content-type: appl
   `jwks` table: after changing it, delete those rows (`DELETE FROM jwks;`) so a new key pair is
   generated, and sign in again.
 - `OAUTH_STATE_SECRET` — `openssl rand -base64 48`.
+- `UNSUBSCRIBE_TOKEN_SECRET` — `openssl rand -base64 48`. Rotating it invalidates the unsubscribe
+  links in emails already sent (they then show "This unsubscribe link is invalid").
 - `GITHUB_WEBHOOK_SECRET` — `openssl rand -hex 32`; rotate on GitHub and in the env together
   (deliveries signed with the old secret are rejected).
 - `TOKEN_ENCRYPTION_KEYS` / `TOKEN_ENCRYPTION_ACTIVE_KEY` — `openssl rand -base64 32` per key.
@@ -366,10 +410,11 @@ curl -i -X POST http://localhost:4000/api/webhooks/github -H 'content-type: appl
 docker compose up --build
 ```
 
-Starts postgres, redis, api (applies migrations on start), worker and web; every service has a
+Starts postgres, redis, api (applies migrations on start), worker (queues `sync`, `metrics`, `ai`
+and `email`; emails print to its log unless `EMAIL_TRANSPORT` is set) and web; every service has a
 healthcheck (`docker compose ps`). `.env` is optional here — compose sets the connection settings
 and **compose-local default secrets** so the stack starts; they are public, so set real
-`BETTER_AUTH_SECRET`, `TOKEN_ENCRYPTION_KEYS` and `OAUTH_STATE_SECRET` in `.env` before exposing
+`BETTER_AUTH_SECRET`, `TOKEN_ENCRYPTION_KEYS`, `OAUTH_STATE_SECRET` and `UNSUBSCRIBE_TOKEN_SECRET` in `.env` before exposing
 the stack anywhere. The web image is a production build, so the dev login is off: configure GitHub
 or Google sign-in to log in. Seed the containerised database from your machine with
 `npm run db:seed` (it uses `localhost:5432`). Behind a registry rate limit, pass a mirror:
@@ -469,10 +514,11 @@ apps/web/src/
 ├── app/
 │   ├── (auth)/sign-in           # S1 — public
 │   ├── (onboarding)/onboarding  # S2–S5 wizard (connect, pending, repositories, sync)
-│   ├── (system)/integrations/github/callback
+│   ├── (system)/integrations/github/callback, (system)/unsubscribe   # no shell; /unsubscribe is public
 │   ├── (app)/…                  # signed-in pages inside the AppShell (loading/error/not-found):
 │   │                            # dashboard, activity, kpis (+ impact), career, settings/integrations,
-│   │                            # documents (library, new/{appraisal,promotion,resume}, [id] viewer) …
+│   │                            # documents (library, new/{appraisal,promotion,resume}, [id] viewer),
+│   │                            # achievements, goals, settings/{profile,notifications,privacy,plan}
 │   ├── (print)/career/print     # S10 print view (server-rendered, no shell)
 │   ├── not-found.tsx, global-error.tsx, providers.tsx, layout.tsx, globals.css
 ├── components/
@@ -510,9 +556,16 @@ the same height. Turbopack bundles `@devimpact/shared` from its ESM source (`nex
 `lib/documents.ts`. The editor is structured per-claim fields (citations stay attached), loaded with
 `next/dynamic` only in edit mode.
 
+**Career OS (P12, D-028):** achievements, goals and settings pages; hooks in
+`lib/api/career-hooks.ts`, labels/helpers in `lib/achievements.ts`. The "Add achievement" and
+"Add goal" dialogs live in the shell (`components/shell/career-dialogs.tsx`) and open from ⌘K, the
+`A` shortcut, the New menu, the dashboard and the item drawer
+(`useShell().openAchievement(prefill)`). `publicApiClient` calls public endpoints (unsubscribe)
+without a token.
+
 **View tests** mock `@/lib/api/browser` with `test/api-mock.tsx` (route table → the real hooks and
-Zod schemas) and use responses captured from the seeded demo user in `test/fixtures-p10/` and
-`test/fixtures-p11/`.
+Zod schemas; `renderWithQuery` includes the shell provider) and use responses captured from the
+seeded demo user in `test/fixtures-p10/`, `test/fixtures-p11/` and `test/fixtures-p12/`.
 
 ### Adding a page
 
@@ -537,46 +590,53 @@ message, details?, requestId } }` with real HTTP status codes; the full contract
 rate-limit classes, pagination) is [`docs/v2/blueprint/API_CONTRACT_V2.md`](docs/v2/blueprint/API_CONTRACT_V2.md)
 and the live schema is at `/api/docs` outside production.
 
-| Method | Path                                            | Description                                            |
-| ------ | ----------------------------------------------- | ------------------------------------------------------ |
-| GET    | /api/health · /api/health/live                  | Readiness (Postgres + Redis) · liveness (public)       |
-| GET    | /api/me · /api/auth/me (deprecated)             | User, settings, entitlements, integrations             |
-| PATCH  | /api/me · /api/me/settings                      | Update name · settings (IANA time zone, …)             |
-| GET    | /api/me/settings · /api/me/entitlements         | Settings · plan limits                                 |
-| DELETE | /api/me                                         | Delete account and all data (`{ confirmEmail }`)       |
-| GET    | /api/integrations · /:id                        | Integrations (never tokens)                            |
-| POST   | /api/integrations/github/connect                | GitHub App install/authorize URL with signed state     |
-| POST   | /api/integrations/github/callback               | Verify state, exchange code, store encrypted tokens    |
-| POST   | /api/integrations/:id/reconnect                 | Authorize again                                        |
-| DELETE | /api/integrations/:id?purgeData=                | Disconnect (revoke token; keep or purge data)          |
-| POST   | /api/sync                                       | Queue a sync (202; 409 in progress / needs reauth)     |
-| GET    | /api/sync/status · /sync/runs · /runs/:id       | DB-backed state, progress, history                     |
-| GET    | /api/repos · PATCH /repos · /repos/:id          | Repositories; include/exclude (recomputes KPIs)        |
-| POST   | /api/repos/:id/purge                            | Delete a repository's synced activity                  |
-| POST   | /api/webhooks/github                            | GitHub App webhook (public, HMAC, idempotent, 202)     |
-| GET    | /api/metrics/definitions                        | Metric catalogue, versions, score bands (cacheable)    |
-| GET    | /api/metrics/overview?period=                   | Stat cards with deltas, impact summary, freshness      |
-| GET    | /api/metrics/kpis?period=                       | Five KPI sections (value, n, status, delta, evidence)  |
-| GET    | /api/metrics/timeseries?metric=&interval=       | One metric per day/week/month (`period` or `from/to`)  |
-| GET    | /api/metrics/heatmap?from=&to=                  | Daily activity counts (≤ 366 days)                     |
-| GET    | /api/metrics/repos · /trends · /evidence        | Per-repo contributions · N-period trends · evidence    |
-| GET    | /api/impact?period= · /impact/history           | Deterministic impact score `impact@2.0.0` + history    |
-| GET    | /api/career/timeline?year=                      | The year by quarter (merged PRs, reviews, milestones)  |
-| GET    | /api/activity/feed                              | Unified feed (commits, PR events, reviews)             |
-| GET    | /api/activity/prs?role= · /prs/:id              | Authored or reviewed PRs (cycle time, my reviews)      |
-| GET    | /api/activity/reviews · /commits · /commits/:id | Reviews (turnaround) · commits                         |
-| GET    | /api/me/usage?month=                            | AI usage vs monthly quota, tokens, estimated cost      |
-| POST   | /api/impact/highlights                          | AI narrative for a period's score (fast, cached; ai)   |
-| GET    | /api/documents?type=&q=&sort=&status=           | Document library (cursor pagination)                   |
-| POST   | /api/documents/preview-evidence                 | Evidence + engine metrics a document would use (no AI) |
-| POST   | /api/documents                                  | Create (200 cache hit / 201 pending + streamUrl; ai)   |
-| GET    | /api/documents/:id?version= · /:id/stream       | Document + version + cited evidence · SSE events       |
-| PATCH  | /api/documents/:id                              | Edit title/content (new version; 409 stale)            |
-| POST   | /api/documents/:id/regenerate · /cancel         | Next version or one section (ai) · cancel              |
-| GET    | /api/documents/:id/versions · POST …/:n/restore | Version history · restore                              |
-| GET    | /api/documents/:id/export?format=&version=      | Download md / txt / pdf / docx (export, 30/h)          |
-| DELETE | /api/documents/:id                              | Delete document and versions                           |
-| POST   | /api/ai/achievement-statement                   | Statement for one of your PRs/commits (fast; ai)       |
+| Method | Path                                            | Description                                                 |
+| ------ | ----------------------------------------------- | ----------------------------------------------------------- |
+| GET    | /api/health · /api/health/live                  | Readiness (Postgres + Redis) · liveness (public)            |
+| GET    | /api/me · /api/auth/me (deprecated)             | User, settings, entitlements, integrations                  |
+| PATCH  | /api/me · /api/me/settings                      | Update name · settings (IANA time zone, …)                  |
+| GET    | /api/me/settings · /api/me/entitlements         | Settings · plan limits                                      |
+| DELETE | /api/me                                         | Delete account and all data (`{ confirmEmail }`)            |
+| GET    | /api/me/export                                  | All your data as a JSON file (3/day)                        |
+| GET    | /api/achievements?period=&category=&q=          | Achievements journal (cursor pagination, total)             |
+| POST   | /api/achievements · PATCH/DELETE /:id           | Add · update · delete (evidence = your PRs/commits/reviews) |
+| GET    | /api/goals?status= · /api/goals/:id             | Goals with engine progress · one goal + achievements        |
+| POST   | /api/goals · PATCH/DELETE /:id                  | Add · update · delete                                       |
+| POST   | /api/notifications/unsubscribe                  | Public: unsubscribe with a signed email token               |
+| POST   | /api/notifications/digest/preview               | Last week's digest (subject, HTML, text); not sent          |
+| GET    | /api/integrations · /:id                        | Integrations (never tokens)                                 |
+| POST   | /api/integrations/github/connect                | GitHub App install/authorize URL with signed state          |
+| POST   | /api/integrations/github/callback               | Verify state, exchange code, store encrypted tokens         |
+| POST   | /api/integrations/:id/reconnect                 | Authorize again                                             |
+| DELETE | /api/integrations/:id?purgeData=                | Disconnect (revoke token; keep or purge data)               |
+| POST   | /api/sync                                       | Queue a sync (202; 409 in progress / needs reauth)          |
+| GET    | /api/sync/status · /sync/runs · /runs/:id       | DB-backed state, progress, history                          |
+| GET    | /api/repos · PATCH /repos · /repos/:id          | Repositories; include/exclude (recomputes KPIs)             |
+| POST   | /api/repos/:id/purge                            | Delete a repository's synced activity                       |
+| POST   | /api/webhooks/github                            | GitHub App webhook (public, HMAC, idempotent, 202)          |
+| GET    | /api/metrics/definitions                        | Metric catalogue, versions, score bands (cacheable)         |
+| GET    | /api/metrics/overview?period=                   | Stat cards with deltas, impact summary, freshness           |
+| GET    | /api/metrics/kpis?period=                       | Five KPI sections (value, n, status, delta, evidence)       |
+| GET    | /api/metrics/timeseries?metric=&interval=       | One metric per day/week/month (`period` or `from/to`)       |
+| GET    | /api/metrics/heatmap?from=&to=                  | Daily activity counts (≤ 366 days)                          |
+| GET    | /api/metrics/repos · /trends · /evidence        | Per-repo contributions · N-period trends · evidence         |
+| GET    | /api/impact?period= · /impact/history           | Deterministic impact score `impact@2.0.0` + history         |
+| GET    | /api/career/timeline?year=                      | The year by quarter (merged PRs, reviews, milestones)       |
+| GET    | /api/activity/feed                              | Unified feed (commits, PR events, reviews)                  |
+| GET    | /api/activity/prs?role= · /prs/:id              | Authored or reviewed PRs (cycle time, my reviews)           |
+| GET    | /api/activity/reviews · /commits · /commits/:id | Reviews (turnaround) · commits                              |
+| GET    | /api/me/usage?month=                            | AI usage vs monthly quota, tokens, estimated cost           |
+| POST   | /api/impact/highlights                          | AI narrative for a period's score (fast, cached; ai)        |
+| GET    | /api/documents?type=&q=&sort=&status=           | Document library (cursor pagination)                        |
+| POST   | /api/documents/preview-evidence                 | Evidence + engine metrics a document would use (no AI)      |
+| POST   | /api/documents                                  | Create (200 cache hit / 201 pending + streamUrl; ai)        |
+| GET    | /api/documents/:id?version= · /:id/stream       | Document + version + cited evidence · SSE events            |
+| PATCH  | /api/documents/:id                              | Edit title/content (new version; 409 stale)                 |
+| POST   | /api/documents/:id/regenerate · /cancel         | Next version or one section (ai) · cancel                   |
+| GET    | /api/documents/:id/versions · POST …/:n/restore | Version history · restore                                   |
+| GET    | /api/documents/:id/export?format=&version=      | Download md / txt / pdf / docx (export, 30/h)               |
+| DELETE | /api/documents/:id                              | Delete document and versions                                |
+| POST   | /api/ai/achievement-statement                   | Statement for one of your PRs/commits (fast; ai)            |
 
 Web routes: `/api/auth/*` (Better Auth), `POST /api/dev-login` (development only), `GET /api/health`.
 

@@ -6,6 +6,8 @@ import { DigestBuilder } from '../../src/email/digest-builder.service';
 import { DigestScheduler } from '../../src/email/digest-scheduler.service';
 import { DigestService } from '../../src/email/digest.service';
 import { EMAIL_QUEUE, EMAIL_TRANSPORT, digestJobId } from '../../src/email/email.constants';
+import { NotificationEmailService } from '../../src/email/notification-email.service';
+import { NotificationProducer } from '../../src/email/notification-producer';
 import { MemoryEmailTransport } from '../../src/email/transports';
 import { createUnsubscribeToken } from '../../src/email/unsubscribe-token';
 import { createTestApp, type TestApp } from '../utils/app';
@@ -282,6 +284,80 @@ describe('Weekly digest and notifications (integration)', () => {
         .post('/api/notifications/unsubscribe')
         .send({ token: 'a.b.c' });
       expect(res.headers['ratelimit-limit']).toBe('60');
+    });
+  });
+
+  describe('notification emails (document ready, sync problems — F-65)', () => {
+    const notifier = () =>
+      new NotificationEmailService(
+        t.prisma,
+        t.app.get<ConfigService<Env, true>>(ConfigService),
+        transport,
+      );
+
+    it('document ready: opt-in, only for the owner’s ready document, escaped title', async () => {
+      const user = await f.user({ settings: { create: { notifyDocumentReady: false } } });
+      const doc = await f.document(user.id, {
+        title: 'Appraisal <b>H2</b>',
+        type: 'APPRAISAL',
+        citationCoverage: 0.96,
+      });
+      expect(
+        await notifier().send({ kind: 'document_ready', userId: user.id, documentId: doc.id }),
+      ).toBe('opted_out');
+      await t.prisma.userSettings.update({
+        where: { userId: user.id },
+        data: { notifyDocumentReady: true },
+      });
+      expect(
+        await notifier().send({ kind: 'document_ready', userId: user.id, documentId: doc.id }),
+      ).toBe('sent');
+      const mail = transport.sent.at(-1);
+      expect(mail?.subject).toBe('Appraisal ready');
+      expect(mail?.html).toContain('Appraisal &lt;b&gt;H2&lt;/b&gt;');
+      expect(mail?.text).toContain('96% of claims cited');
+      expect(mail?.text).toContain(`/documents/${doc.id}`);
+      const other = await f.user({ settings: { create: { notifyDocumentReady: true } } });
+      expect(
+        await notifier().send({ kind: 'document_ready', userId: other.id, documentId: doc.id }),
+      ).toBe('not_applicable');
+    });
+
+    it('sync problems: default on, respects the toggle, deduped per integration and day', async () => {
+      const user = await f.user({ settings: { create: {} } });
+      const gh = await f.integration(user.id, { externalAccountId: 'node-sync' });
+      expect(
+        await notifier().send({
+          kind: 'sync_problem',
+          userId: user.id,
+          integrationId: gh.id,
+          problem: 'needs_reauth',
+        }),
+      ).toBe('sent');
+      expect(transport.sent.at(-1)?.subject).toBe('GitHub needs reconnecting');
+      expect(transport.sent.at(-1)?.text).toContain('Unsubscribe from all DevImpact emails');
+      await t.prisma.userSettings.update({
+        where: { userId: user.id },
+        data: { notifySyncFailures: false },
+      });
+      expect(
+        await notifier().send({
+          kind: 'sync_problem',
+          userId: user.id,
+          integrationId: gh.id,
+          problem: 'sync_failed',
+        }),
+      ).toBe('opted_out');
+
+      const producer = new NotificationProducer(queue as never);
+      const now = new Date('2026-11-24T10:00:00Z');
+      await producer.syncProblem(user.id, gh.id, 'sync_failed', now);
+      await producer.syncProblem(user.id, gh.id, 'sync_failed', now);
+      await producer.documentReady(user.id, 'cmdoc', 1);
+      const jobs = await queue.getJobs(['waiting', 'delayed']);
+      expect(jobs.map((j) => j.id).sort()).toEqual(
+        [`notify-sync-${gh.id}-sync_failed-2026-11-24`, 'notify-doc-cmdoc-1'].sort(),
+      );
     });
   });
 

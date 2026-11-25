@@ -10,6 +10,7 @@ import {
   StructuredGenerator,
   type AiCallRecord,
 } from '../ai/structured-generator';
+import { NotificationProducer } from '../email/notification-producer';
 import { allowedRefs, verifyCitations } from '../evidence/citation-verifier';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsageService } from '../usage/usage.service';
@@ -42,6 +43,7 @@ export class DocumentGenerationService {
     private readonly events: DocEventsService,
     private readonly usage: UsageService,
     private readonly ai: AiConfig,
+    private readonly notifications: NotificationProducer,
   ) {}
 
   async run(job: AiGenerateJobData, opts: { stream: boolean }): Promise<AiJobResult> {
@@ -201,6 +203,8 @@ export class DocumentGenerationService {
         citationCoverage: verified.coverage,
         flags: { uncited: verified.uncited, invalid: verified.invalid },
       });
+      // "Document ready" email for studio documents (opt-in, F-65); quick actions never email.
+      if (opts.stream) await this.notifications.documentReady(userId, doc.id, job.version);
       return { ok: true };
     } catch (raw) {
       const crashed = !(raw instanceof GenerationFailure) && !(raw instanceof AiError);

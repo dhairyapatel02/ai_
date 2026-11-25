@@ -8,6 +8,7 @@ import { DigestScheduler } from './digest-scheduler.service';
 import { DigestService } from './digest.service';
 import { EMAIL_TRANSPORT } from './email.constants';
 import { EmailProcessor } from './email.processor';
+import { NotificationEmailService } from './notification-email.service';
 import { NotificationsController } from './notifications.controller';
 import { createEmailTransport } from './transports';
 
@@ -44,7 +45,7 @@ export class NotificationsModule {}
 /** `email` queue consumer + hourly digest fan-out (worker, or the API with RUN_WORKER_IN_API). */
 @Module({
   imports: [EmailCoreModule, AiGenerationModule],
-  providers: [DigestService, DigestScheduler, EmailProcessor],
-  exports: [DigestService, DigestScheduler],
+  providers: [DigestService, DigestScheduler, EmailProcessor, NotificationEmailService],
+  exports: [DigestService, DigestScheduler, NotificationEmailService],
 })
 export class EmailWorkerModule {}

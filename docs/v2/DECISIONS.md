@@ -675,3 +675,89 @@ Within D-009/D-010/D-012/D-020, ADR-0010/0012 and SCREENS S11–S16, Phase 11 ch
 *Consequences:* P12 binds achievements into evidence (GAP-18) and the plan page can reuse
 `QuotaMeter`; P14 owns section-scoped prompts (AI-12), the durable soft delete (GAP-17) and
 off-loop PDF rendering (DEBT-14).
+
+### D-028 · P12 implementation choices (career OS, email, export, plan limits) · APPLIED (P12)
+Within D-007/D-009/D-014/D-019/D-020, PRD §5.5/§6 and API_CONTRACT §5/§15–§17, Phase 12 chose:
+- **Scope (P03 amendment 1):** every Must shipped (achievements + evidence, goals with metric
+  targets, weekly digest, notification preferences, data export, account deletion UI, plan &
+  usage, entitlements) plus the Should AI digest summary. **Could items deferred to v2.1** (no owner
+  approval needed): monthly digest (F-67) and the in-app notification centre (F-66).
+- **Achievement visibility:** private to the owner. The contract and DATA_MODEL_V2 define no
+  visibility field; share links / manager views are v2.1 (D-014). Linked evidence must be the
+  user's own *authored* PR (reviewed PRs are linked as `review`), own commit or own review — anything
+  else is `404 NOT_FOUND`. Purged activity removes its `achievement_evidence` rows (FK cascade per
+  DATA_MODEL_V2), so S17's struck "Evidence removed" chip has no data to show (logged GAP-20).
+- **Achievements everywhere:** `ACHIEVEMENT_SOURCE` → `PrismaAchievementSource` (stable
+  `updatedAt` version, so inputHash only changes when an achievement does); `RefResolver` resolves
+  `ACH-<cuid>` (no URL); `/activity/feed` includes `achievement` items (local noon of `occurredOn`
+  as feed time, excluded by repository filters); PR detail `achievementIds`; career timeline gets an
+  additive `quarters[].achievements` "Beyond code" list + up to two `achievement` milestones per
+  quarter (API_CONTRACT §22 A-7); the `achievements` snapshot counter is filled by the rollup
+  (not an "active" day). Saving enqueues `metrics.recompute` (reason `achievement`).
+- **Goals:** progress per API_CONTRACT §16 from `ImpactScoreService.scoresFor` (one cached period
+  computation per evaluated month), never the LLM. List ordering active → achieved → missed →
+  archived, offset cursor. **Goals → appraisal:** not fed into the prompt in v2.0 — it would change
+  the appraisal prompt contract (new prompt version + re-recorded evals); the existing "Next goals"
+  section stays model-written from evidence. Logged as GAP-19 (P14 with the live eval, AI-10).
+- **Email provider:** `EmailTransport` with `console` (dev default, prints the text part),
+  `memory` (tests; refused in production), `smtp` (**nodemailer 10.4.1**, exact pin, loaded lazily
+  only when selected) and `resend` (HTTPS `POST /emails`, no SDK). Env: `EMAIL_TRANSPORT`,
+  `EMAIL_FROM`, `SMTP_URL`, `RESEND_API_KEY`, `RESEND_API_URL` (validated with Zod; transport-specific
+  requirements in `superRefine`). Provider errors are reduced to a status/code message. SES is not
+  built (SMTP covers SES SMTP credentials).
+- **Digest scheduling (D-019):** BullMQ job scheduler `email-digest-fanout` hourly at :00 UTC
+  (registered on worker boot unless `DIGEST_ENABLED=false`); a user is due when it is their local
+  digest weekday and the local hour is **≥** their digest hour (so DST gaps and worker downtime
+  never skip a week); the digest covers the last complete ISO week (Mon–Sun) in the user's time
+  zone. Job id `digest-<userId>-<weekStart>` (BullMQ ids cannot contain `:`, so the contract's
+  `digest:<userId>:<weekStart>` is spelled with `-`), plus the `digest_deliveries (user_id,
+  week_start)` unique row: claimed before sending (FAILED "sending"), SENT after; FAILED may be
+  retried (3 attempts, exponential), SENT/SKIPPED never. Empty weeks are recorded SKIPPED
+  (`no_activity`) and not emailed. Opt-out is re-read at send time. Numbers come from the engine
+  (`prs_merged`, `prs_reviewed`, `commits`, `repos_contributed` vs the previous week); notable PRs =
+  the week's three largest merged PRs; suggestions = up to two merged PRs without an achievement,
+  linking to the Activity drawer's "Turn into achievement". The optional AI summary comes from
+  `DigestSummaryService.summarize` (fast model, cached; any failure → no summary).
+- **Notification emails:** "Sync problems" (default on: integration → NEEDS_REAUTH, or a sync run
+  FAILED) and "Document ready" (opt-in: studio document finished) as `email.send` jobs with
+  dedupe ids (one per integration, problem and UTC day; one per document version); the worker
+  re-checks the preference. So every S21 toggle does something.
+- **Unsubscribe:** stateless HMAC-SHA256 token `base64url({u,l,e}).base64url(sig)` with a domain
+  prefix, dedicated `UNSUBSCRIBE_TOKEN_SECRET` (≥ 32 chars; the example value is refused in
+  production), 60-day TTL (`UNSUBSCRIBE_TOKEN_TTL_DAYS`), constant-time comparison; replay only
+  repeats the opt-out. Digest emails carry `list: digest`, notification emails `list: all`.
+  `POST /notifications/unsubscribe` is `@Public()` in the `public` class (60/min/IP); every failure
+  is `400 VALIDATION_FAILED` with `details.reason` `expired` | `invalid` (unknown users are
+  `invalid`). Emails also send `List-Unsubscribe` (link only; no one-click POST).
+- **Templates:** table-based HTML with inline styles (light palette) + plain text; every user,
+  GitHub and LLM string is escaped and stripped of control/bidi characters; links pass an http(s)
+  check. Snapshot-tested. The web preview renders the HTML in a `sandbox=""` iframe.
+- **Data export:** `GET /me/export` streams one JSON document in 500-row batches with
+  back-pressure; `EXPORT_SECTIONS` lists every user-data model and a test compares it with the
+  Prisma DMMF (exclusions: `Verification`, `Jwks`, `WebhookDelivery`). Omitted secrets:
+  `Account.accessToken/refreshToken/idToken/password`, `Session.token`,
+  `Integration.accessTokenEnc/refreshTokenEnc/syncCursor`. BigInts are strings. Filename
+  `devimpact-export-<local date>.json` (fixed ASCII). Own rate class `data-export` (3/day,
+  `RATE_LIMIT_DATA_EXPORT_PER_DAY`) so document exports don't consume it.
+- **Account deletion:** existing P05 `DELETE /me` (typed email, best-effort GitHub revoke, user
+  cascade incl. Better Auth sessions/accounts) now also clears Redis state (document event streams,
+  the pending metrics range + delayed recompute job, `sse:` counter, the user's `rl:*` keys). The web
+  signs out to `/sign-in?reason=account_deleted` ("Account deleted").
+- **Entitlements:** `PlanLimits` gains `weeklyDigest` (both plans ✓; checked by the fan-out). The
+  history window (FREE 12 / PRO 36 months) is enforced as `403 ENTITLEMENT_REQUIRED { entitlement:
+  'history_window', limit, plan }` for any requested period starting before the first day of the
+  month `historyMonths` months back — in `MetricsService.resolve` (overview, KPIs, impact, trends,
+  timeseries…) and `EvidenceBuilder.context` (documents, preview) — and already bounds the sync
+  backfill (P06). Integrations stay enforced at connect (P05). AI quotas stay `402`. The web shows
+  ENTITLEMENT_REQUIRED as "Outside your plan" with a Plan & usage link; PRO is assigned with
+  `npm run plan:set --workspace=apps/api -- <email> PRO` (no billing, D-014).
+- **Web:** one shell-level achievement dialog and goal dialog (⌘K, `A`, New menu, dashboard,
+  Next step, item drawer, page buttons) via `ShellState.openAchievement(prefill)` /
+  `setGoalDialogOpen`; dialogs become bottom sheets below 640 px. Achievements period filter is a
+  page select (All time / this quarter / half / year / last 12 months → `?period=`), not the global
+  period picker (the journal defaults to all time). Goal detail is a sheet on `?goal=`. Profile
+  sessions and sign-in methods use the Better Auth client (`listSessions`, `revokeSession`,
+  `listAccounts`, `linkSocial`); "Link Google" shows only when Google sign-in is configured.
+*Consequences:* P14 load/security-tests the public unsubscribe endpoint, `/me/export`, `DELETE /me`
+and the digest fan-out (see PROGRESS P12 handoff), adds DigestDelivery retention (OPS-18) and
+decides GAP-19 with the live eval.
