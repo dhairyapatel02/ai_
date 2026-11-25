@@ -153,6 +153,8 @@ test.describe('insight pages (P10)', () => {
  */
 async function interceptSync(page: Page) {
   let phase = 0;
+  // P13: S19 polls one status per connected source; only the synced integration advances the fake.
+  let syncedId: string | null = null;
   const now = () => new Date().toISOString();
   const run = (status: string, progress: number) => ({
     id: 'cme2esyncrun0000000000001',
@@ -183,14 +185,19 @@ async function interceptSync(page: Page) {
     });
   await page.route(`${API_URL}/sync`, async (route) => {
     if (route.request().method() !== 'POST') return route.fallback();
+    const posted = route.request().postDataJSON() as { integrationId?: string } | null;
+    syncedId = posted?.integrationId ?? null;
     phase = 1;
     return json(route, { syncRun: run('queued', 0) }, 202);
   });
   await page.route(new RegExp(`${API_URL.replace(/[/.]/g, '\\$&')}/sync/status`), async (route) => {
     if (phase === 0) return route.fallback();
+    const id = new URL(route.request().url()).searchParams.get('integrationId');
+    if (syncedId && id && id !== syncedId) return route.fallback();
     const real = await route.fetch();
     const body = (await real.json()) as { data: Record<string, unknown> };
-    phase += 1;
+    // Unscoped requests (shell status) share the state but don't advance it.
+    if (!syncedId || id === syncedId) phase += 1;
     if (phase <= 3) {
       return json(route, {
         ...body.data,
