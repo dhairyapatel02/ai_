@@ -50,5 +50,6 @@ export interface MetricsRecomputeJobData {
   /** Affected range, ISO timestamps (P07 maps it to local dates in the user's time zone). */
   from: string;
   to: string;
-  reason: 'sync' | 'webhook' | 'repository_inclusion' | 'timezone' | 'nightly' | 'manual';
+  reason:
+    'sync' | 'webhook' | 'repository_inclusion' | 'timezone' | 'nightly' | 'manual' | 'achievement';
 }

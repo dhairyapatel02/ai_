@@ -102,6 +102,16 @@ export function errorMessage(error: unknown, what = 'this'): string {
     }
     case 'INVALID_PERIOD':
       return "That period isn't valid. Choose 7–366 days that don't start in the future.";
+    case 'ENTITLEMENT_REQUIRED': {
+      const d = entitlementDetails(error);
+      if (d?.entitlement === 'history_window') {
+        return `This period starts before your plan's ${d.limit}-month history window. Choose a more recent period, or see Plan & usage to upgrade.`;
+      }
+      if (d?.entitlement === 'integrations') {
+        return 'Your plan allows one GitHub connection. See Plan & usage for options.';
+      }
+      return "Your plan doesn't include this. See Plan & usage for options.";
+    }
     case 'NOT_FOUND':
       return `Couldn't find ${what}. It may have been deleted.`;
     case 'INTEGRATION_NEEDS_REAUTH':
@@ -117,4 +127,19 @@ export function errorMessage(error: unknown, what = 'this'): string {
     default:
       return error.message;
   }
+}
+
+/** `403 ENTITLEMENT_REQUIRED` details `{ entitlement, limit, plan }` (API_CONTRACT_V2 §2). */
+export function entitlementDetails(
+  error: unknown,
+): { entitlement: string; limit: number; plan: string } | null {
+  if (!isApiError(error) || error.code !== 'ENTITLEMENT_REQUIRED') return null;
+  const d = error.details as { entitlement?: unknown; limit?: unknown; plan?: unknown } | null;
+  return d && typeof d.entitlement === 'string' && typeof d.limit === 'number'
+    ? {
+        entitlement: d.entitlement,
+        limit: d.limit,
+        plan: typeof d.plan === 'string' ? d.plan : 'free',
+      }
+    : null;
 }

@@ -15,11 +15,11 @@ Legend for tables/endpoints: see [DATA_MODEL_V2](DATA_MODEL_V2.md) and [API_CONT
 |---|---|---|---|---|---|---|
 | F-01 Sign in GitHub/Google, sign-out | M | ADR-0003 | User, Session, Account, Verification, Jwks | web `/api/auth/*`, `GET /me` | `/sign-in`, user menu | P05, P09 |
 | F-02 Dev-only sign-in | M | ADR-0003 | Account (credential) | web `POST /api/dev-login` | `/sign-in` (dev button) | P05 |
-| F-03 Account deletion | M | ADR-0003, DATA_MODEL §6 | cascade all | `DELETE /me` | `/settings/privacy` | P05 (API), P12 (UI) |
-| F-04 Export my data | M | DATA_MODEL §6 | all user-owned | `GET /me/export` | `/settings/privacy` | P12 |
-| F-05 User settings (tz, role, period) | M | KPI §2.4 | UserSettings | `GET/PATCH /me/settings` | `/settings/profile`, onboarding | P05 (tz), P12 |
-| F-06 Plans & entitlements | M | PRD §6, ADR-0009 | User.plan, AiUsage | `/me/entitlements`, 402/403 errors | disabled states + upgrade copy | P08, P12 |
-| F-07 Plan & usage page | M | PRD §6 | AiUsage | `GET /me/usage` | `/settings/plan` | P12 |
+| F-03 Account deletion | M | ADR-0003, DATA_MODEL §6 | cascade all | `DELETE /me` | `/settings/privacy` | P05 (API), P12 (UI) ✅ |
+| F-04 Export my data | M | DATA_MODEL §6 | all user-owned | `GET /me/export` | `/settings/privacy` | P12 ✅ |
+| F-05 User settings (tz, role, period) | M | KPI §2.4 | UserSettings | `GET/PATCH /me/settings` | `/settings/profile`, onboarding | P05 (tz), P12 ✅ |
+| F-06 Plans & entitlements | M | PRD §6, ADR-0009 | User.plan, AiUsage | `/me/entitlements`, 402/403 errors | disabled states + upgrade copy | P08, P12 ✅ |
+| F-07 Plan & usage page | M | PRD §6 | AiUsage | `GET /me/usage`, `GET /me/entitlements` | `/settings/plan` | P12 ✅ |
 | F-10 Connect GitHub (App) | M | ADR-0004, ADR-0005 | Integration, GitHubInstallation | `POST /integrations/github/connect`, `/callback` | `/onboarding/connect`, `/onboarding/pending`, `/integrations/github/callback`, `/settings/integrations` | P05, P06, P09 |
 | F-11 Repository selection | M | ADR-0007 | Repository.included | `GET/PATCH /repos` | `/onboarding/repositories`, `/settings/integrations` | P06, P09, P10 |
 | F-12 Initial 12-month backfill | M | ADR-0007 | SyncRun, cursors | `POST /sync` (auto on connect), `SyncRunDto.recentWindowCompletedAt` (A-4) | `/onboarding/sync` | P06 |
@@ -53,14 +53,14 @@ Legend for tables/endpoints: see [DATA_MODEL_V2](DATA_MODEL_V2.md) and [API_CONT
 | F-49 Exports | M | ADR-0012 | DocumentVersion | `GET /documents/:id/export` (+ client copy) | viewer | P11 ✅ |
 | F-50 Result caching | M | ADR-0009 | inputHash | `POST /documents` (200 cached) | — | P08 |
 | F-51 Achievement statement | S | ADR-0009 | (AiUsage) | `POST /ai/achievement-statement` | activity drawer, achievements | P08, P10, P12 |
-| F-60 Achievements journal | M | — | Achievement, AchievementEvidence | `/achievements` CRUD | `/achievements`, ⌘K, dashboard | P12 |
-| F-61 Achievements as evidence | M | ADR-0009 | AchievementEvidence | feed, timeline, documents | feed, career, documents | P12 (+P08 interface) |
-| F-62 Goals | M | KPI keys | Goal, GoalAchievement | `/goals` CRUD | `/goals` | P12 |
-| F-63 Weekly digest | M | — | DigestDelivery, UserSettings | `PATCH /me/settings`, `/notifications/unsubscribe` | email, `/settings/notifications`, `/unsubscribe` | P12 |
-| F-64 AI digest summary | S | ADR-0009 | GeneratedDocument (DIGEST_SUMMARY) | (worker) | email | P08, P12 |
-| F-65 Notification preferences | M | — | UserSettings | `PATCH /me/settings` | `/settings/notifications` | P12 |
+| F-60 Achievements journal | M | — | Achievement, AchievementEvidence | `/achievements` CRUD | `/achievements`, ⌘K, `A`, dashboard | P12 ✅ |
+| F-61 Achievements as evidence | M | ADR-0009 | AchievementEvidence | feed, timeline (A-7), documents (`ACH-` refs) | feed, career, documents | P12 (+P08 interface) ✅ |
+| F-62 Goals | M | KPI keys | Goal, GoalAchievement | `/goals` CRUD | `/goals` (+ `?goal=` sheet) | P12 ✅ |
+| F-63 Weekly digest | M | — | DigestDelivery, UserSettings | `PATCH /me/settings`, `/notifications/unsubscribe`, `/notifications/digest/preview` | email, `/settings/notifications`, `/unsubscribe` | P12 ✅ |
+| F-64 AI digest summary | S | ADR-0009 | GeneratedDocument (DIGEST_SUMMARY) | (worker) | email | P08, P12 ✅ |
+| F-65 Notification preferences | M | — | UserSettings | `PATCH /me/settings` (+ `email.send` worker jobs) | `/settings/notifications` | P12 ✅ |
 | F-66 In-app notification centre | C | — | (v2.1) | — | — | v2.1 |
-| F-67 Monthly digest | C | — | DigestDelivery | — | email | P12 (if time) |
+| F-67 Monthly digest | C | — | DigestDelivery | — | email | v2.1 (deferred in P12, D-028) |
 | F-70 Responsive shell | M | — | — | — | all | P09 |
 | F-71 Dark mode | M | — | — | — | all | P04, P09 |
 | F-72 Command palette | S | — | — | various | all | P09 |
@@ -102,7 +102,7 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | API-02 | 🟠 | ADR-0006 | P05 | |
 | PERF-01 | 🟠 | ADR-0007 (budget ≤ 250) | P06 | |
 | UX-02 | 🟠 | F-70, F-20 | P09, P10 | ✅ fixed in P10 (0 px overflow at 390 on every insight page) |
-| UX-03 | 🟠 | F-49 (documents), F-65/F-05 (settings) | P11, P12 | ✅ documents part P11 (copy + downloads); settings → P12 |
+| UX-03 | 🟠 | F-49 (documents), F-65/F-05 (settings) | P11, P12 | ✅ documents part P11; settings part P12 |
 | UX-04 | 🟠 | F-46 | P11 | ✅ fixed in P11 (`DocumentRenderer`, legacy sections) |
 | UX-05 | 🟠 | F-73 | P09 | |
 | GAP-01 | 🟠 | F-13, F-14 | P06 | |
@@ -148,7 +148,7 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | UX-10 | 🟡 | F-30 | P10 | ✅ fixed in P10 |
 | UX-11 | 🟡 | F-71 | P04, P09 | |
 | UX-12 | 🟡 | F-44, F-48 | P11 | ✅ fixed in P11 (server-side generation, replay on return, E2E) |
-| GAP-07 | 🟡 | F-05, F-06, F-07, F-65 | P12 | |
+| GAP-07 | 🟡 | F-05, F-06, F-07, F-65 | P12 | ✅ fixed in P12 |
 | GAP-08 | 🟡 | F-40 | P08, P11 | ✅ API P08, UI P11 |
 | GAP-09 | 🟡 | ADR-0006, ADR-0010 | P02, P05, P09 | |
 | DEBT-06 | 🟡 | ADR-0010 | P09 | |
@@ -181,11 +181,14 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | DEBT-13 | ⚪ | DESIGN_SYSTEM §11 | P14 | added by P09: re-sync vendored shadcn sources with the CLI |
 | GAP-14 | ⚪ | F-25 | P14 | added by P10: `total` for `/activity/feed` |
 | GAP-15 | ⚪ | F-27, F-25 | P14 | added by P10: PR id on review evidence items |
-| GAP-16 | ⚪ | F-24, F-60, F-62 | P12 | added by P10: Next step rules 4 and 6 need achievements/goals |
+| GAP-16 | ⚪ | F-24, F-60, F-62 | P12 | ✅ fixed in P12: Next step rules 4 and 6 |
 | PERF-07 | ⚪ | ADR-0010 | P14 | added by P10: shared ESM `exports` map (web already bundles the ESM source) |
 | UX-14 | ⚪ | DESIGN_SYSTEM §5.1 | P11 | ✅ added + fixed in P11: tailwind-merge kept token font sizes |
 | GAP-17 | ⚪ | F-48 | P14 | added by P11: durable (server) soft delete for library Undo |
-| GAP-18 | ⚪ | F-43, F-45, F-60 | P12 | added by P11: achievements in evidence packs and citation links |
+| GAP-18 | ⚪ | F-43, F-45, F-60 | P12 | ✅ fixed in P12: achievements in evidence packs, RefResolver, chip links |
 | DEBT-14 | ⚪ | F-49, ADR-0012 | P14 | added by P11: render PDFs off the API event loop |
+| GAP-19 | ⚪ | F-41, F-62 | P14 | added by P12: goals in the appraisal prompt (new prompt version) |
+| GAP-20 | ⚪ | F-60 | v2.1 | added by P12: "Evidence removed" needs denormalised evidence refs |
+| GAP-21 | ⚪ | F-63 | P14/P15 | added by P12: bounces, one-click unsubscribe POST, SPF/DKIM |
 
 Every open ISSUES row with a target of P05 or later is mapped above; one (GAP-10) is won't-fix for v2.0.

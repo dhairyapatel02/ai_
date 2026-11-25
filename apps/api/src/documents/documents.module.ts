@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AiCoreModule } from '../ai/ai.module';
+import { NotificationProducer } from '../email/notification-producer';
 import { EvidenceModule } from '../evidence/evidence.module';
 import { DocumentExportsService } from '../exports/document-exports.service';
 import { UsageModule } from '../usage/usage.module';
@@ -16,7 +17,12 @@ import { QuickActionsService } from './quick-actions.service';
 /** Generation services shared by the API (tests) and the worker. */
 @Module({
   imports: [AiCoreModule, EvidenceModule, UsageModule],
-  providers: [DocumentInputs, DocumentGenerationService, DigestSummaryService],
+  providers: [
+    DocumentInputs,
+    DocumentGenerationService,
+    DigestSummaryService,
+    NotificationProducer,
+  ],
   exports: [
     DocumentInputs,
     DocumentGenerationService,

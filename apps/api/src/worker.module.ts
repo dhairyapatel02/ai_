@@ -1,6 +1,7 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 
 import { AiWorkerModule } from './documents/ai-worker.module';
+import { EmailWorkerModule } from './email/email.module';
 import { infrastructureImports } from './infrastructure';
 import { SyncWorkerModule } from './sync/sync-worker.module';
 
@@ -13,7 +14,7 @@ export class WorkerModule {
   static register(): DynamicModule {
     return {
       module: WorkerModule,
-      imports: [...infrastructureImports(), SyncWorkerModule, AiWorkerModule],
+      imports: [...infrastructureImports(), SyncWorkerModule, AiWorkerModule, EmailWorkerModule],
     };
   }
 }

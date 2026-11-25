@@ -2,6 +2,8 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { EvidenceChip } from '@/components/evidence-chip';
+
 import {
   calls,
   fail,
@@ -11,6 +13,7 @@ import {
   type Handler,
 } from '../../../../test/api-mock';
 import { clone, fx, NOW } from '../../../../test/fixtures-p10';
+import { fx12 } from '../../../../test/fixtures-p12';
 import { nav, setUrl } from '../../../../test/navigation-mock';
 import { quarterTotals, reviewClusterLabel } from '../../../lib/career';
 import { CareerView } from './career-view';
@@ -117,6 +120,47 @@ describe('CareerView (S10)', () => {
     routes({ 'GET /me': me });
     renderWithQuery(<CareerView />);
     expect(await screen.findByTestId('not-connected')).toBeInTheDocument();
+  });
+
+  it('P12: "Beyond code" lists the quarter\'s achievements and opens the achievement drawer', async () => {
+    routes({
+      'GET /career/timeline': fx12.career,
+      'GET /achievements/*': { data: fx12.achievements.data[0] },
+    });
+    renderWithQuery(<CareerView />);
+    const beyond = (await screen.findAllByTestId('beyond-code'))[0];
+    const first = fx12.career.data.quarters.find((q) => q.achievements.length)!.achievements[0];
+    await userEvent.click(within(beyond).getByRole('button', { name: first.title }));
+    expect(nav.push).toHaveBeenCalledWith(`/career?item=achievement%3A${first.id}`, {
+      scroll: false,
+    });
+    expect(quarterTotals({ prsMerged: 0, prsReviewed: 0, achievements: 2 })).toBe(
+      '0 merged · 0 reviewed · 2 achievements',
+    );
+  });
+
+  it('P12: an achievement ref in an evidence chip links to its drawer (GAP-18)', async () => {
+    const a = fx12.achievements.data[0];
+    renderWithQuery(
+      <EvidenceChip
+        refId={a.ref}
+        evidence={{
+          ref: a.ref,
+          kind: 'achievement',
+          id: a.id,
+          title: a.title,
+          repo: null,
+          url: null,
+          occurredAt: `${a.occurredOn}T12:00:00.000Z`,
+        }}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: `Evidence ${a.ref}` }));
+    expect(await screen.findByRole('link', { name: 'Details' })).toHaveAttribute(
+      'href',
+      `/achievements?item=achievement:${a.id}`,
+    );
+    expect(screen.queryByRole('link', { name: /GitHub/ })).not.toBeInTheDocument();
   });
 
   it('UX-10 / BUG-13: plurals and year parsing', () => {

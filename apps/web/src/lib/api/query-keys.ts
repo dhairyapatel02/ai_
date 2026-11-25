@@ -77,6 +77,22 @@ export const qk = {
     all: ['usage'] as const,
     month: () => ['usage', 'month', 'current'] as const,
   },
+  /** Achievements journal (S17): `category` / `period` filters from the URL. */
+  achievements: {
+    all: ['achievements'] as const,
+    list: (params: Record<string, string | undefined>) => ['achievements', 'list', params] as const,
+    detail: (id: string) => ['achievements', 'detail', id] as const,
+  },
+  goals: {
+    all: ['goals'] as const,
+    list: (params: Record<string, string | undefined>) => ['goals', 'list', params] as const,
+    detail: (id: string) => ['goals', 'detail', id] as const,
+  },
+  entitlements: {
+    all: ['entitlements'] as const,
+    detail: () => ['entitlements', 'detail'] as const,
+  },
+  sessions: { all: ['sessions'] as const, list: () => ['sessions', 'list'] as const },
 } as const;
 
 /** Domains whose data changes when a sync finishes (FLOWS F4: refresh in place, no reload). */
@@ -88,4 +104,5 @@ export const SYNC_DEPENDENT_KEYS = [
   qk.repos.all,
   qk.integrations.all,
   qk.me.all,
+  qk.goals.all,
 ] as const;

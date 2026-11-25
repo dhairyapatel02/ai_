@@ -17,6 +17,11 @@ x-api-env: &api-env
   TOKEN_ENCRYPTION_KEYS: ${TOKEN_ENCRYPTION_KEYS:-1:Y29tcG9zZS1sb2NhbC1vbmx5LXRva2VuLWtleS0hISE=}
   TOKEN_ENCRYPTION_ACTIVE_KEY: ${TOKEN_ENCRYPTION_ACTIVE_KEY:-1}
   OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET:-compose-local-only-oauth-state-secret-0123456789}
+  UNSUBSCRIBE_TOKEN_SECRET: ${UNSUBSCRIBE_TOKEN_SECRET:-compose-local-only-unsubscribe-secret-0123456789}
+  EMAIL_TRANSPORT: ${EMAIL_TRANSPORT:-console}
+  EMAIL_FROM: ${EMAIL_FROM:-DevImpact <digest@devimpact.local>}
+  SMTP_URL: ${SMTP_URL:-}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
 
 services:
   postgres:

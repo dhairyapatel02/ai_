@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { NotificationProducer } from '../email/notification-producer';
 import { MetricsCoreModule } from '../metrics/metrics-core.module';
 import { ProvidersModule } from '../providers/providers.module';
 import { IntegrationTokensService } from './integration-tokens.service';
@@ -11,7 +12,14 @@ import { SyncService } from './sync.service';
 /** Services shared by the HTTP API and the worker (queues come from the global QueuesModule). */
 @Module({
   imports: [ProvidersModule, MetricsCoreModule],
-  providers: [SyncService, SyncEngine, SyncWriter, SyncTargetedService, IntegrationTokensService],
+  providers: [
+    SyncService,
+    SyncEngine,
+    SyncWriter,
+    SyncTargetedService,
+    IntegrationTokensService,
+    NotificationProducer,
+  ],
   exports: [
     SyncService,
     SyncEngine,

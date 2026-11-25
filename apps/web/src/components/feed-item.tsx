@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
+import { CATEGORY_LABEL, parseCategory } from '@/lib/achievements';
 import { formatLocalDate, formatTime, localDateKey } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -82,6 +83,10 @@ export function feedMeta(item: FeedItem): string {
     const author = str(item.meta.authorLogin);
     const state = REVIEW_STATE[str(item.meta.reviewState) ?? ''] ?? '';
     return [repo, author ? `by @${author}` : null, state || null].filter(Boolean).join(' · ');
+  }
+  if (item.type === 'achievement') {
+    const category = parseCategory(str(item.meta.category));
+    return category ? CATEGORY_LABEL[category] : 'Achievement';
   }
   return repo;
 }

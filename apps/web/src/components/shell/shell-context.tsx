@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from 'react';
 
+import type { AchievementPrefill } from '@/lib/achievements';
+
 const COLLAPSE_KEY = 'devimpact:sidebar-collapsed';
 const SINGLE_KEY = 'devimpact:single-key-shortcuts';
 
@@ -43,6 +45,13 @@ interface ShellState {
   toggleCollapsed: () => void;
   singleKeyShortcuts: boolean;
   setSingleKeyShortcuts: (on: boolean) => void;
+  /** Global "Add achievement" dialog (⌘K, `A`, New menu, dashboard, item drawer — F7). */
+  achievementDialog: { open: boolean; prefill?: AchievementPrefill };
+  openAchievement: (prefill?: AchievementPrefill) => void;
+  closeAchievement: () => void;
+  /** Global "Add goal" dialog (⌘K, New menu, dashboard Next step — F8). */
+  goalDialogOpen: boolean;
+  setGoalDialogOpen: (open: boolean) => void;
 }
 
 const ShellContext = createContext<ShellState | null>(null);
@@ -55,6 +64,16 @@ export function ShellProvider({ children }: { children: ReactNode }) {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [singleKeyShortcuts, setSingleKey] = useState(true);
+  const [achievementDialog, setAchievementDialog] = useState<ShellState['achievementDialog']>({
+    open: false,
+  });
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const openAchievement = useCallback((prefill?: AchievementPrefill) => {
+    setAchievementDialog({ open: true, prefill });
+  }, []);
+  const closeAchievement = useCallback(() => {
+    setAchievementDialog((d) => ({ ...d, open: false }));
+  }, []);
 
   // Per-device conveniences live in localStorage (IA §6); read after mount (no hydration mismatch).
   useEffect(() => {
@@ -87,8 +106,17 @@ export function ShellProvider({ children }: { children: ReactNode }) {
       toggleCollapsed,
       singleKeyShortcuts,
       setSingleKeyShortcuts,
+      achievementDialog,
+      openAchievement,
+      closeAchievement,
+      goalDialogOpen,
+      setGoalDialogOpen,
     }),
     [
+      achievementDialog,
+      openAchievement,
+      closeAchievement,
+      goalDialogOpen,
       paletteOpen,
       periodOpen,
       navOpen,

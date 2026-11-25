@@ -1,0 +1,21 @@
+{
+  "data": {
+    "month": "2026-11",
+    "generations": {
+      "used": 0,
+      "limit": 150,
+      "resetsAt": "2026-12-01T00:00:00.000Z"
+    },
+    "quick": {
+      "used": 0,
+      "limit": 1000
+    },
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0
+    },
+    "estimatedCostUsd": 0,
+    "byFeature": []
+  }
+}

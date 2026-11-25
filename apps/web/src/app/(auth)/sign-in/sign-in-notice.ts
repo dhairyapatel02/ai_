@@ -35,6 +35,13 @@ export function signInNotice(params: {
       body: provider ? `Try again, or continue with ${other}.` : 'Try again in a moment.',
     };
   }
+  if (params.reason === 'account_deleted') {
+    return {
+      tone: 'neutral',
+      title: 'Account deleted',
+      body: "We're sorry to see you go. Your account and its data have been removed.",
+    };
+  }
   if (params.reason === 'session_expired') {
     return { tone: 'info', title: 'Your session ended. Sign in to continue.' };
   }

@@ -23,6 +23,7 @@
     "db:push": "prisma db push",
     "db:seed:heavy": "tsx prisma/scripts/seed-heavy.ts",
     "metrics:recompute": "tsx prisma/scripts/recompute-metrics.ts",
+    "plan:set": "tsx prisma/scripts/set-plan.ts",
     "perf:metrics": "tsx prisma/scripts/measure-metrics-perf.ts",
     "ai:mock": "tsx test/utils/serve-fake-anthropic.ts"
   },
@@ -51,6 +52,7 @@
     "ioredis": "^5.8.0",
     "jose": "^6.2.17",
     "nestjs-pino": "^4.6.1",
+    "nodemailer": "10.4.1",
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
     "prisma": "7.10.1",

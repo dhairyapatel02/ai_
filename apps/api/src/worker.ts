@@ -28,7 +28,7 @@ async function bootstrap() {
   }
 
   logger.log(
-    `Worker started; consuming queues "sync", "metrics" and "ai" (prefix ${env.QUEUE_PREFIX})`,
+    `Worker started; consuming queues "sync", "metrics", "ai" and "email" (prefix ${env.QUEUE_PREFIX}, email transport ${env.EMAIL_TRANSPORT})`,
   );
 }
 

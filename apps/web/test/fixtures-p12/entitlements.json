@@ -1,0 +1,15 @@
+{
+  "data": {
+    "plan": "pro",
+    "limits": {
+      "integrations": 1,
+      "historyMonths": 36,
+      "aiGenerationsPerMonth": 150,
+      "aiQuickPerMonth": 1000,
+      "weeklyDigest": true
+    },
+    "usage": {
+      "integrations": 1
+    }
+  }
+}

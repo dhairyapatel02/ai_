@@ -2,9 +2,11 @@ import { periodSpecContaining, resolvePeriod } from '@devimpact/shared';
 
 /**
  * Dashboard "Next step" rules (SCREENS S6, F-24): first match wins, evaluated on the client.
- * Rules 4 (achievements) and 6 (goals) need the P12 endpoints and are skipped until they exist.
+ * 1 reconnect · 2 failed sync · 3 appraisal · 4 capture a recent win · 5 resume · 6 set a goal ·
+ * 7 impact score.
  */
-export type NextStepRule = 'reconnect' | 'sync_failed' | 'appraisal' | 'resume' | 'impact';
+export type NextStepRule =
+  'reconnect' | 'sync_failed' | 'appraisal' | 'achievement' | 'resume' | 'goal' | 'impact';
 
 export interface NextStepInput {
   today: string;
@@ -18,6 +20,12 @@ export interface NextStepInput {
   appraisalPeriods: (string | null)[] | null;
   /** Newest resume document's creation time, `undefined` when none exists. */
   newestResumeAt: string | null | undefined;
+  /** PRs merged in the selected period (rule 4); null while loading. */
+  prsMergedInPeriod: number | null;
+  /** Achievements dated in the last 30 days (rule 4); null while loading. */
+  recentAchievements: number | null;
+  /** Number of goals (rule 6); null while loading. */
+  goalsCount: number | null;
   /** Rules hidden with "Not now" until their expiry (epoch ms). */
   dismissed: Partial<Record<NextStepRule, number>>;
   now: number;
@@ -63,12 +71,21 @@ export function pickNextStep(input: NextStepInput): NextStep {
     }
   }
   if (
+    input.prsMergedInPeriod !== null &&
+    input.prsMergedInPeriod >= 3 &&
+    input.recentAchievements === 0 &&
+    !hidden('achievement')
+  ) {
+    return { rule: 'achievement' };
+  }
+  if (
     input.newestResumeAt &&
     input.now - Date.parse(input.newestResumeAt) > 90 * DAY &&
     !hidden('resume')
   ) {
     return { rule: 'resume' };
   }
+  if (input.goalsCount === 0 && !hidden('goal')) return { rule: 'goal' };
   return { rule: 'impact' };
 }
 

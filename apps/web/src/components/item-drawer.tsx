@@ -1,10 +1,12 @@
 'use client';
 
-import { Copy, ExternalLink, GitMerge, Sparkles } from 'lucide-react';
+import { ExternalLink, GitMerge, Plus, Sparkles } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
-import { toast } from 'sonner';
 
+import { AchievementDialog } from '@/components/career/achievement-dialog';
+import { EvidenceChip } from '@/components/evidence-chip';
 import { parseItemParam, type ParsedItem } from '@/components/feed-item';
+import { useShell } from '@/components/shell/shell-context';
 import { ErrorState } from '@/components/states';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,9 +19,10 @@ import {
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useHydrated } from '@/hooks/use-hydrated';
+import { useAchievement } from '@/lib/api/career-hooks';
 import { errorMessage, isApiError, quotaDetails } from '@/lib/api/errors';
 import { useAchievementStatement, useCommit, usePullRequest } from '@/lib/api/metrics-hooks';
-import { formatDate, formatTime, plural } from '@/lib/format';
+import { formatDate, formatLocalDate, formatTime, localDateKey, plural } from '@/lib/format';
 
 import type {
   AchievementStatementResponse,
@@ -80,90 +83,184 @@ function GitHubLink({ url }: { url: string | null }) {
 }
 
 /**
- * "Turn into achievement" (S7, F-51): `POST /ai/achievement-statement` on the fast model (quick
- * quota). Saving achievements arrives with the Achievements page (P12, D-026): until then the
- * drafted statement is shown with a Copy button.
+ * "Turn into achievement" (S7, F-51, FLOWS F7): `POST /ai/achievement-statement` on the fast model
+ * (quick quota) drafts a title, statement and category, then the S17 dialog opens pre-filled
+ * ("Drafted by AI from <ref>. Edit anything before saving."). 402 → "Quick AI actions used up —
+ * add it manually" with the dialog pre-filled from the record itself.
  */
-function AchievementDraft({ source }: { source: { kind: 'pull_request' | 'commit'; id: string } }) {
+function AchievementDraft({
+  source,
+  record,
+}: {
+  source: { kind: 'pull_request' | 'commit'; id: string };
+  record: { ref: string; title: string; date: string };
+}) {
   const draft = useAchievementStatement();
-  const [result, setResult] = useState<AchievementStatementResponse | null>(null);
+  const shell = useShell();
   const quota = isApiError(draft.error) ? quotaDetails(draft.error) : null;
+  const evidence = [{ kind: source.kind, id: source.id, ref: record.ref, title: record.title }];
 
+  const manual = () => {
+    shell.openAchievement({
+      title: record.title.slice(0, 200),
+      occurredOn: record.date,
+      evidence,
+      source: 'from_activity',
+    });
+  };
   const run = () => {
     draft.mutate(source, {
-      onSuccess: (data) => {
-        setResult(data);
+      onSuccess: (data: AchievementStatementResponse) => {
+        shell.openAchievement({
+          title: data.title,
+          category: data.category,
+          impact: data.statement,
+          occurredOn: record.date,
+          evidence,
+          source: 'from_activity',
+          draftedFrom: record.ref,
+        });
       },
     });
   };
 
   return (
     <section
-      className="flex flex-col gap-2 rounded-md border p-3"
+      className="flex flex-col gap-2 rounded-md bg-surface-2 p-3"
       aria-labelledby="achievement-draft-title"
-      aria-live="polite"
     >
       <h3 id="achievement-draft-title" className="font-medium">
         Capture this as an achievement
       </h3>
-      {result ? (
-        <div className="flex flex-col gap-2" data-testid="achievement-draft">
-          <p className="font-medium">{result.title}</p>
-          <p className="text-muted-foreground">{result.statement}</p>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="outline">{CATEGORY[result.category] ?? result.category}</Badge>
-            {result.citations.map((ref) => (
-              <Ref key={ref}>{ref}</Ref>
-            ))}
-          </div>
-          <p className="text-caption text-subtle-foreground">
-            Saving achievements arrives with the Achievements page. Copy the statement to keep it
-            for now.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                navigator.clipboard.writeText(`${result.title}\n\n${result.statement}`).then(
-                  () => toast.success('Statement copied'),
-                  () => toast.error('Copy was blocked. Select the text and copy it manually.'),
-                );
-              }}
-            >
-              <Copy aria-hidden="true" />
-              Copy statement
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <p className="text-sm text-muted-foreground">
-            DevImpact drafts a short statement from this work. You review it before keeping it.
-          </p>
-          {draft.isError ? (
-            <p className="text-sm text-destructive" role="alert">
-              {quota
-                ? `Quick AI actions used up for this month — they reset on ${formatDate(quota.resetsAt, { withYear: false })}. Write it down manually for now.`
-                : isApiError(draft.error) && draft.error.code === 'UPSTREAM_UNAVAILABLE'
-                  ? 'The AI service is busy. Try again in a minute.'
-                  : errorMessage(draft.error, 'the statement')}
-            </p>
-          ) : null}
-          <Button
-            size="sm"
-            variant="secondary"
-            className="self-start"
-            loading={draft.isPending}
-            disabled={!!quota}
-            onClick={run}
-          >
+      <p className="text-sm text-muted-foreground">
+        DevImpact drafts a short statement from this work. You review and edit it before saving.
+      </p>
+      {draft.isError ? (
+        <p className="text-sm text-destructive" role="alert">
+          {quota
+            ? `Quick AI actions used up — add it manually. They reset on ${formatDate(quota.resetsAt, { withYear: false })}.`
+            : isApiError(draft.error) && draft.error.code === 'UPSTREAM_UNAVAILABLE'
+              ? 'The AI service is busy. Try again in a minute, or add it manually.'
+              : errorMessage(draft.error, 'the statement')}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        {quota ? (
+          <Button size="sm" variant="secondary" onClick={manual}>
+            <Plus aria-hidden="true" />
+            Add it manually
+          </Button>
+        ) : (
+          <Button size="sm" variant="secondary" loading={draft.isPending} onClick={run}>
             <Sparkles aria-hidden="true" />
             {draft.isPending ? 'Drafting…' : 'Turn into achievement'}
           </Button>
-        </>
-      )}
+        )}
+        {draft.isError && !quota ? (
+          <Button size="sm" variant="ghost" onClick={manual}>
+            Add it manually
+          </Button>
+        ) : null}
+      </div>
     </section>
+  );
+}
+
+/** Achievement detail (S7 drawer): description, impact, evidence chips, links, Edit. */
+function AchievementDrawerContent({ id }: { id: string }) {
+  const q = useAchievement(id);
+  const [editing, setEditing] = useState(false);
+  if (q.isPending) {
+    return (
+      <>
+        <SheetHeader>
+          <SheetTitle>Achievement</SheetTitle>
+          <SheetDescription className="sr-only">Loading</SheetDescription>
+        </SheetHeader>
+        <div className="flex flex-col gap-3 p-4">
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      </>
+    );
+  }
+  if (q.isError) {
+    return (
+      <>
+        <SheetHeader>
+          <SheetTitle>Achievement</SheetTitle>
+          <SheetDescription className="sr-only">Error</SheetDescription>
+        </SheetHeader>
+        <ErrorState error={q.error} what="this achievement" onRetry={() => void q.refetch()} />
+      </>
+    );
+  }
+  const a = q.data;
+  return (
+    <>
+      <SheetHeader>
+        <SheetDescription>
+          Achievement · {CATEGORY[a.category] ?? a.category} ·{' '}
+          {formatLocalDate(a.occurredOn, { withYear: true })}
+        </SheetDescription>
+        <SheetTitle className="pr-8 text-lg">{a.title}</SheetTitle>
+      </SheetHeader>
+      <div
+        className="flex flex-1 flex-col gap-4 overflow-y-auto p-4"
+        data-testid="achievement-drawer"
+      >
+        {a.description ? <p className="whitespace-pre-line">{a.description}</p> : null}
+        {a.impact ? (
+          <Well label="Impact" value={<span className="font-normal">{a.impact}</span>} />
+        ) : null}
+        <section className="flex flex-col gap-1.5" aria-labelledby="ach-evidence-title">
+          <h3 id="ach-evidence-title" className="font-medium">
+            Linked evidence
+          </h3>
+          {a.evidence.length ? (
+            <div className="flex flex-wrap gap-1.5">
+              {a.evidence.map((e) => (
+                <EvidenceChip key={e.ref} refId={e.ref} evidence={e} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No pull requests, reviews or commits linked.
+            </p>
+          )}
+        </section>
+        {a.links.length ? (
+          <ul className="flex flex-col gap-1">
+            {a.links.map((l) => (
+              <li key={l.url}>
+                <a
+                  href={l.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-link underline underline-offset-2"
+                >
+                  {l.label || l.url}
+                  <ExternalLink className="size-3.5" aria-hidden="true" />
+                  <span className="sr-only">(opens in a new tab)</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <p className="font-mono text-caption text-subtle-foreground">{a.ref}</p>
+      </div>
+      <div className="border-t p-4">
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setEditing(true);
+          }}
+        >
+          Edit
+        </Button>
+      </div>
+      <AchievementDialog open={editing} onOpenChange={setEditing} editing={a} />
+    </>
   );
 }
 
@@ -263,7 +360,14 @@ function PrBody({ pr, timezone }: { pr: PullRequestDetail; timezone?: string }) 
         ]}
       />
       {pr.isAuthoredByUser ? (
-        <AchievementDraft source={{ kind: 'pull_request', id: pr.id }} />
+        <AchievementDraft
+          source={{ kind: 'pull_request', id: pr.id }}
+          record={{
+            ref: pr.ref,
+            title: pr.title,
+            date: localDateKey(pr.mergedAt ?? pr.createdAt, timezone),
+          }}
+        />
       ) : null}
     </>
   );
@@ -409,7 +513,14 @@ function CommitDrawerContent({ id, timezone }: { id: string; timezone?: string }
         {c.messageBody ? (
           <p className="text-sm whitespace-pre-line text-muted-foreground">{c.messageBody}</p>
         ) : null}
-        <AchievementDraft source={{ kind: 'commit', id: c.id }} />
+        <AchievementDraft
+          source={{ kind: 'commit', id: c.id }}
+          record={{
+            ref: c.ref,
+            title: c.messageHeadline,
+            date: localDateKey(c.authoredAt, timezone),
+          }}
+        />
       </div>
       <div className="border-t p-4">
         <GitHubLink url={c.url} />
@@ -447,10 +558,7 @@ export function ItemDrawer({
         ) : item.type === 'commit' ? (
           <CommitDrawerContent id={item.id} timezone={timezone} />
         ) : item.type === 'achievement' ? (
-          <SheetHeader>
-            <SheetTitle>Achievement</SheetTitle>
-            <SheetDescription>Achievements arrive with the Achievements page.</SheetDescription>
-          </SheetHeader>
+          <AchievementDrawerContent id={item.id} />
         ) : (
           <PrDrawerContent item={item} timezone={timezone} />
         )}

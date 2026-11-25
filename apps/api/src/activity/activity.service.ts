@@ -1,6 +1,7 @@
 import {
   PeriodError,
   businessHours,
+  localDateOf,
   localRangeToUtc,
   resolvePeriod,
   toUtcRange,
@@ -38,7 +39,14 @@ import { PrismaService } from '../prisma/prisma.service';
 type Range = { gte?: Date; lt?: Date } | undefined;
 type Filter = Pick<ActivityListQuery, 'period' | 'from' | 'to' | 'repoIds' | 'q'>;
 
-const FEED_TYPES: ActivityType[] = ['commit', 'pr_opened', 'pr_merged', 'pr_closed', 'review'];
+const FEED_TYPES: ActivityType[] = [
+  'commit',
+  'pr_opened',
+  'pr_merged',
+  'pr_closed',
+  'review',
+  'achievement',
+];
 const REPO_SELECT = { select: { id: true, fullName: true, htmlUrl: true } } as const;
 
 const prStateWire = (state: PRState) => state.toLowerCase() as 'open' | 'merged' | 'closed';
@@ -106,8 +114,78 @@ export class ActivityService {
 
   // ── Feed ───────────────────────────────────────────────────────────────────────────────
 
+  /** Feed time of an achievement: local noon of `occurredOn` in the user's time zone. */
+  private achievementAt(date: string, timezone: string): Date {
+    return new Date(localRangeToUtc(date, date, timezone).start.getTime() + 12 * 3_600_000);
+  }
+
+  /**
+   * Achievements for the feed (F-61). They have no repository, so a repository filter excludes
+   * them. Every achievement of a day shares one feed time (local noon), so the keyset condition
+   * is a date bound plus the synthetic-id tie-break used by the other sources.
+   */
+  private async achievementFeed(
+    userId: string,
+    timezone: string,
+    range: Range,
+    key: CursorKey | undefined,
+    q: string | undefined,
+    take: number,
+  ): Promise<FeedItem[]> {
+    const occurredOn: Prisma.DateTimeFilter = {};
+    const dbDate = (d: string) => new Date(`${d}T00:00:00.000Z`);
+    if (range?.gte) occurredOn.gte = dbDate(localDateOf(range.gte, timezone));
+    if (range?.lt) occurredOn.lte = dbDate(localDateOf(new Date(range.lt.getTime() - 1), timezone));
+    const keyset: Prisma.AchievementWhereInput[] = [];
+    if (key) {
+      const t = new Date(key.t);
+      const keyDate = localDateOf(t, timezone);
+      const noon = this.achievementAt(keyDate, timezone).getTime();
+      const own = 'achievement:';
+      if (noon < t.getTime()) keyset.push({ occurredOn: { lte: dbDate(keyDate) } });
+      else if (noon > t.getTime()) keyset.push({ occurredOn: { lt: dbDate(keyDate) } });
+      else {
+        const sameDay: Prisma.AchievementWhereInput[] = key.id.startsWith(own)
+          ? [{ occurredOn: dbDate(keyDate), id: { lt: key.id.slice(own.length) } }]
+          : own < key.id
+            ? [{ occurredOn: dbDate(keyDate) }]
+            : [];
+        keyset.push({ OR: [{ occurredOn: { lt: dbDate(keyDate) } }, ...sameDay] });
+      }
+    }
+    const rows = await this.prisma.achievement.findMany({
+      where: {
+        userId,
+        ...(q ? { title: { contains: q, mode: 'insensitive' } } : {}),
+        AND: [range ? { occurredOn } : {}, ...keyset],
+      },
+      select: { id: true, title: true, category: true, impact: true, occurredOn: true },
+      orderBy: [{ occurredOn: 'desc' }, { id: 'desc' }],
+      take,
+    });
+    return rows.map((a) => {
+      const date = a.occurredOn.toISOString().slice(0, 10);
+      return {
+        id: `achievement:${a.id}`,
+        type: 'achievement' as const,
+        occurredAt: this.achievementAt(date, timezone).toISOString(),
+        repo: null,
+        title: a.title,
+        url: null,
+        ref: `ACH-${a.id}`,
+        meta: {
+          recordId: a.id,
+          category: a.category.toLowerCase(),
+          occurredOn: date,
+          impact: a.impact,
+        },
+      };
+    });
+  }
+
   async feed(userId: string, query: FeedQuery): Promise<{ items: FeedItem[]; meta: PageMeta }> {
-    const range = await this.range(userId, query);
+    const timezone = await this.timezoneOf(userId);
+    const range = await this.range(userId, query, timezone);
     const key = decodeCursor(query.cursor);
     const types = new Set(query.types ?? FEED_TYPES);
     const take = query.limit + 1;
@@ -130,7 +208,7 @@ export class ActivityService {
       repository: REPO_SELECT,
     } as const;
 
-    const [commits, opened, merged, closed, reviews] = await Promise.all([
+    const [commits, opened, merged, closed, reviews, achievements] = await Promise.all([
       types.has('commit')
         ? this.prisma.commit.findMany({
             where: {
@@ -218,9 +296,13 @@ export class ActivityService {
             take,
           })
         : [],
+      types.has('achievement') && !query.repoIds?.length
+        ? this.achievementFeed(userId, timezone, range, key, query.q, take)
+        : [],
     ]);
 
     const items: FeedItem[] = [
+      ...achievements,
       ...commits.map((c) => ({
         id: `commit:${c.id}`,
         type: 'commit' as const,
@@ -421,6 +503,10 @@ export class ActivityService {
           where: { userId },
           orderBy: { submittedAt: 'desc' },
         },
+        evidence: {
+          where: { achievement: { userId } },
+          select: { achievementId: true },
+        },
       },
     });
     if (!row) throw AppException.notFound('Pull request');
@@ -434,7 +520,7 @@ export class ActivityService {
       changesRequestedCount: row.changesRequestedCount,
       myReviews: row.reviews.map((r) => this.reviewItem({ ...r, pullRequest: row }, timezone)),
       revertedByUrl: safeUrl(row.revertedByUrl),
-      achievementIds: [],
+      achievementIds: [...new Set(row.evidence.map((e) => e.achievementId))],
     };
   }
 

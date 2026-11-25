@@ -9,6 +9,7 @@ import {
   type SyncRun,
 } from '@prisma/client';
 
+import { NotificationProducer } from '../email/notification-producer';
 import { MetricsQueueService } from '../metrics/metrics-queue.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -118,6 +119,7 @@ export class SyncEngine {
     private readonly metrics: MetricsQueueService,
     private readonly config: ConfigService<Env, true>,
     @Inject(ACTIVITY_PROVIDER) private readonly provider: ActivityProvider,
+    private readonly notifications: NotificationProducer,
   ) {}
 
   openSession(userId: string, integrationId: string): ProviderSession {
@@ -434,6 +436,10 @@ export class SyncEngine {
         data: { lastSyncedAt: now, ...(ok ? { lastSuccessfulSyncAt: now } : {}) },
       }),
     ]);
+    // "Sync problems" email (F-65; preference checked by the worker, at most one per day).
+    if (status === SyncStatus.FAILED && error.errorCode !== 'INTEGRATION_NEEDS_REAUTH') {
+      await this.notifications.syncProblem(run.userId, run.integrationId, 'sync_failed', now);
+    }
   }
 
   private counts(raw: Prisma.JsonValue): Counts {

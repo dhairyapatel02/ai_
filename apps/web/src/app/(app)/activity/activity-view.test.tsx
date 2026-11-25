@@ -1,6 +1,8 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { CareerDialogs } from '@/components/shell/career-dialogs';
 
 import {
   calls,
@@ -11,6 +13,7 @@ import {
   type Handler,
 } from '../../../../test/api-mock';
 import { clone, fx, NOW } from '../../../../test/fixtures-p10';
+import { achievementFixture } from '../../../../test/fixtures-p12';
 import { nav, setUrl } from '../../../../test/navigation-mock';
 import { ActivityView, groupByDay, typesFor } from './activity-view';
 
@@ -171,16 +174,33 @@ describe('ActivityView (S7)', () => {
         resetsAt: '2026-12-01T00:00:00.000Z',
       }),
     });
-    renderWithQuery(<ActivityView />);
+    renderWithQuery(
+      <>
+        <ActivityView />
+        <CareerDialogs />
+      </>,
+    );
     await userEvent.click(await screen.findByRole('button', { name: /Turn into achievement/ }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Quick AI actions used up for this month',
+      'Quick AI actions used up — add it manually',
     );
+    await userEvent.click(screen.getByRole('button', { name: 'Add it manually' }));
+    const dialog = await screen.findByTestId('achievement-dialog');
+    expect(within(dialog).getByRole('heading', { name: 'Add achievement' })).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Title')).toHaveValue(prItem.title);
+    expect(
+      within(dialog).getByRole('button', { name: `Unlink ${prItem.ref}` }),
+    ).toBeInTheDocument();
   });
 
-  it('"Turn into achievement": shows the drafted statement and that saving comes with Achievements', async () => {
+  it('"Turn into achievement": opens the pre-filled S17 dialog and saves with the PR linked', async () => {
     setUrl(`/activity?item=pr_merged:${prItem.meta.recordId as string}`);
+    let saved: unknown = null;
     routes({
+      'POST /achievements': (_q: unknown, body: unknown) => {
+        saved = body;
+        return { data: achievementFixture(prItem.ref, prItem.meta.recordId as string) };
+      },
       'POST /ai/achievement-statement': {
         data: {
           title: 'Shipped refunds',
@@ -191,12 +211,28 @@ describe('ActivityView (S7)', () => {
         },
       },
     });
-    renderWithQuery(<ActivityView />);
+    renderWithQuery(
+      <>
+        <ActivityView />
+        <CareerDialogs />
+      </>,
+    );
     await userEvent.click(await screen.findByRole('button', { name: /Turn into achievement/ }));
-    expect(await screen.findByTestId('achievement-draft')).toHaveTextContent('Shipped refunds');
-    expect(
-      screen.getByText(/Saving achievements arrives with the Achievements page/),
-    ).toBeInTheDocument();
+    const dialog = await screen.findByTestId('achievement-dialog');
+    expect(within(dialog).getByRole('heading', { name: 'Review achievement' })).toBeInTheDocument();
+    expect(within(dialog).getByText(/Drafted by AI from/)).toHaveTextContent(prItem.ref);
+    expect(within(dialog).getByLabelText('Title')).toHaveValue('Shipped refunds');
+    expect(within(dialog).getByLabelText(/Impact/)).toHaveValue('Delivered partial refunds.');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save achievement' }));
+    await waitFor(() => {
+      expect(saved).toMatchObject({
+        title: 'Shipped refunds',
+        category: 'delivery',
+        impact: 'Delivered partial refunds.',
+        source: 'from_activity',
+        evidence: [{ kind: 'pull_request', id: prItem.meta.recordId }],
+      });
+    });
   });
 
   it('?metric= lists the metric evidence (A-2)', async () => {

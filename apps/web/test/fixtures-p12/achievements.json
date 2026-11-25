@@ -1,0 +1,148 @@
+{
+  "data": [
+    {
+      "id": "cmwuv0mxr00mrz17d5th4eqvz",
+      "ref": "ACH-cmwuv0mxr00mrz17d5th4eqvz",
+      "title": "Shipped search: escape user input",
+      "description": "Staged behind a flag, rolled out to 100% over a week with no incidents.",
+      "impact": "Duplicate charges on client retries dropped to zero after rollout.",
+      "category": "delivery",
+      "occurredOn": "2026-11-12",
+      "links": [],
+      "source": "from_activity",
+      "evidence": [
+        {
+          "ref": "PR-acme/payments-api#267",
+          "kind": "pull_request",
+          "id": "cmwuv0mun00f7z17dqjdtccfd",
+          "title": "Search: escape user input",
+          "repo": "acme/payments-api",
+          "url": "https://github.com/acme/payments-api/pull/267",
+          "occurredAt": "2026-11-13T00:00:00.000Z"
+        }
+      ],
+      "goalIds": [],
+      "createdAt": "2026-11-12T17:00:00.000Z",
+      "updatedAt": "2026-11-12T17:00:00.000Z"
+    },
+    {
+      "id": "cmwuv0mxw00mtz17d2p8iycw2",
+      "ref": "ACH-cmwuv0mxw00mtz17d2p8iycw2",
+      "title": "Mentored two new engineers through their first on-call rotation",
+      "description": "Weekly pairing sessions and a written runbook walkthrough.",
+      "impact": "Both now handle payments alerts on their own.",
+      "category": "mentoring",
+      "occurredOn": "2026-10-15",
+      "links": [],
+      "source": "manual",
+      "evidence": [],
+      "goalIds": ["cmwuv0n3m00sxz17d2dcfbt1v"],
+      "createdAt": "2026-10-15T17:00:00.000Z",
+      "updatedAt": "2026-10-15T17:00:00.000Z"
+    },
+    {
+      "id": "cmwuv0my200muz17drk5ug1j9",
+      "ref": "ACH-cmwuv0my200muz17drk5ug1j9",
+      "title": "Led the checkout outage incident response",
+      "description": "Incident commander for a Saturday outage caused by a webhook retry storm.",
+      "impact": "Restored checkout in 38 minutes; follow-ups closed within two weeks.",
+      "category": "incident",
+      "occurredOn": "2026-09-10",
+      "links": [
+        {
+          "url": "https://example.com/postmortems/checkout-outage",
+          "label": "Postmortem"
+        }
+      ],
+      "source": "manual",
+      "evidence": [
+        {
+          "ref": "PR-acme/web-app#139",
+          "kind": "pull_request",
+          "id": "cmwuv0mun00etz17d0uwf24kf",
+          "title": "Webhook delivery retries",
+          "repo": "acme/web-app",
+          "url": "https://github.com/acme/web-app/pull/139",
+          "occurredAt": "2026-09-13T12:00:00.000Z"
+        },
+        {
+          "ref": "C-acme/payments-api@39e199f",
+          "kind": "commit",
+          "id": "cmwuv0mrf00dhz17dc59kut22",
+          "title": "fix: prevent double submit on checkout button",
+          "repo": "acme/payments-api",
+          "url": "https://github.com/acme/payments-api/commit/39e199f8b236e4c61cf144de03ca21d67687ec4c",
+          "occurredAt": "2026-11-24T17:01:00.000Z"
+        }
+      ],
+      "goalIds": [],
+      "createdAt": "2026-09-10T17:00:00.000Z",
+      "updatedAt": "2026-09-10T17:00:00.000Z"
+    },
+    {
+      "id": "cmwuv0my500mxz17dkemfg18p",
+      "ref": "ACH-cmwuv0my500mxz17dkemfg18p",
+      "title": "Wrote the ledger batching design doc",
+      "description": null,
+      "impact": "Adopted by two teams as the template for write-path changes.",
+      "category": "leadership",
+      "occurredOn": "2026-07-27",
+      "links": [
+        {
+          "url": "https://example.com/docs/ledger-batching",
+          "label": "Design doc"
+        }
+      ],
+      "source": "manual",
+      "evidence": [],
+      "goalIds": ["cmwuv0n3m00sxz17d2dcfbt1v"],
+      "createdAt": "2026-07-27T17:00:00.000Z",
+      "updatedAt": "2026-07-27T17:00:00.000Z"
+    },
+    {
+      "id": "cmwuv0my700myz17dzux2yrht",
+      "ref": "ACH-cmwuv0my700myz17dzux2yrht",
+      "title": "Completed the distributed systems reading group",
+      "description": "Twelve sessions; presented the Raft paper.",
+      "impact": null,
+      "category": "learning",
+      "occurredOn": "2026-06-07",
+      "links": [],
+      "source": "manual",
+      "evidence": [],
+      "goalIds": [],
+      "createdAt": "2026-06-07T17:00:00.000Z",
+      "updatedAt": "2026-06-07T17:00:00.000Z"
+    },
+    {
+      "id": "cmwuv0my900mzz17dozefdmgy",
+      "ref": "ACH-cmwuv0my900mzz17dozefdmgy",
+      "title": "Unblocked the UI kit dark theme release with fast reviews",
+      "description": null,
+      "impact": "Reviewed the contrast fixes within a day so the release shipped on time.",
+      "category": "collaboration",
+      "occurredOn": "2026-04-08",
+      "links": [],
+      "source": "manual",
+      "evidence": [
+        {
+          "ref": "REV-acme/design-system#160",
+          "kind": "review",
+          "id": "cmwuv0mwk00mlz17drqc9ld8z",
+          "title": "Refactor auth middleware",
+          "repo": "acme/design-system",
+          "url": "https://github.com/acme/design-system/pull/160",
+          "occurredAt": "2026-11-23T07:00:00.000Z"
+        }
+      ],
+      "goalIds": [],
+      "createdAt": "2026-04-08T17:00:00.000Z",
+      "updatedAt": "2026-04-08T17:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "nextCursor": null,
+    "hasMore": false,
+    "total": 6
+  }
+}

@@ -307,3 +307,30 @@ raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
   promotion packet) next to the three v0.1 imports.
 - **Tests:** web Vitest 208, shared 83, API unit 210, API integration 164, Playwright 34 (+ opt-in
   screenshots for P09–P11). Playwright now starts the fake Anthropic API (:4010) for generation.
+
+### After Phase 12 (2026-11-24)
+- **Career OS (D-028):** migration P12-1 `career_os` (achievements + evidence with an exactly-one
+  CHECK, goals, goal_achievements, digest_deliveries). `/achievements` and `/goals` CRUD (evidence =
+  your own PRs / commits / reviews, else 404); achievements appear in the activity feed, PR detail,
+  career timeline ("Beyond code", A-7), snapshots and AI evidence packs as `ACH-<id>` refs
+  (`RefResolver`, citation popovers); goal progress comes from the metrics engine.
+- **Email:** `EmailTransport` (`console` default in dev, `memory` in tests, `smtp` via nodemailer
+  10.4.1, `resend`), the worker consumes the `email` queue: hourly `email-digest-fanout` → idempotent
+  weekly `email.digest` (user's local day/hour, last complete ISO week, engine numbers, optional AI
+  summary), `email.send` for "Sync problems" / "Document ready"; HMAC unsubscribe links + public
+  `POST /notifications/unsubscribe` and the public `/unsubscribe` page; `POST
+  /notifications/digest/preview`.
+- **Settings complete:** Profile (roles, sessions, sign-in methods), Notifications, Privacy & data
+  (redaction, `GET /me/export` streamed JSON 3/day, `DELETE /me` with typed confirmation + Redis
+  cleanup), Plan & usage. Entitlements add `weeklyDigest` and enforce the history window
+  (`403 ENTITLEMENT_REQUIRED`); PRO via `npm run plan:set --workspace=apps/api -- <email> PRO`.
+- **Web:** S17 Achievements, S18 Goals, S20–S24 replace every placeholder (`ComingSoon` removed);
+  shell-level "Add achievement" / "Add goal" dialogs (⌘K, `A`, New menu, dashboard, Next step rules 4
+  and 6); "Turn into achievement" saves through the pre-filled dialog.
+- **New env:** `EMAIL_TRANSPORT`, `EMAIL_FROM`, `SMTP_URL`, `RESEND_API_KEY`, `RESEND_API_URL`,
+  `DIGEST_ENABLED`, `UNSUBSCRIBE_TOKEN_SECRET` (required in production), `UNSUBSCRIBE_TOKEN_TTL_DAYS`,
+  `RATE_LIMIT_DATA_EXPORT_PER_DAY`.
+- **Seed:** achievements, goals (met / not met / tracked by achievements), digest settings + a
+  delivered digest, and the disposable `delete-me@devimpact.dev` user.
+- **Deferred:** monthly digest and in-app notification centre → v2.1; goals in the appraisal prompt
+  (GAP-19), email bounce handling (GAP-21), DigestDelivery retention (OPS-18) → P14.

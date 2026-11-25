@@ -1,6 +1,8 @@
 import { Plan } from '@prisma/client';
 import { z } from 'zod';
 
+import { AppException } from '../common/app-exception';
+
 /**
  * Plan limits (PRD §6), read by every enforcement point through `limitsFor`. Values can be
  * overridden per plan with `ENTITLEMENTS_JSON` (validated at startup by `config/env.ts`), e.g.
@@ -11,6 +13,8 @@ export interface PlanLimits {
   historyMonths: number;
   aiGenerationsPerMonth: number;
   aiQuickPerMonth: number;
+  /** Weekly digest email allowed (PRD §6: both plans). */
+  weeklyDigest: boolean;
 }
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
@@ -19,12 +23,14 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     historyMonths: 12,
     aiGenerationsPerMonth: 15,
     aiQuickPerMonth: 100,
+    weeklyDigest: true,
   },
   [Plan.PRO]: {
     integrations: 1,
     historyMonths: 36,
     aiGenerationsPerMonth: 150,
     aiQuickPerMonth: 1000,
+    weeklyDigest: true,
   },
   // Reserved for v2.1 (D-014); behave like PRO until then.
   [Plan.TEAM]: {
@@ -32,12 +38,14 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     historyMonths: 36,
     aiGenerationsPerMonth: 150,
     aiQuickPerMonth: 1000,
+    weeklyDigest: true,
   },
   [Plan.ENTERPRISE]: {
     integrations: 1,
     historyMonths: 36,
     aiGenerationsPerMonth: 150,
     aiQuickPerMonth: 1000,
+    weeklyDigest: true,
   },
 };
 
@@ -49,6 +57,7 @@ export const EntitlementsOverride = z.partialRecord(
     historyMonths: limit.optional(),
     aiGenerationsPerMonth: limit.optional(),
     aiQuickPerMonth: limit.optional(),
+    weeklyDigest: z.boolean().optional(),
   }),
 );
 
@@ -87,4 +96,43 @@ function effectiveLimits(): Record<Plan, PlanLimits> {
 
 export function limitsFor(plan: Plan): PlanLimits {
   return effectiveLimits()[plan];
+}
+
+/**
+ * First local date inside the plan's history window (PRD §6): the first day of the month
+ * `historyMonths` months before today's month (FREE on 2026-11-24 → 2025-11-01). The sync
+ * backfill uses the same window, so older periods would only show missing data.
+ */
+export function historyWindowStart(plan: Plan, today: string): string {
+  const months = limitsFor(plan).historyMonths;
+  const y = Number(today.slice(0, 4));
+  const m = Number(today.slice(5, 7)) - 1 - months;
+  const d = new Date(Date.UTC(y, m, 1));
+  return d.toISOString().slice(0, 10);
+}
+
+/** `403 ENTITLEMENT_REQUIRED { entitlement, limit, plan }` (API_CONTRACT_V2 §2). */
+export function entitlementRequired(
+  entitlement: 'history_window' | 'integrations' | 'weekly_digest',
+  limit: number,
+  plan: Plan,
+  message: string,
+): AppException {
+  return new AppException('ENTITLEMENT_REQUIRED', message, {
+    entitlement,
+    limit,
+    plan: plan.toLowerCase(),
+  });
+}
+
+/** Rejects a period that starts before the plan's history window. */
+export function assertWithinHistory(plan: Plan, startDate: string, today: string): void {
+  if (startDate >= historyWindowStart(plan, today)) return;
+  const months = limitsFor(plan).historyMonths;
+  throw entitlementRequired(
+    'history_window',
+    months,
+    plan,
+    `This period starts before your plan's ${months}-month history window`,
+  );
 }

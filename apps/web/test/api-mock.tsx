@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { vi } from 'vitest';
 
+import { ShellProvider } from '@/components/shell/shell-context';
 import { ApiError } from '@/lib/api/errors';
 
 import type { ReactNode } from 'react';
@@ -121,6 +122,8 @@ export const apiClient = {
 
 export const browserModule = {
   apiClient,
+  // Public endpoints (unsubscribe) go through the same route table.
+  publicApiClient: apiClient,
   getApiToken: vi.fn(() => Promise.resolve('test-token')),
   clearApiToken: vi.fn(),
 };
@@ -130,5 +133,13 @@ export function renderWithQuery(ui: ReactNode) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  return { client, ...render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>) };
+  // Views can open the shell's dialogs (Add achievement / goal), so they render inside its provider.
+  return {
+    client,
+    ...render(
+      <QueryClientProvider client={client}>
+        <ShellProvider>{ui}</ShellProvider>
+      </QueryClientProvider>,
+    ),
+  };
 }

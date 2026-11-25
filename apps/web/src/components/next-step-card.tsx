@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleAlert, FileText, Gauge, ListChecks, Plug } from 'lucide-react';
+import { Award, CircleAlert, FileText, Gauge, ListChecks, Plug, Target } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,9 @@ export function NextStepCard({
   reconnecting,
   suspendedOrg,
   onDismiss,
+  onCaptureWin,
+  capturing = false,
+  onAddGoal,
 }: {
   step: NextStep;
   /** Merged / reviewed since the appraisal period began (rule 3). */
@@ -38,6 +41,11 @@ export function NextStepCard({
   reconnecting: boolean;
   suspendedOrg: string | null;
   onDismiss: (rule: NextStepRule) => void;
+  /** Rule 4: opens "Add achievement" pre-filled from the largest merged PR. */
+  onCaptureWin?: () => void;
+  capturing?: boolean;
+  /** Rule 6: opens "Add goal". */
+  onAddGoal?: () => void;
 }) {
   const copy = (() => {
     switch (step.rule) {
@@ -96,6 +104,30 @@ export function NextStepCard({
           ),
         };
       }
+      case 'achievement':
+        return {
+          icon: Award,
+          title: 'Capture a recent win',
+          body: 'Turn your largest merged PR into an achievement while the details are fresh.',
+          why: 'Shown because you have no achievements in the last 30 days.',
+          action: (
+            <Button size="sm" loading={capturing} onClick={onCaptureWin}>
+              Add achievement
+            </Button>
+          ),
+        };
+      case 'goal':
+        return {
+          icon: Target,
+          title: 'Set a goal for this half',
+          body: 'Pick a metric to improve — for example, review turnaround — or track a goal with achievements.',
+          why: "Shown because you haven't set any goals yet.",
+          action: (
+            <Button size="sm" onClick={onAddGoal}>
+              Add goal
+            </Button>
+          ),
+        };
       case 'resume':
         return {
           icon: ListChecks,

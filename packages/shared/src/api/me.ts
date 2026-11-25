@@ -88,6 +88,7 @@ export const Entitlements = z.object({
     historyMonths: z.number().int(),
     aiGenerationsPerMonth: z.number().int(),
     aiQuickPerMonth: z.number().int(),
+    weeklyDigest: z.boolean().default(true),
   }),
   usage: z.object({ integrations: z.number().int() }),
 });

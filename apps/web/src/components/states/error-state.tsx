@@ -1,6 +1,7 @@
 'use client';
 
 import { CloudOff, RotateCw } from 'lucide-react';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { errorMessage, isApiError } from '@/lib/api/errors';
@@ -45,10 +46,15 @@ export function ErrorState({
       icon={CloudOff}
       headingLevel={headingLevel}
       className={cn(className)}
-      title={title ?? `Couldn't load ${what}`}
+      title={
+        title ??
+        (isApiError(error) && error.code === 'ENTITLEMENT_REQUIRED'
+          ? 'Outside your plan'
+          : `Couldn't load ${what}`)
+      }
       description={errorMessage(error, what)}
       actions={
-        onRetry || secondary ? (
+        (onRetry || secondary) && !(isApiError(error) && error.code === 'ENTITLEMENT_REQUIRED') ? (
           <>
             {onRetry ? (
               <Button onClick={onRetry} loading={retrying}>
@@ -58,6 +64,10 @@ export function ErrorState({
             ) : null}
             {secondary}
           </>
+        ) : isApiError(error) && error.code === 'ENTITLEMENT_REQUIRED' ? (
+          <Button variant="secondary" asChild>
+            <Link href="/settings/plan">See Plan &amp; usage</Link>
+          </Button>
         ) : null
       }
     >

@@ -88,6 +88,16 @@ export class MetricsQueueService {
     );
   }
 
+  /** Account deletion: drops the user's pending range and debounced recompute job. */
+  async cancelForUser(userId: string): Promise<void> {
+    await this.redis.del(this.pendingKey(userId));
+    const jobId = await this.queue.getDeduplicationJobId(metricsJobId(userId));
+    if (jobId) {
+      const job = await this.queue.getJob(jobId);
+      if (job && (await job.isDelayed())) await job.remove();
+    }
+  }
+
   /** The merged pending range (consumed by the recompute job), or null. */
   async takePending(userId: string): Promise<{ from: Date; to: Date } | null> {
     const raw = (await this.redis.eval(TAKE_RANGE, 1, this.pendingKey(userId))) as

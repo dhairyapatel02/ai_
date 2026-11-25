@@ -18,7 +18,7 @@ type RepoGroup = Quarter['repos'][number];
 
 /**
  * `GET /career/timeline` (API_CONTRACT_V2 §12, F-30): the year by quarter — merged PRs per
- * repository, one review cluster per repository, milestones and totals. Server-side aggregation
+ * repository, one review cluster per repository, achievements ("Beyond code"), milestones and totals. Server-side aggregation
  * over included repositories only (fixes PERF-03's client-side 200-row truncation; no reviewed-PR
  * stubs or commit-count cards, UX-10/DATA-01).
  */
@@ -51,11 +51,14 @@ export class CareerService {
         JOIN pull_requests p ON p.id = v.pull_request_id AND NOT p.is_authored_by_user AND NOT p.legacy_stub
         JOIN repositories r ON r.id = p.repository_id AND r.included
         WHERE v.user_id = ${userId}
+        UNION
+        SELECT EXTRACT(YEAR FROM a.occurred_on) AS y
+        FROM achievements a WHERE a.user_id = ${userId}
       ) years ORDER BY y DESC`;
 
     const { start, endExclusive } = localRangeToUtc(`${year}-01-01`, `${year}-12-31`, timezone);
     const included = { included: true } as const;
-    const [mergedRows, reviews, firstMerges, facts] = await Promise.all([
+    const [mergedRows, reviews, firstMerges, facts, achievementRows] = await Promise.all([
       this.prisma.pullRequest.findMany({
         where: {
           userId,
@@ -110,7 +113,27 @@ export class CareerService {
         _min: { mergedAt: true },
       }),
       this.repo.loadFacts(userId, start, endExclusive),
+      this.prisma.achievement.findMany({
+        where: {
+          userId,
+          occurredOn: {
+            gte: new Date(`${year}-01-01T00:00:00.000Z`),
+            lte: new Date(`${year}-12-31T00:00:00.000Z`),
+          },
+        },
+        select: { id: true, title: true, category: true, occurredOn: true },
+        orderBy: [{ occurredOn: 'desc' }, { id: 'desc' }],
+      }),
     ]);
+    const achievementsAll = achievementRows.map((a) => ({
+      type: 'achievement' as const,
+      id: a.id,
+      ref: `ACH-${a.id}`,
+      title: a.title,
+      date: a.occurredOn.toISOString().slice(0, 10),
+      url: null,
+      tags: [a.category.toLowerCase()],
+    }));
     const merged = mergedRows.flatMap((p) =>
       p.mergedAt
         ? [
@@ -139,6 +162,7 @@ export class CareerService {
       const inQ = (t: Date) => t >= range.start && t < range.endExclusive;
 
       const qMerged = merged.filter((p) => inQ(p.mergedAt));
+      const qAchievements = achievementsAll.filter((a) => a.date >= qStart && a.date <= qEnd);
       const qReviews = reviews.filter((r) => inQ(r.submittedAt));
       const groups = new Map<
         string,
@@ -231,6 +255,10 @@ export class CareerService {
           refs: [],
         });
       }
+      // Achievement milestones: the two most recent achievements of the quarter.
+      for (const a of qAchievements.slice(0, 2)) {
+        milestones.push({ kind: 'achievement', date: a.date, title: a.title, refs: [a.ref] });
+      }
       milestones.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
       quarters.push({
@@ -239,10 +267,11 @@ export class CareerService {
         inProgress,
         repos,
         milestones,
+        achievements: qAchievements,
         totals: {
           prsMerged: qMerged.length,
           prsReviewed: new Set(qReviews.map((r) => r.pullRequestId)).size,
-          achievements: 0,
+          achievements: qAchievements.length,
         },
       });
     }

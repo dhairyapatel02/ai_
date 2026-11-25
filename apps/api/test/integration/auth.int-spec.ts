@@ -67,10 +67,11 @@ describe('Authentication on every route (integration, generated from the router)
       ]),
     );
     expect(routes.length).toBeGreaterThan(20);
-    // Public: health and the signature-gated GitHub webhook (P06). Unsubscribe arrives in P12.
+    // Public: health, the signature-gated GitHub webhook (P06) and token-gated unsubscribe (P12).
     expect(routes.filter((r) => r.isPublic).map((r) => r.path)).toEqual([
       '/api/health',
       '/api/health/live',
+      '/api/notifications/unsubscribe',
       '/api/webhooks/github',
     ]);
   });

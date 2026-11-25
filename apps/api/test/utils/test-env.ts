@@ -5,6 +5,7 @@ export const TEST_SECRETS = {
   TOKEN_ENCRYPTION_KEYS: `1:${Buffer.alloc(32, 1).toString('base64')},2:${Buffer.alloc(32, 2).toString('base64')}`,
   TOKEN_ENCRYPTION_ACTIVE_KEY: '2',
   OAUTH_STATE_SECRET: 'integration-test-oauth-state-secret-0123456789abcdef',
+  UNSUBSCRIBE_TOKEN_SECRET: 'integration-test-unsubscribe-secret-0123456789abcdef',
 };
 
 /**
@@ -46,5 +47,10 @@ export function useTestDatabase(): string {
   process.env.ANTHROPIC_BASE_URL = 'http://127.0.0.1:9';
   process.env.AI_RETRY_BASE_MS = '0';
   delete process.env.ENTITLEMENTS_JSON;
+  // Email: in-process transport only (never a provider); no hourly digest scheduler noise.
+  process.env.EMAIL_TRANSPORT = 'memory';
+  delete process.env.SMTP_URL;
+  delete process.env.RESEND_API_KEY;
+  delete process.env.RATE_LIMIT_DATA_EXPORT_PER_DAY;
   return testUrl;
 }

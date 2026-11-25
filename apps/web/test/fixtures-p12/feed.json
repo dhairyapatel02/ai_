@@ -1,0 +1,98 @@
+{
+  "data": [
+    {
+      "id": "achievement:cmwuv0mxr00mrz17d5th4eqvz",
+      "type": "achievement",
+      "occurredAt": "2026-11-12T12:00:00.000Z",
+      "repo": null,
+      "title": "Shipped search: escape user input",
+      "url": null,
+      "ref": "ACH-cmwuv0mxr00mrz17d5th4eqvz",
+      "meta": {
+        "recordId": "cmwuv0mxr00mrz17d5th4eqvz",
+        "category": "delivery",
+        "occurredOn": "2026-11-12",
+        "impact": "Duplicate charges on client retries dropped to zero after rollout."
+      }
+    },
+    {
+      "id": "achievement:cmwuv0mxw00mtz17d2p8iycw2",
+      "type": "achievement",
+      "occurredAt": "2026-10-15T11:00:00.000Z",
+      "repo": null,
+      "title": "Mentored two new engineers through their first on-call rotation",
+      "url": null,
+      "ref": "ACH-cmwuv0mxw00mtz17d2p8iycw2",
+      "meta": {
+        "recordId": "cmwuv0mxw00mtz17d2p8iycw2",
+        "category": "mentoring",
+        "occurredOn": "2026-10-15",
+        "impact": "Both now handle payments alerts on their own."
+      }
+    },
+    {
+      "id": "achievement:cmwuv0my200muz17drk5ug1j9",
+      "type": "achievement",
+      "occurredAt": "2026-09-10T11:00:00.000Z",
+      "repo": null,
+      "title": "Led the checkout outage incident response",
+      "url": null,
+      "ref": "ACH-cmwuv0my200muz17drk5ug1j9",
+      "meta": {
+        "recordId": "cmwuv0my200muz17drk5ug1j9",
+        "category": "incident",
+        "occurredOn": "2026-09-10",
+        "impact": "Restored checkout in 38 minutes; follow-ups closed within two weeks."
+      }
+    },
+    {
+      "id": "achievement:cmwuv0my500mxz17dkemfg18p",
+      "type": "achievement",
+      "occurredAt": "2026-07-27T11:00:00.000Z",
+      "repo": null,
+      "title": "Wrote the ledger batching design doc",
+      "url": null,
+      "ref": "ACH-cmwuv0my500mxz17dkemfg18p",
+      "meta": {
+        "recordId": "cmwuv0my500mxz17dkemfg18p",
+        "category": "leadership",
+        "occurredOn": "2026-07-27",
+        "impact": "Adopted by two teams as the template for write-path changes."
+      }
+    },
+    {
+      "id": "achievement:cmwuv0my700myz17dzux2yrht",
+      "type": "achievement",
+      "occurredAt": "2026-06-07T11:00:00.000Z",
+      "repo": null,
+      "title": "Completed the distributed systems reading group",
+      "url": null,
+      "ref": "ACH-cmwuv0my700myz17dzux2yrht",
+      "meta": {
+        "recordId": "cmwuv0my700myz17dzux2yrht",
+        "category": "learning",
+        "occurredOn": "2026-06-07",
+        "impact": null
+      }
+    },
+    {
+      "id": "achievement:cmwuv0my900mzz17dozefdmgy",
+      "type": "achievement",
+      "occurredAt": "2026-04-08T11:00:00.000Z",
+      "repo": null,
+      "title": "Unblocked the UI kit dark theme release with fast reviews",
+      "url": null,
+      "ref": "ACH-cmwuv0my900mzz17dozefdmgy",
+      "meta": {
+        "recordId": "cmwuv0my900mzz17dozefdmgy",
+        "category": "collaboration",
+        "occurredOn": "2026-04-08",
+        "impact": "Reviewed the contrast fixes within a day so the release shipped on time."
+      }
+    }
+  ],
+  "meta": {
+    "nextCursor": null,
+    "hasMore": false
+  }
+}

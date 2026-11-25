@@ -200,6 +200,8 @@ export function autoReply(req: FakeRequest): FakeReply {
   const refs = evidenceOf(req).items.map((i) => i.ref);
   const ref = (i: number) => (refs.length ? [refs[i % refs.length]] : []);
   const claim = (text: string, i: number) => ({ text, citations: ref(i) });
+  // Achievements rank after PRs; cite one (when present) so ACH- citations are exercised (P12).
+  const achievement = refs.find((r) => r.startsWith('ACH-'));
   let output: unknown;
   if (sys.includes('Task: resume bullets')) {
     output = {
@@ -216,7 +218,11 @@ export function autoReply(req: FakeRequest): FakeReply {
         ...claim(`Shipped item ${i + 1}.`, i),
         title: `Contribution ${i + 1}`,
       })),
-      areasOfImpact: [claim('Improved reliability of the API.', 1)],
+      areasOfImpact: [
+        achievement
+          ? { text: 'Mentored teammates beyond code.', citations: [achievement] }
+          : claim('Improved reliability of the API.', 1),
+      ],
       growth: [claim('Took on larger changes.', 2)],
       nextGoals: [{ text: 'Lead the next migration.' }],
     };

@@ -211,7 +211,8 @@ export function CommandPalette() {
                 icon={<Award aria-hidden="true" />}
                 hint="A"
                 onSelect={() => {
-                  go('/achievements');
+                  close();
+                  shell.openAchievement();
                 }}
               >
                 Add achievement
@@ -220,7 +221,8 @@ export function CommandPalette() {
                 value="Add goal"
                 icon={<Target aria-hidden="true" />}
                 onSelect={() => {
-                  go('/goals');
+                  close();
+                  shell.setGoalDialogOpen(true);
                 }}
               >
                 Add goal

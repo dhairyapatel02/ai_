@@ -19,6 +19,7 @@ const optionalString = z
 export const EXAMPLE_SECRETS = new Set([
   '1:ZGV2LW9ubHktdG9rZW4ta2V5LWRvLW5vdC11c2UtISE=',
   'dev-only-oauth-state-secret-change-me-0123456789',
+  'dev-only-unsubscribe-secret-change-me-0123456789',
 ]);
 
 const webUrlList = z
@@ -101,6 +102,8 @@ export const envSchema = z
     // Raised only for the E2E API server, whose axe loops visit every page in four contexts.
     RATE_LIMIT_DEFAULT_PER_MINUTE: z.coerce.number().int().min(1).default(300),
     RATE_LIMIT_EXPORT_PER_HOUR: z.coerce.number().int().min(1).default(30),
+    // `GET /me/export` (full data export) per user per day — 3 by contract; E2E raises it.
+    RATE_LIMIT_DATA_EXPORT_PER_DAY: z.coerce.number().int().min(1).default(3),
     // Sync pauses (WAITING_RATE_LIMIT) when GitHub's remaining budget drops below this (ADR-0007).
     SYNC_RATE_LIMIT_MIN_REMAINING: z.coerce.number().int().min(0).default(200),
     // Worker liveness file touched every few seconds (used by the compose healthcheck).
@@ -154,6 +157,26 @@ export const envSchema = z
     GITHUB_WEB_URL: z.url().default('https://github.com'),
     GITHUB_API_URL: z.url().default('https://api.github.com'),
 
+    // ── Email (P12, ARCHITECTURE_V2 §2/§10). `console` logs messages (dev default), `memory` keeps
+    // them in-process (tests only), `smtp` uses SMTP_URL (nodemailer), `resend` the Resend HTTP API.
+    EMAIL_TRANSPORT: z.enum(['console', 'memory', 'smtp', 'resend']).default('console'),
+    EMAIL_FROM: z.string().min(3).max(200).default('DevImpact <digest@devimpact.local>'),
+    SMTP_URL: z
+      .string()
+      .regex(/^smtps?:\/\//, 'SMTP_URL must be an smtp:// or smtps:// URL')
+      .optional()
+      .or(z.literal('').transform(() => undefined)),
+    RESEND_API_KEY: optionalString,
+    RESEND_API_URL: z.url({ protocol: /^https?$/ }).default('https://api.resend.com'),
+    // Weekly digest fan-out (hourly scheduler). Off = no digests are enqueued.
+    DIGEST_ENABLED: booleanString.default(true),
+    // HMAC secret for unsubscribe links (`POST /api/notifications/unsubscribe`, no login).
+    UNSUBSCRIBE_TOKEN_SECRET: z
+      .string()
+      .min(32, 'UNSUBSCRIBE_TOKEN_SECRET must be at least 32 characters')
+      .default('dev-only-unsubscribe-secret-change-me-0123456789'),
+    UNSUBSCRIBE_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(60),
+
     // Token encryption at rest (ADR-0005).
     TOKEN_ENCRYPTION_KEYS: tokenKeyList,
     TOKEN_ENCRYPTION_ACTIVE_KEY: z.coerce.number().int().nonnegative(),
@@ -169,6 +192,27 @@ export const envSchema = z
       loadModelPrices(env.AI_PRICES_JSON);
     } catch (error) {
       ctx.addIssue({ code: 'custom', path: ['AI_PRICES_JSON'], message: (error as Error).message });
+    }
+    if (env.EMAIL_TRANSPORT === 'smtp' && !env.SMTP_URL) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SMTP_URL'],
+        message: 'is required when EMAIL_TRANSPORT=smtp',
+      });
+    }
+    if (env.EMAIL_TRANSPORT === 'resend' && !env.RESEND_API_KEY) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['RESEND_API_KEY'],
+        message: 'is required when EMAIL_TRANSPORT=resend',
+      });
+    }
+    if (env.NODE_ENV === 'production' && env.EMAIL_TRANSPORT === 'memory') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['EMAIL_TRANSPORT'],
+        message: '"memory" is for tests only; use smtp or resend in production',
+      });
     }
     if (!env.TOKEN_ENCRYPTION_KEYS.has(env.TOKEN_ENCRYPTION_ACTIVE_KEY)) {
       ctx.addIssue({
@@ -218,8 +262,14 @@ export function validateEnv(raw: Record<string, unknown>): Env {
   const env = result.data;
   if (env.NODE_ENV === 'production') {
     const raw_ = raw as Record<string, string | undefined>;
-    const leaked = ['TOKEN_ENCRYPTION_KEYS', 'OAUTH_STATE_SECRET'].filter((key) =>
-      (raw_[key] ?? '').split(',').some((part) => EXAMPLE_SECRETS.has(part.trim())),
+    const leaked = [
+      'TOKEN_ENCRYPTION_KEYS',
+      'OAUTH_STATE_SECRET',
+      'UNSUBSCRIBE_TOKEN_SECRET',
+    ].filter((key) =>
+      key === 'UNSUBSCRIBE_TOKEN_SECRET'
+        ? EXAMPLE_SECRETS.has(env.UNSUBSCRIBE_TOKEN_SECRET)
+        : (raw_[key] ?? '').split(',').some((part) => EXAMPLE_SECRETS.has(part.trim())),
     );
     if (leaked.length > 0) {
       throw new EnvValidationError(

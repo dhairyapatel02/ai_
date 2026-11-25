@@ -1,6 +1,12 @@
 'use client';
 
 import {
+  PullRequestListItem,
+  addDays,
+  type MetricValue,
+  type OverviewResponse,
+} from '@devimpact/shared';
+import {
   Award,
   ChevronRight,
   FileText,
@@ -26,6 +32,7 @@ import { ImpactScoreCard } from '@/components/impact-score-card';
 import { ItemDrawer } from '@/components/item-drawer';
 import { NextStepCard } from '@/components/next-step-card';
 import { InvalidPeriodState, isInvalidPeriodError } from '@/components/period-gate';
+import { useShell } from '@/components/shell/shell-context';
 import { SyncBanner } from '@/components/shell/sync-banner';
 import {
   CardSkeleton,
@@ -37,6 +44,8 @@ import {
 } from '@/components/states';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { apiClient } from '@/lib/api/browser';
+import { useAchievements, useGoals } from '@/lib/api/career-hooks';
 import { errorMessage } from '@/lib/api/errors';
 import {
   isBackfilling,
@@ -55,13 +64,12 @@ import {
 } from '@/lib/api/metrics-hooks';
 import { bucketActivity, chooseInterval, daysBetween } from '@/lib/charts';
 import { DASHBOARD_FEED } from '@/lib/dashboard';
-import { formatRelative } from '@/lib/format';
+import { formatRelative, localDateKey } from '@/lib/format';
 import { formatMetric } from '@/lib/metrics-format';
 import { appraisalTarget, pickNextStep, readDismissed, type NextStepRule } from '@/lib/next-step';
 import { longerPeriod, startsBeforeRecentWindow, usePeriod } from '@/lib/period';
 import { useSearchParamsState } from '@/lib/url-state';
 
-import type { MetricValue, OverviewResponse } from '@devimpact/shared';
 import type { LucideIcon } from 'lucide-react';
 
 const CARD_ICON: Record<string, LucideIcon> = {
@@ -102,6 +110,7 @@ export function DashboardView() {
 }
 
 function DashboardHeader({ connected }: { connected: boolean }) {
+  const shell = useShell();
   const period = usePeriod();
   const sync = useSyncStatus({ enabled: connected });
   const me = useMe();
@@ -133,11 +142,14 @@ function DashboardHeader({ connected }: { connected: boolean }) {
       lede={lede}
       actions={
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-          <Button variant="secondary" asChild>
-            <Link href="/achievements">
-              <Award aria-hidden="true" />
-              Add achievement
-            </Link>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              shell.openAchievement();
+            }}
+          >
+            <Award aria-hidden="true" />
+            Add achievement
           </Button>
           <Button asChild>
             <Link href={`/documents/new/appraisal${qs}`}>
@@ -596,6 +608,15 @@ function NextStep() {
   const resumes = useRecentDocuments('resume', 1);
   const [dismissed, setDismissed] = useState<Partial<Record<NextStepRule, number>>>({});
   const [reconnecting, setReconnecting] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const shell = useShell();
+  const overview = useOverview(period.apiParam);
+  const recentFrom = period.today ? addDays(period.today, -29) : null;
+  const recent = useAchievements(
+    { period: recentFrom && period.today ? `custom:${recentFrom}..${period.today}` : undefined },
+    { enabled: recentFrom !== null },
+  );
+  const goals = useGoals();
   useEffect(() => {
     setDismissed(readDismissed());
   }, []);
@@ -621,6 +642,11 @@ function NextStep() {
         ? appraisals.data.items.map((d) => d.period?.spec ?? null)
         : null,
       newestResumeAt: resumes.data ? (resumes.data.items[0]?.createdAt ?? undefined) : null,
+      prsMergedInPeriod: overview.data
+        ? (overview.data.cards.find((c) => c.key === 'prs_merged')?.value ?? 0)
+        : null,
+      recentAchievements: recent.data ? (recent.data.pages[0]?.items.length ?? 0) : null,
+      goalsCount: goals.data ? goals.data.items.length : null,
       dismissed,
       now: Date.now(),
     });
@@ -632,6 +658,9 @@ function NextStep() {
     sync.data?.state,
     appraisals.data,
     resumes.data,
+    overview.data,
+    recent.data,
+    goals.data,
     dismissed,
   ]);
 
@@ -669,6 +698,48 @@ function NextStep() {
       }}
       onDismiss={() => {
         setDismissed(readDismissed());
+      }}
+      capturing={capturing}
+      onCaptureWin={() => {
+        setCapturing(true);
+        apiClient
+          .getPage('/activity/prs', {
+            schema: PullRequestListItem,
+            query: {
+              role: 'authored',
+              state: 'merged',
+              sort: '-changedLines',
+              limit: 1,
+              period: period.apiParam,
+            },
+          })
+          .then(
+            ({ items }) => {
+              const pr = items[0];
+              shell.openAchievement(
+                pr
+                  ? {
+                      title: pr.title.slice(0, 200),
+                      occurredOn:
+                        pr.mergedAt && settings
+                          ? localDateKey(pr.mergedAt, settings.timezone)
+                          : undefined,
+                      evidence: [{ kind: 'pull_request', id: pr.id, ref: pr.ref, title: pr.title }],
+                      source: 'suggested',
+                    }
+                  : undefined,
+              );
+            },
+            () => {
+              shell.openAchievement();
+            },
+          )
+          .finally(() => {
+            setCapturing(false);
+          });
+      }}
+      onAddGoal={() => {
+        shell.setGoalDialogOpen(true);
       }}
     />
   );
