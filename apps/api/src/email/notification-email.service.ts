@@ -1,7 +1,7 @@
+import { PROVIDER_LABELS, type ProviderKind } from '@devimpact/shared';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentStatus, DocumentType } from '@prisma/client';
-import { PROVIDER_LABELS, type ProviderKind } from '@devimpact/shared';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { clean, esc, safeHref } from './digest-template';

@@ -177,7 +177,10 @@ export const IdentityDto = z.object({
 export type IdentityDto = z.infer<typeof IdentityDto>;
 
 export const AddIdentityInput = z.strictObject({
-  email: z.email().max(254).transform((v) => v.trim().toLowerCase()),
+  email: z
+    .email()
+    .max(254)
+    .transform((v) => v.trim().toLowerCase()),
 });
 export type AddIdentityInput = z.infer<typeof AddIdentityInput>;
 

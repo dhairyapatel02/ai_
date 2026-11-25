@@ -105,7 +105,8 @@ export class IntegrationsController {
   @Post(':provider/callback')
   @HttpCode(201)
   @ApiDoc({
-    summary: 'Complete the GitLab / Jira / Linear flow (state verified, code exchanged, backfill queued)',
+    summary:
+      'Complete the GitLab / Jira / Linear flow (state verified, code exchanged, backfill queued)',
     tags: ['integrations'],
     status: 201,
     response: ProviderCallbackResult,

@@ -1,6 +1,6 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger, type OnApplicationBootstrap } from '@nestjs/common';
-import { IntegrationStatus, Provider, SyncTrigger } from '@prisma/client';
+import { IntegrationStatus, SyncTrigger } from '@prisma/client';
 import { Queue } from 'bullmq';
 
 import { PrismaService } from '../prisma/prisma.service';

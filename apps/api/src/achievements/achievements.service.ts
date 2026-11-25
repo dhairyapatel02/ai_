@@ -21,7 +21,9 @@ import { afterCursor, decodeCursor, toPage } from '../common/pagination';
 import { MetricsQueueService } from '../metrics/metrics-queue.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-const REPO = { select: { fullName: true, htmlUrl: true, integration: { select: { provider: true } } } } as const;
+const REPO = {
+  select: { fullName: true, htmlUrl: true, integration: { select: { provider: true } } },
+} as const;
 
 /** Prisma include that resolves every evidence link to a titled, linkable record. */
 export const ACHIEVEMENT_INCLUDE = {

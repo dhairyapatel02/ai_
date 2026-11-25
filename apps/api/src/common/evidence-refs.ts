@@ -24,11 +24,7 @@ export function repoRef(repo: {
   integration?: { provider: string } | null;
 }): { id: string; fullName: string; provider?: 'github' | 'gitlab' | 'jira' | 'linear' } {
   const provider = repo.integration?.provider.toLowerCase() as
-    | 'github'
-    | 'gitlab'
-    | 'jira'
-    | 'linear'
-    | undefined;
+    'github' | 'gitlab' | 'jira' | 'linear' | undefined;
   return { id: repo.id, fullName: repo.fullName, ...(provider ? { provider } : {}) };
 }
 

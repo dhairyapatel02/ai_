@@ -3,7 +3,13 @@ import { PeriodType, type Plan, Prisma, ScoreStatus, SyncStatus } from '@prisma/
 
 import { PrismaService } from '../prisma/prisma.service';
 
-import type { AuthoredPrFact, CommitFact, Facts, IssueFact, ReviewFact } from './metric-definitions';
+import type {
+  AuthoredPrFact,
+  CommitFact,
+  Facts,
+  IssueFact,
+  ReviewFact,
+} from './metric-definitions';
 import type { DailyCounters } from './rollup';
 
 /**
@@ -151,7 +157,7 @@ export class MetricsRepository {
         id: i.id,
         completedAt: i.completed_at,
         startedAt: i.started_at,
-        storyPoints: i.story_points === null ? null : Number(i.story_points),
+        storyPoints: i.story_points,
         provider: i.provider,
       })),
     };

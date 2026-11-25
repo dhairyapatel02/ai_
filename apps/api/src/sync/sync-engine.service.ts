@@ -1,3 +1,13 @@
+import {
+  PROVIDER_LABELS,
+  type CommitRequest,
+  type IssueTrackerSession,
+  type NormalizedRepository,
+  type ProviderSession,
+  type ProviderSessionOptions,
+  type SyncCounts,
+  type SyncRunError,
+} from '@devimpact/shared';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -13,27 +23,17 @@ import {
 import { NotificationProducer } from '../email/notification-producer';
 import { MetricsQueueService } from '../metrics/metrics-queue.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProviderRegistry, kindOf } from '../providers/provider-registry';
 import {
   ProviderAuthError,
   ProviderRateLimitError,
   ProviderUnavailableError,
 } from '../providers/provider.errors';
-import { ProviderRegistry, kindOf } from '../providers/provider-registry';
 import { IntegrationTokensService } from './integration-tokens.service';
 import { type RepoRef, SyncWriter, type WriteScope } from './sync-writer';
 import { CURSOR_OVERLAP_MS, RECENT_WINDOW_DAYS } from './sync.constants';
 
 import type { Env } from '../config/env';
-import {
-  PROVIDER_LABELS,
-  type CommitRequest,
-  type IssueTrackerSession,
-  type NormalizedRepository,
-  type ProviderSession,
-  type ProviderSessionOptions,
-  type SyncCounts,
-  type SyncRunError,
-} from '@devimpact/shared';
 
 const DAY_MS = 86_400_000;
 type ActivityStage = 'AUTHORED_PRS' | 'REVIEWED_PRS' | 'COMMITS' | 'ISSUES';
@@ -111,9 +111,15 @@ export function progressOf(
  * Safe, user-facing run errors. Codes stay `GITHUB_*` for GitHub (P06 contract) and are
  * `<PROVIDER>_*` for GitLab / Jira / Linear (P13).
  */
-export function safeError(provider: Provider, kind: 'REAUTH_REQUIRED' | 'UNAVAILABLE' | 'INTERNAL') {
+export function safeError(
+  provider: Provider,
+  kind: 'REAUTH_REQUIRED' | 'UNAVAILABLE' | 'INTERNAL',
+) {
   if (kind === 'INTERNAL') {
-    return { errorCode: 'INTERNAL', errorMessage: 'The sync failed unexpectedly. Please try again.' };
+    return {
+      errorCode: 'INTERNAL',
+      errorMessage: 'The sync failed unexpectedly. Please try again.',
+    };
   }
   const label = PROVIDER_LABELS[kindOf(provider)];
   return kind === 'REAUTH_REQUIRED'
@@ -162,13 +168,20 @@ export class SyncEngine {
 
   /** GitHub session (targeted webhook jobs, P06). */
   openSession(userId: string, integrationId: string): ProviderSession {
-    return this.registry.code(Provider.GITHUB).openSession(this.sessionOptions(userId, integrationId));
+    return this.registry
+      .code(Provider.GITHUB)
+      .openSession(this.sessionOptions(userId, integrationId));
   }
 
   /** Session for any code-host integration (GitHub, GitLab) with its instance + linked emails. */
   private async codeSession(
     userId: string,
-    integration: { id: string; provider: Provider; baseUrl: string | null; config: Prisma.JsonValue },
+    integration: {
+      id: string;
+      provider: Provider;
+      baseUrl: string | null;
+      config: Prisma.JsonValue;
+    },
   ): Promise<ProviderSession> {
     const identities = await this.prisma.providerIdentity.findMany({
       where: { userId, integrationId: integration.id },
@@ -220,7 +233,12 @@ export class SyncEngine {
       return { type: 'finished', status: SyncStatus.FAILED };
     }
     if (this.registry.get(integration.provider).category === 'issues') {
-      return this.runIssues(run, userId, { ...integration, provider: integration.provider }, attempt);
+      return this.runIssues(
+        run,
+        userId,
+        { ...integration, provider: integration.provider },
+        attempt,
+      );
     }
 
     const scope: WriteScope = { userId, integrationId: integration.id };
@@ -432,9 +450,11 @@ export class SyncEngine {
     const windowFrom = run.windowFrom ?? new Date(windowTo.getTime() - DAY_MS);
     const slices = planSlices(run.kind, windowFrom, windowTo);
     const config = (integration.config ?? {}) as Record<string, unknown>;
-    const session: IssueTrackerSession = this.registry.issues(integration.provider).openSession(
-      this.sessionOptions(userId, integration.id, { baseUrl: integration.baseUrl, config }),
-    );
+    const session: IssueTrackerSession = this.registry
+      .issues(integration.provider)
+      .openSession(
+        this.sessionOptions(userId, integration.id, { baseUrl: integration.baseUrl, config }),
+      );
     let progress = run.progress;
     const save = async (data: Prisma.SyncRunUpdateManyMutationInput = {}) => {
       progress = progressOf(checkpoint, progress, slices.length, ISSUE_STAGES);

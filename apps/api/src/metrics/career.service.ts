@@ -58,88 +58,90 @@ export class CareerService {
 
     const { start, endExclusive } = localRangeToUtc(`${year}-01-01`, `${year}-12-31`, timezone);
     const included = { included: true } as const;
-    const [mergedRows, reviews, firstMerges, facts, achievementRows, issueRows] = await Promise.all([
-      this.prisma.pullRequest.findMany({
-        where: {
-          userId,
-          isAuthoredByUser: true,
-          legacyStub: false,
-          repository: included,
-          mergedAt: { gte: start, lt: endExclusive },
-        },
-        select: {
-          id: true,
-          number: true,
-          title: true,
-          url: true,
-          labels: true,
-          mergedAt: true,
-          additions: true,
-          deletions: true,
-          repositoryId: true,
-          repository: { select: { fullName: true, ...REPO_PROVIDER } },
-        },
-        orderBy: [{ mergedAt: 'desc' }, { id: 'desc' }],
-      }),
-      this.prisma.pullRequestReview.findMany({
-        where: {
-          userId,
-          submittedAt: { gte: start, lt: endExclusive },
-          pullRequest: { isAuthoredByUser: false, legacyStub: false, repository: included },
-        },
-        select: {
-          id: true,
-          submittedAt: true,
-          pullRequestId: true,
-          pullRequest: {
-            select: {
-              number: true,
-              repositoryId: true,
-              repository: { select: { fullName: true, ...REPO_PROVIDER } },
+    const [mergedRows, reviews, firstMerges, facts, achievementRows, issueRows] = await Promise.all(
+      [
+        this.prisma.pullRequest.findMany({
+          where: {
+            userId,
+            isAuthoredByUser: true,
+            legacyStub: false,
+            repository: included,
+            mergedAt: { gte: start, lt: endExclusive },
+          },
+          select: {
+            id: true,
+            number: true,
+            title: true,
+            url: true,
+            labels: true,
+            mergedAt: true,
+            additions: true,
+            deletions: true,
+            repositoryId: true,
+            repository: { select: { fullName: true, ...REPO_PROVIDER } },
+          },
+          orderBy: [{ mergedAt: 'desc' }, { id: 'desc' }],
+        }),
+        this.prisma.pullRequestReview.findMany({
+          where: {
+            userId,
+            submittedAt: { gte: start, lt: endExclusive },
+            pullRequest: { isAuthoredByUser: false, legacyStub: false, repository: included },
+          },
+          select: {
+            id: true,
+            submittedAt: true,
+            pullRequestId: true,
+            pullRequest: {
+              select: {
+                number: true,
+                repositoryId: true,
+                repository: { select: { fullName: true, ...REPO_PROVIDER } },
+              },
             },
           },
-        },
-        orderBy: [{ submittedAt: 'desc' }, { id: 'desc' }],
-      }),
-      this.prisma.pullRequest.groupBy({
-        by: ['repositoryId'],
-        where: {
-          userId,
-          isAuthoredByUser: true,
-          legacyStub: false,
-          repository: included,
-          mergedAt: { not: null },
-        },
-        _min: { mergedAt: true },
-      }),
-      this.repo.loadFacts(userId, start, endExclusive),
-      this.prisma.achievement.findMany({
-        where: {
-          userId,
-          occurredOn: {
-            gte: new Date(`${year}-01-01T00:00:00.000Z`),
-            lte: new Date(`${year}-12-31T00:00:00.000Z`),
+          orderBy: [{ submittedAt: 'desc' }, { id: 'desc' }],
+        }),
+        this.prisma.pullRequest.groupBy({
+          by: ['repositoryId'],
+          where: {
+            userId,
+            isAuthoredByUser: true,
+            legacyStub: false,
+            repository: included,
+            mergedAt: { not: null },
           },
-        },
-        select: { id: true, title: true, category: true, occurredOn: true },
-        orderBy: [{ occurredOn: 'desc' }, { id: 'desc' }],
-      }),
-      // Issues completed in the year (Jira / Linear, P13, A-8).
-      this.prisma.issue.findMany({
-        where: { userId, status: 'DONE', completedAt: { gte: start, lt: endExclusive } },
-        select: {
-          id: true,
-          key: true,
-          title: true,
-          url: true,
-          completedAt: true,
-          storyPoints: true,
-          projectName: true,
-          integration: { select: { provider: true } },
-        },
-        orderBy: [{ completedAt: 'desc' }, { id: 'desc' }],
-      }),
-    ]);
+          _min: { mergedAt: true },
+        }),
+        this.repo.loadFacts(userId, start, endExclusive),
+        this.prisma.achievement.findMany({
+          where: {
+            userId,
+            occurredOn: {
+              gte: new Date(`${year}-01-01T00:00:00.000Z`),
+              lte: new Date(`${year}-12-31T00:00:00.000Z`),
+            },
+          },
+          select: { id: true, title: true, category: true, occurredOn: true },
+          orderBy: [{ occurredOn: 'desc' }, { id: 'desc' }],
+        }),
+        // Issues completed in the year (Jira / Linear, P13, A-8).
+        this.prisma.issue.findMany({
+          where: { userId, status: 'DONE', completedAt: { gte: start, lt: endExclusive } },
+          select: {
+            id: true,
+            key: true,
+            title: true,
+            url: true,
+            completedAt: true,
+            storyPoints: true,
+            projectName: true,
+            integration: { select: { provider: true } },
+          },
+          orderBy: [{ completedAt: 'desc' }, { id: 'desc' }],
+        }),
+      ],
+    );
     const achievementsAll = achievementRows.map((a) => ({
       type: 'achievement' as const,
       id: a.id,
@@ -257,7 +259,11 @@ export class CareerService {
           date: localDateOf(largest.mergedAt, timezone),
           title: `Largest merged PR: ${largest.title}`,
           refs: [
-            prRef(largest.repository.fullName, largest.number, largest.repository.integration.provider),
+            prRef(
+              largest.repository.fullName,
+              largest.number,
+              largest.repository.integration.provider,
+            ),
           ],
         });
       }

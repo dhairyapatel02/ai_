@@ -4,12 +4,13 @@ import { IntegrationStatus } from '@prisma/client';
 import { TokenCipher, TokenCipherService } from '../crypto/token-cipher';
 import { NotificationProducer } from '../email/notification-producer';
 import { PrismaService } from '../prisma/prisma.service';
-import { ProviderAuthError } from '../providers/provider.errors';
 import { ProviderRegistry } from '../providers/provider-registry';
+import { ProviderAuthError } from '../providers/provider.errors';
 import { TOKEN_REFRESH_MARGIN_MS } from './sync.constants';
 
 /** `<PROVIDER>_TOKEN_REVOKED` / `<PROVIDER>_REFRESH_FAILED` / `GITHUB_APP_AUTHORIZATION_REVOKED`. */
-export type ReauthReason = `${'GITHUB' | 'GITLAB' | 'JIRA' | 'LINEAR'}_${'TOKEN_REVOKED' | 'REFRESH_FAILED'}`
+export type ReauthReason =
+  | `${'GITHUB' | 'GITLAB' | 'JIRA' | 'LINEAR'}_${'TOKEN_REVOKED' | 'REFRESH_FAILED'}`
   | 'GITHUB_APP_AUTHORIZATION_REVOKED';
 
 /**
@@ -94,13 +95,15 @@ export class IntegrationTokensService {
         if (!row.refreshTokenEnc) return null;
         let tokens;
         try {
-          tokens = await this.registry.get(row.provider).refreshToken(
-            this.cipher.decrypt(
-              row.refreshTokenEnc,
-              TokenCipher.aad(integrationId, 'refreshToken'),
-            ),
-            row.baseUrl,
-          );
+          tokens = await this.registry
+            .get(row.provider)
+            .refreshToken(
+              this.cipher.decrypt(
+                row.refreshTokenEnc,
+                TokenCipher.aad(integrationId, 'refreshToken'),
+              ),
+              row.baseUrl,
+            );
         } catch (error) {
           if (error instanceof ProviderAuthError) return null;
           throw error;
@@ -144,7 +147,11 @@ export class IntegrationTokensService {
       select: { accessTokenEnc: true, refreshTokenEnc: true, provider: true },
     });
     if (!row?.refreshTokenEnc) {
-      await this.markNeedsReauth(userId, integrationId, `${row?.provider ?? 'GITHUB'}_TOKEN_REVOKED`);
+      await this.markNeedsReauth(
+        userId,
+        integrationId,
+        `${row?.provider ?? 'GITHUB'}_TOKEN_REVOKED`,
+      );
       return null;
     }
     return this.refresh(userId, integrationId, row.accessTokenEnc);

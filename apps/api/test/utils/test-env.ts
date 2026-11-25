@@ -40,6 +40,30 @@ export function useTestDatabase(): string {
   process.env.GITHUB_WEBHOOK_SECRET = 'test-webhook-secret-0123456789';
   process.env.GITHUB_REQUEST_RETRIES = '0';
   process.env.GITHUB_THROTTLING = 'false'; // no 1 s pacing between fake GraphQL calls
+  // P13 providers: unroutable hosts served by `installFakeProviders()` (test/utils/fake-providers.ts).
+  process.env.GITLAB_URL = 'https://gitlab.invalid';
+  process.env.GITLAB_CLIENT_ID = 'gitlab-test-client';
+  process.env.GITLAB_CLIENT_SECRET = 'gitlab-test-secret';
+  process.env.GITLAB_INSTANCES_JSON = JSON.stringify([
+    {
+      url: 'https://gitlab.selfhosted.invalid',
+      clientId: 'sh-client',
+      clientSecret: 'sh-secret',
+      label: 'Self-managed',
+    },
+  ]);
+  process.env.GITLAB_WEBHOOK_SECRET = 'test-gitlab-webhook-token';
+  process.env.JIRA_CLIENT_ID = 'jira-test-client';
+  process.env.JIRA_CLIENT_SECRET = 'jira-test-secret';
+  process.env.JIRA_AUTH_URL = 'https://auth.atlassian.invalid';
+  process.env.JIRA_API_URL = 'https://api.atlassian.invalid';
+  process.env.JIRA_WEBHOOK_SECRET = 'test-jira-webhook-secret';
+  process.env.LINEAR_CLIENT_ID = 'linear-test-client';
+  process.env.LINEAR_CLIENT_SECRET = 'linear-test-secret';
+  process.env.LINEAR_WEB_URL = 'https://linear.invalid';
+  process.env.LINEAR_API_URL = 'https://api.linear.invalid';
+  process.env.LINEAR_WEBHOOK_SECRET = 'test-linear-webhook-secret';
+  process.env.PROVIDER_REQUEST_RETRIES = '0';
   delete process.env.QUEUE_PREFIX; // NODE_ENV=test → "devimpact-test" (OPS-17)
   // AI: never the real Anthropic. Tests that generate start the in-process fake
   // (`startFakeAnthropic`) and set ANTHROPIC_BASE_URL/KEY before creating the app.

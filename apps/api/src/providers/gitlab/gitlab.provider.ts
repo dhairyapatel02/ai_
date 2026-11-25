@@ -82,7 +82,9 @@ export class GitLabInstances {
       });
     }
     const extra = parseGitLabInstances(config.get('GITLAB_INSTANCES_JSON', { infer: true }));
-    if (extra.ok) for (const inst of extra.instances) if (!list.some((i) => i.url === inst.url)) list.push(inst);
+    if (extra.ok)
+      for (const inst of extra.instances)
+        if (!list.some((i) => i.url === inst.url)) list.push(inst);
     this.all = list;
   }
 
@@ -176,7 +178,11 @@ export class GitLabOAuthClient implements ProviderOAuthClient {
   }
 }
 
-async function gitlabAccount(http: ProviderHttp, api: string, host: string): Promise<ProviderAccount> {
+async function gitlabAccount(
+  http: ProviderHttp,
+  api: string,
+  host: string,
+): Promise<ProviderAccount> {
   const { data: user } = await http.get<GlUserProfile>(`${api}/user`);
   const emails = new Set<string>();
   // The primary email of a GitLab account is confirmed; `/user/emails` lists the secondary ones.
@@ -231,7 +237,8 @@ class GitLabSession implements ProviderSession {
 
   private url(path: string, params: Record<string, string | number | undefined> = {}): URL {
     const url = new URL(`${this.api}${path}`);
-    for (const [k, v] of Object.entries(params)) if (v !== undefined) url.searchParams.set(k, String(v));
+    for (const [k, v] of Object.entries(params))
+      if (v !== undefined) url.searchParams.set(k, String(v));
     return url;
   }
 
@@ -399,7 +406,10 @@ class GitLabSession implements ProviderSession {
         }),
       );
       for (const e of data ?? []) {
-        counts.set(e.project_id, (counts.get(e.project_id) ?? 0) + (e.push_data?.commit_count ?? 1));
+        counts.set(
+          e.project_id,
+          (counts.get(e.project_id) ?? 0) + (e.push_data?.commit_count ?? 1),
+        );
       }
       if (!headers.get('x-next-page')) break;
     }
@@ -412,7 +422,9 @@ class GitLabSession implements ProviderSession {
   }
 
   async *commits(authorExternalId: string, requests: CommitRequest[]): AsyncIterable<CommitPage> {
-    const emails = [...new Set((this.options.identities?.emails ?? []).map((e) => e.toLowerCase()))];
+    const emails = [
+      ...new Set((this.options.identities?.emails ?? []).map((e) => e.toLowerCase())),
+    ];
     for (const request of requests) {
       const repo = request.repository;
       const projectId = numericId(repo.externalId);
@@ -456,7 +468,13 @@ class GitLabSession implements ProviderSession {
         }
       } catch (error) {
         if (!(error instanceof ProviderNotFoundError)) throw error;
-        yield { repositoryExternalId: repo.externalId, branch, items: [], done: true, notFound: true };
+        yield {
+          repositoryExternalId: repo.externalId,
+          branch,
+          items: [],
+          done: true,
+          notFound: true,
+        };
       }
     }
   }

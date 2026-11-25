@@ -6,8 +6,8 @@ import {
   KPI_SECTIONS,
   METRIC_SECTIONS,
 } from '../metrics/catalogue';
-import { PROVIDER_KINDS } from '../providers/activity';
 import { PERIOD_SPEC_PATTERN, PERIOD_TYPES } from '../periods';
+import { PROVIDER_KINDS } from '../providers/activity';
 import { Id, LocalDate, PageQuery, Timestamp } from './common';
 
 /**

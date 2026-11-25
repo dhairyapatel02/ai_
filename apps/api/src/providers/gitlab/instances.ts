@@ -20,7 +20,13 @@ const Instance = z.strictObject({
 export function originOf(value: string): string | null {
   try {
     const u = new URL(value);
-    if (u.username || u.password || (u.pathname !== '/' && u.pathname !== '') || u.search || u.hash) {
+    if (
+      u.username ||
+      u.password ||
+      (u.pathname !== '/' && u.pathname !== '') ||
+      u.search ||
+      u.hash
+    ) {
       return null;
     }
     return u.origin;

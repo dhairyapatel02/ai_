@@ -239,8 +239,8 @@ export function prepareContext(facts: Facts, window: MetricWindow): MetricContex
     }
   }
 
-  const completedIssues = (facts.issues ?? []).filter(
-    (i): i is IssueFact & { completedAt: Date } => inWindow(i.completedAt, window),
+  const completedIssues = (facts.issues ?? []).filter((i): i is IssueFact & { completedAt: Date } =>
+    inWindow(i.completedAt, window),
   );
 
   return {
@@ -560,7 +560,12 @@ export const issueCycleTimeMedianHours: MetricFn = (ctx) => {
       i.startedAt !== null && i.startedAt.getTime() <= i.completedAt.getTime(),
   );
   const sample = started.map((i) => hours(i.startedAt, i.completedAt, ctx.window));
-  return result('issue_cycle_time_median_hours', median(sample), sample.length, started.map(issueEv));
+  return result(
+    'issue_cycle_time_median_hours',
+    median(sample),
+    sample.length,
+    started.map(issueEv),
+  );
 };
 
 export const METRIC_FUNCTIONS: Record<ImplementedMetricKey, MetricFn> = {

@@ -1,3 +1,14 @@
+import {
+  PROVIDER_LABELS,
+  type ConnectProviderResult,
+  type IdentityDto,
+  type IntegrationDto,
+  type OAuthProviderWire,
+  type ProviderAccount,
+  type ProviderCallbackInput,
+  type ProviderTokenSet,
+  type SyncRunDto,
+} from '@devimpact/shared';
 import { Injectable, Logger } from '@nestjs/common';
 import {
   IdentityKind,
@@ -13,21 +24,9 @@ import { TokenCipher, TokenCipherService } from '../crypto/token-cipher';
 import { PrismaService } from '../prisma/prisma.service';
 import { PROVIDER_ENUM, ProviderRegistry } from '../providers/provider-registry';
 import { SyncService } from '../sync/sync.service';
-import { SAFE_INTEGRATION_SELECT, scheduleSlotFor, toIntegrationDto } from './integration.mapper';
 import { assertIntegrationSlot } from './integration-slots';
+import { SAFE_INTEGRATION_SELECT, scheduleSlotFor, toIntegrationDto } from './integration.mapper';
 import { OAuthStateService } from './oauth-state.service';
-
-import {
-  PROVIDER_LABELS,
-  type ConnectProviderResult,
-  type IdentityDto,
-  type IntegrationDto,
-  type OAuthProviderWire,
-  type ProviderAccount,
-  type ProviderCallbackInput,
-  type ProviderTokenSet,
-  type SyncRunDto,
-} from '@devimpact/shared';
 
 /** `GET /integrations/providers` entry (S19 decides which cards can connect). */
 export interface ProviderAvailability {
@@ -62,9 +61,16 @@ export class ProviderConnectService {
         provider: 'gitlab',
         category: 'code',
         configured: this.registry.oauth('gitlab').configured(),
-        instances: this.registry.gitlabInstances.list().map((i) => ({ url: i.url, label: i.label })),
+        instances: this.registry.gitlabInstances
+          .list()
+          .map((i) => ({ url: i.url, label: i.label })),
       },
-      { provider: 'jira', category: 'issues', configured: this.registry.oauth('jira').configured(), instances: [] },
+      {
+        provider: 'jira',
+        category: 'issues',
+        configured: this.registry.oauth('jira').configured(),
+        instances: [],
+      },
       {
         provider: 'linear',
         category: 'issues',
@@ -161,13 +167,19 @@ export class ProviderConnectService {
     }
     const label = PROVIDER_LABELS[kind];
     if (input.error || !input.code) {
-      throw new AppException('OAUTH_DENIED', `${label} access was not granted. You can try again at any time.`);
+      throw new AppException(
+        'OAUTH_DENIED',
+        `${label} access was not granted. You can try again at any time.`,
+      );
     }
     this.assertConfigured(kind);
     const client = this.registry.oauth(kind);
     const baseUrl = payload.b ?? null;
     if (kind === 'gitlab' && !this.registry.gitlabInstances.resolve(baseUrl)) {
-      throw new AppException('OAUTH_STATE_INVALID', 'This GitLab instance is no longer configured.');
+      throw new AppException(
+        'OAUTH_STATE_INVALID',
+        'This GitLab instance is no longer configured.',
+      );
     }
     const token = await client.exchangeCode({
       code: input.code,
@@ -239,7 +251,10 @@ export class ProviderConnectService {
         wasReconnect = true;
       }
       if (!targetId || byAccount?.status === IntegrationStatus.DISCONNECTED) {
-        const user = await tx.user.findUniqueOrThrow({ where: { id: userId }, select: { plan: true } });
+        const user = await tx.user.findUniqueOrThrow({
+          where: { id: userId },
+          select: { plan: true },
+        });
         await assertIntegrationSlot(tx, userId, user.plan, provider);
       }
       targetId ??= (
@@ -261,7 +276,10 @@ export class ProviderConnectService {
           status: IntegrationStatus.ACTIVE,
           statusReason: null,
           disconnectedAt: null,
-          accessTokenEnc: this.cipher.encrypt(token.accessToken, TokenCipher.aad(id, 'accessToken')),
+          accessTokenEnc: this.cipher.encrypt(
+            token.accessToken,
+            TokenCipher.aad(id, 'accessToken'),
+          ),
           refreshTokenEnc: token.refreshToken
             ? this.cipher.encrypt(token.refreshToken, TokenCipher.aad(id, 'refreshToken'))
             : null,
@@ -304,7 +322,12 @@ export class ProviderConnectService {
     for (const identity of wanted) {
       // user-scope: global uniqueness — drop another user's unverified claim of this identity.
       await tx.providerIdentity.deleteMany({
-        where: { provider, kind: identity.kind, value: identity.value, source: IdentitySource.MANUAL },
+        where: {
+          provider,
+          kind: identity.kind,
+          value: identity.value,
+          source: IdentitySource.MANUAL,
+        },
       });
       await tx.providerIdentity.createMany({
         data: [
@@ -442,15 +465,25 @@ export class ProviderConnectService {
         issues: [{ path: 'body.storyPointsField', message: 'Not supported', code: 'custom' }],
       });
     }
-    const config = { ...((row.config ?? {}) as Record<string, unknown>), storyPointsField: input.storyPointsField };
+    const config = {
+      ...((row.config ?? {}) as Record<string, unknown>),
+      storyPointsField: input.storyPointsField,
+    };
     await this.prisma.integration.updateMany({
       where: { id: row.id, userId },
-      data: { config: config as Prisma.InputJsonValue, backfillFrom: null },
+      data: { config: config, backfillFrom: null },
     });
     try {
-      await this.sync.requestSync(userId, { integrationId: row.id, trigger: SyncTrigger.MANUAL, reuseActive: true });
+      await this.sync.requestSync(userId, {
+        integrationId: row.id,
+        trigger: SyncTrigger.MANUAL,
+        reuseActive: true,
+      });
     } catch (error) {
-      this.logger.warn({ integrationId: row.id, err: error }, 'Re-sync after settings change not queued');
+      this.logger.warn(
+        { integrationId: row.id, err: error },
+        'Re-sync after settings change not queued',
+      );
     }
   }
 }

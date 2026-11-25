@@ -1,5 +1,3 @@
-import { nextSlotAfter } from '../sync/sync-run.mapper';
-
 import {
   PROVIDER_CATEGORY,
   type IntegrationDto,
@@ -7,6 +5,9 @@ import {
   type IntegrationSummary,
   type ProviderKind,
 } from '@devimpact/shared';
+
+import { nextSlotAfter } from '../sync/sync-run.mapper';
+
 import type { GitHubInstallation, Integration, Prisma } from '@prisma/client';
 
 /**
@@ -62,9 +63,12 @@ function settingsOf(row: Pick<Integration, 'provider' | 'config'>): IntegrationD
   const c = (row.config ?? {}) as Record<string, unknown>;
   if (row.provider === 'JIRA') {
     const sites = Array.isArray(c.sites)
-      ? (c.sites as { id?: unknown; name?: unknown; url?: unknown }[])
-          .filter((s) => typeof s.id === 'string' && typeof s.name === 'string' && safeUrl(String(s.url)))
-          .map((s) => ({ id: String(s.id), name: String(s.name), url: safeUrl(String(s.url)) as string }))
+      ? (c.sites as { id?: unknown; name?: unknown; url?: unknown }[]).flatMap((s) => {
+          const url = safeUrl(String(s.url));
+          return typeof s.id === 'string' && typeof s.name === 'string' && url
+            ? [{ id: s.id, name: s.name, url }]
+            : [];
+        })
       : [];
     return {
       sites,
@@ -75,7 +79,12 @@ function settingsOf(row: Pick<Integration, 'provider' | 'config'>): IntegrationD
   }
   if (row.provider === 'LINEAR') {
     const org = c.organization as { id?: unknown; name?: unknown; urlKey?: unknown } | undefined;
-    if (org && typeof org.id === 'string' && typeof org.name === 'string' && typeof org.urlKey === 'string') {
+    if (
+      org &&
+      typeof org.id === 'string' &&
+      typeof org.name === 'string' &&
+      typeof org.urlKey === 'string'
+    ) {
       return { workspace: { id: org.id, name: org.name, urlKey: org.urlKey } };
     }
   }
@@ -106,7 +115,7 @@ export function toIntegrationDto(
     id: row.id,
     provider: kind(row.provider),
     category: PROVIDER_CATEGORY[kind(row.provider)],
-    baseUrl: row.baseUrl ? safeUrl(row.baseUrl)?.replace(/\/$/, '') ?? null : null,
+    baseUrl: row.baseUrl ? (safeUrl(row.baseUrl)?.replace(/\/$/, '') ?? null) : null,
     settings: settingsOf(row),
     status: toWireStatus(row.status),
     statusReason: row.statusReason,

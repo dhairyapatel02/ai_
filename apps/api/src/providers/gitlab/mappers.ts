@@ -107,7 +107,9 @@ export function mapMrState(state: GlMergeRequest['state']): NormalizedPrState {
 /** Bots: GitLab's `bot` flag, project/group access-token bots and `*-bot` service accounts. */
 export function isBot(user: GlUser): boolean {
   return (
-    user.bot === true || /^(project|group)_\d+_bot/.test(user.username) || /-bot$/.test(user.username)
+    user.bot === true ||
+    /^(project|group)_\d+_bot/.test(user.username) ||
+    user.username.endsWith('-bot')
   );
 }
 
@@ -135,7 +137,13 @@ const REVIEW_REQUEST = /^requested review from (.+)$/i;
  */
 export function analyzeNotes(
   notes: GlNote[],
-  options: { host: string; mrId: number; authorId: number; userId: number | null; username: string | null },
+  options: {
+    host: string;
+    mrId: number;
+    authorId: number;
+    userId: number | null;
+    username: string | null;
+  },
 ): NotesAnalysis {
   const sorted = [...notes].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
   let readyForReviewAt: Date | null = null;
@@ -154,7 +162,11 @@ export function analyzeNotes(
     if (note.system) {
       if (READY.test(body) && note.author.id === options.authorId) readyForReviewAt = at;
       const request = REVIEW_REQUEST.exec(body);
-      if (request && options.username && request[1].split(/[\s,]+/).includes(`@${options.username}`)) {
+      if (
+        request &&
+        options.username &&
+        request[1].split(/[\s,]+/).includes(`@${options.username}`)
+      ) {
         reviewRequestedAt ??= at;
       }
       const approved = APPROVED.test(body);
@@ -240,7 +252,7 @@ export function mapMergeRequest(
     reviewersCount: options.authored && notes ? notes.reviewersCount : null,
     approvalsCount: options.authored && notes ? notes.approvalsCount : null,
     changesRequestedCount: options.authored && notes ? notes.changesRequestedCount : null,
-    isRevert: /^Revert "/.test(mr.title),
+    isRevert: mr.title.startsWith('Revert "'),
     revertedAt: null,
     revertedByUrl: null,
   };

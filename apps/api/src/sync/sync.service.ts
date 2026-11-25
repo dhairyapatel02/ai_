@@ -1,9 +1,15 @@
+import {
+  PROVIDER_LABELS,
+  type ProviderKind,
+  type SyncRunDto,
+  type SyncRunListQuery,
+  type SyncStatusDto,
+} from '@devimpact/shared';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { getStorageToken, type ThrottlerStorage } from '@nestjs/throttler';
 import {
   IntegrationStatus,
-  Provider,
   SyncKind,
   SyncStatus,
   SyncTrigger,
@@ -27,14 +33,6 @@ import {
   type SyncJobData,
   syncJobId,
 } from './sync.constants';
-
-import {
-  PROVIDER_LABELS,
-  type ProviderKind,
-  type SyncRunDto,
-  type SyncRunListQuery,
-  type SyncStatusDto,
-} from '@devimpact/shared';
 
 export const ACTIVE_RUN_STATUSES: SyncStatus[] = [
   SyncStatus.QUEUED,

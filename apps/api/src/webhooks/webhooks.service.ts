@@ -126,9 +126,7 @@ export class WebhooksService {
       throw new AppException('VALIDATION_FAILED', 'Webhook body is not valid JSON');
     }
     const eventName =
-      kind === 'jira'
-        ? (payload as { webhookEvent?: unknown }).webhookEvent
-        : headers.event;
+      kind === 'jira' ? (payload as { webhookEvent?: unknown }).webhookEvent : headers.event;
     if (typeof eventName !== 'string' || !PROVIDER_EVENT_NAME.test(eventName)) {
       throw new AppException('VALIDATION_FAILED', 'Missing or invalid webhook event name');
     }
@@ -137,8 +135,9 @@ export class WebhooksService {
     const deliveryId = `${prefix}-${rawId || createHash('sha256').update(body).digest('hex').slice(0, 64)}`;
 
     const event = provider.parseWebhook(eventName, payload);
-    const action = (payload as { action?: unknown; object_attributes?: { action?: unknown } })
-      .object_attributes?.action ?? (payload as { action?: unknown }).action;
+    const action =
+      (payload as { action?: unknown; object_attributes?: { action?: unknown } }).object_attributes
+        ?.action ?? (payload as { action?: unknown }).action;
     const inserted = await this.prisma.webhookDelivery.createMany({
       data: [
         {

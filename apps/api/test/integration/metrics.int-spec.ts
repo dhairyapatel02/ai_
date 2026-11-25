@@ -201,13 +201,19 @@ describe('Metrics engine API (integration)', () => {
         'collaboration',
         'ownership',
         'consistency',
+        'issues', // P13: always present; `available: false` without Jira / Linear
       ]);
+      expect(data.sections.at(-1).available).toBe(false);
       const values = Object.fromEntries(
         data.sections.flatMap((s: { metrics: { key: string; value: number; n: number }[] }) =>
           s.metrics.map((m) => [m.key, [m.value, m.n]]),
         ),
       );
       expect(values).toEqual({
+        // §3.6 issue metrics (P13): no Jira / Linear data in the golden dataset.
+        issues_completed: [0, 0],
+        story_points_completed: [0, 0],
+        issue_cycle_time_median_hours: [null, 0],
         prs_merged: [4, 4],
         prs_opened: [6, 6],
         pr_cycle_time_median_hours: [15, 4],
@@ -508,11 +514,12 @@ describe('Metrics engine API (integration)', () => {
       const { as } = await goldenUser();
       const res = await get('/api/metrics/definitions', as).expect(200);
       expect(res.headers['cache-control']).toBe('private, max-age=3600');
-      expect(res.body.data.metricsVersion).toBe('metrics@2.0.0');
+      expect(res.body.data.metricsVersion).toBe('metrics@2.1.0');
       expect(res.body.data.scoreVersion).toBe('impact@2.0.0');
       expect(res.body.data.metrics).toHaveLength(24);
+      // P13 implemented the §3.6 issue metrics: nothing is deferred any more.
       expect(res.body.data.metrics.filter((m: { deferred: boolean }) => m.deferred)).toHaveLength(
-        3,
+        0,
       );
       expect(res.body.data.bands).toHaveLength(4);
     });
@@ -524,7 +531,7 @@ describe('Metrics engine API (integration)', () => {
       ['/api/impact?period=month:2099-01', 'INVALID_PERIOD'],
       ['/api/metrics/overview?period=week:2026-W01', 'VALIDATION_FAILED'],
       ['/api/metrics/kpis?period=month:2026-10&extra=1', 'VALIDATION_FAILED'],
-      ['/api/metrics/timeseries?metric=issues_completed', 'VALIDATION_FAILED'],
+      ['/api/metrics/timeseries?metric=issues_closed', 'VALIDATION_FAILED'],
       ['/api/metrics/trends?count=13', 'VALIDATION_FAILED'],
       ['/api/metrics/evidence?metric=commits&cursor=@@', 'VALIDATION_FAILED'],
       ['/api/impact/history?periodType=year', 'VALIDATION_FAILED'],
@@ -860,7 +867,13 @@ describe('Metrics engine API (integration)', () => {
       expect(data.years).toEqual([2026]);
       const q4 = data.quarters.find((q: { quarter: number }) => q.quarter === 4);
       // Q4 = October + November: P7 (merged Nov 2) and Q5 (rG, Nov 3) count too.
-      expect(q4.totals).toEqual({ prsMerged: 5, prsReviewed: 5, achievements: 0 });
+      expect(q4.totals).toEqual({
+        prsMerged: 5,
+        prsReviewed: 5,
+        achievements: 0,
+        issuesCompleted: 0,
+        storyPoints: 0,
+      });
       const r1 = q4.repos.find((r: { fullName: string }) => r.fullName === REPO.R1);
       expect(r1.items.filter((i: { type: string }) => i.type === 'pr_merged')).toHaveLength(4);
       expect(r1.items.find((i: { type: string }) => i.type === 'review_cluster')).toMatchObject({
@@ -876,7 +889,13 @@ describe('Metrics engine API (integration)', () => {
       );
       expect(JSON.stringify(data)).not.toContain('acme/excluded');
       const q3 = data.quarters.find((q: { quarter: number }) => q.quarter === 3);
-      expect(q3.totals).toEqual({ prsMerged: 0, prsReviewed: 1, achievements: 0 });
+      expect(q3.totals).toEqual({
+        prsMerged: 0,
+        prsReviewed: 1,
+        achievements: 0,
+        issuesCompleted: 0,
+        storyPoints: 0,
+      });
     });
   });
 

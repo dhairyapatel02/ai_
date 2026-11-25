@@ -55,7 +55,11 @@ export class GitHubAppClient {
   }
 
   isConfigured(): boolean {
-    return !!(this.clientId && this.clientSecret && this.config.get('GITHUB_APP_SLUG', { infer: true }));
+    return !!(
+      this.clientId &&
+      this.clientSecret &&
+      this.config.get('GITHUB_APP_SLUG', { infer: true })
+    );
   }
 
   /** Throws a clear error when the GitHub App isn't configured (local dev on seed data). */

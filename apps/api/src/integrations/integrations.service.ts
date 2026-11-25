@@ -12,13 +12,13 @@ import {
   type GitHubInstallationInfo,
   type GitHubUserToken,
 } from './github-app.client';
+import { assertIntegrationSlot } from './integration-slots';
 import {
   SAFE_INTEGRATION_SELECT,
   scheduleSlotFor,
   toIntegrationDto,
   type SafeIntegration,
 } from './integration.mapper';
-import { assertIntegrationSlot } from './integration-slots';
 import { OAuthStateService } from './oauth-state.service';
 import { ProviderConnectService } from './provider-connect.service';
 
@@ -54,7 +54,9 @@ export class IntegrationsService {
     const manage =
       row.provider === Provider.GITHUB
         ? this.github.manageUrl()
-        : this.registry.oauth(kindOf(row.provider) as 'gitlab' | 'jira' | 'linear').manageUrl(row.baseUrl);
+        : this.registry
+            .oauth(kindOf(row.provider) as 'gitlab' | 'jira' | 'linear')
+            .manageUrl(row.baseUrl);
     return toIntegrationDto(row, manage);
   }
 
@@ -393,7 +395,10 @@ export class IntegrationsService {
     for (const row of rows) {
       if (!row.accessTokenEnc) continue;
       try {
-        const token = this.cipher.decrypt(row.accessTokenEnc, TokenCipher.aad(row.id, 'accessToken'));
+        const token = this.cipher.decrypt(
+          row.accessTokenEnc,
+          TokenCipher.aad(row.id, 'accessToken'),
+        );
         if (row.provider === Provider.GITHUB) await this.github.revokeToken(token);
         else await this.registry.get(row.provider).revokeToken(token, row.baseUrl);
       } catch (error) {

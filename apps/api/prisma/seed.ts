@@ -780,8 +780,18 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
   await seedGitLab(prisma, demo.id, demoGl.id, at);
   await seedProviderExtras(prisma, demo.id, anchor, [
     { id: demoGl.id, provider: Provider.GITLAB, login: 'dana-demo', account: 'gitlab.com/7100001' },
-    { id: demoJira.id, provider: Provider.JIRA, login: 'Dana Demo', account: 'seed-atlassian-5f0c1d' },
-    { id: demoLinear.id, provider: Provider.LINEAR, login: 'dana', account: 'seed-linear-user-dana' },
+    {
+      id: demoJira.id,
+      provider: Provider.JIRA,
+      login: 'Dana Demo',
+      account: 'seed-atlassian-5f0c1d',
+    },
+    {
+      id: demoLinear.id,
+      provider: Provider.LINEAR,
+      login: 'dana',
+      account: 'seed-linear-user-dana',
+    },
   ]);
   const snapshot = await rollups.recompute(demo.id, at(DAYS + 7, 0), today, today);
 
@@ -1012,7 +1022,10 @@ async function seedProviderExtras(
         backfillFrom: new Date(anchor.getTime() - 365 * 86_400_000),
         syncCursor:
           row.provider === Provider.GITLAB
-            ? { authoredPrsUpdatedAt: anchor.toISOString(), reviewedPrsUpdatedAt: anchor.toISOString() }
+            ? {
+                authoredPrsUpdatedAt: anchor.toISOString(),
+                reviewedPrsUpdatedAt: anchor.toISOString(),
+              }
             : { issuesUpdatedAt: anchor.toISOString() },
       },
     });
@@ -1030,7 +1043,15 @@ async function seedProviderExtras(
         windowTo: new Date(anchor.getTime() - 2 * 86_400_000),
         counts:
           row.provider === Provider.GITLAB
-            ? { repos: 2, prsAuthored: 9, prsReviewed: 0, reviews: 0, commits: 18, created: 29, updated: 0 }
+            ? {
+                repos: 2,
+                prsAuthored: 9,
+                prsReviewed: 0,
+                reviews: 0,
+                commits: 18,
+                created: 29,
+                updated: 0,
+              }
             : { issues: issueCount, created: issueCount, updated: 0 },
         apiCalls: row.provider === Provider.GITLAB ? 31 : 4,
         queuedAt: new Date(anchor.getTime() - 2 * 86_400_000),
@@ -1039,9 +1060,33 @@ async function seedProviderExtras(
       },
     });
     const identities: Prisma.ProviderIdentityCreateManyInput[] = [
-      { userId, integrationId: row.id, provider: row.provider, kind: 'ACCOUNT', value: row.account, source: 'PROVIDER', verified: true },
-      { userId, integrationId: row.id, provider: row.provider, kind: 'USERNAME', value: row.login, source: 'PROVIDER', verified: true },
-      { userId, integrationId: row.id, provider: row.provider, kind: 'EMAIL', value: DEMO_EMAIL, source: 'PROVIDER', verified: true },
+      {
+        userId,
+        integrationId: row.id,
+        provider: row.provider,
+        kind: 'ACCOUNT',
+        value: row.account,
+        source: 'PROVIDER',
+        verified: true,
+      },
+      {
+        userId,
+        integrationId: row.id,
+        provider: row.provider,
+        kind: 'USERNAME',
+        value: row.login,
+        source: 'PROVIDER',
+        verified: true,
+      },
+      {
+        userId,
+        integrationId: row.id,
+        provider: row.provider,
+        kind: 'EMAIL',
+        value: DEMO_EMAIL,
+        source: 'PROVIDER',
+        verified: true,
+      },
     ];
     if (row.provider === Provider.GITLAB) {
       identities.push({

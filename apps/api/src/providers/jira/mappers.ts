@@ -33,7 +33,10 @@ export interface JiraIssue {
     assignee?: { accountId?: string } | null;
   };
   changelog?: {
-    histories?: { created: string; items?: { field?: string; fieldId?: string; to?: string | null }[] }[];
+    histories?: {
+      created: string;
+      items?: { field?: string; fieldId?: string; to?: string | null }[];
+    }[];
   };
 }
 
@@ -107,12 +110,16 @@ export function detectStoryPointsField(fields: JiraField[]): string | null {
   const software = candidates.find(
     (f) => f.schema?.custom === 'com.pyxis.greenhopper.jira:jsw-story-points',
   );
-  const numeric = candidates.find((f) => f.schema?.custom && STORY_POINT_SCHEMAS.has(f.schema.custom));
+  const numeric = candidates.find(
+    (f) => f.schema?.custom && STORY_POINT_SCHEMAS.has(f.schema.custom),
+  );
   return (software ?? numeric ?? candidates[0])?.id ?? null;
 }
 
 const date = (value: unknown): Date | null =>
-  typeof value === 'string' && value !== '' && Number.isFinite(Date.parse(value)) ? new Date(value) : null;
+  typeof value === 'string' && value !== '' && Number.isFinite(Date.parse(value))
+    ? new Date(value)
+    : null;
 
 /** First move into an in-progress (`indeterminate`) status, from the changelog. */
 export function startedAtOf(issue: JiraIssue, categories: Map<string, string>): Date | null {
@@ -167,7 +174,11 @@ export function mapJiraIssue(
  * JQL window as *relative minutes* (`updated >= -90m`): Jira interprets absolute JQL dates in the
  * user's profile time zone, relative ones are zone-independent. Rounded outwards (idempotent).
  */
-export function jqlFor(accountId: string, window: { from: Date; to: Date }, now = Date.now()): string {
+export function jqlFor(
+  accountId: string,
+  window: { from: Date; to: Date },
+  now = Date.now(),
+): string {
   const fromMin = Math.ceil((now - window.from.getTime()) / 60_000) + 1;
   const toMin = Math.max(0, Math.floor((now - window.to.getTime()) / 60_000));
   const safeId = accountId.replace(/[^A-Za-z0-9:_-]/g, '');

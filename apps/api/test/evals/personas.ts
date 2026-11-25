@@ -60,7 +60,13 @@ interface Spec {
   redactPrivateRepos?: boolean;
   injectionMarkers?: string[];
   /** Jira / Linear issues completed in October (P13). */
-  issues?: { provider: 'JIRA' | 'LINEAR'; key: string; title: string; points: number | null; labels?: string[] }[];
+  issues?: {
+    provider: 'JIRA' | 'LINEAR';
+    key: string;
+    title: string;
+    points: number | null;
+    labels?: string[];
+  }[];
 }
 
 function build(spec: Spec): Persona {
@@ -424,9 +430,27 @@ export const PERSONAS: Persona[] = [
     reviewTitles: ['Usage-based billing meter', 'Invoice email templates'],
     commitMessages: ['chore: bump billing SDK'],
     issues: [
-      { provider: 'JIRA', key: 'PAY-231', title: 'Support annual plans in billing', points: 5, labels: ['feature'] },
-      { provider: 'JIRA', key: 'PAY-240', title: 'Fix duplicate invoice emails', points: 2, labels: ['bug'] },
-      { provider: 'LINEAR', key: 'ENG-42', title: 'Speed up checkout page load', points: 3, labels: ['performance'] },
+      {
+        provider: 'JIRA',
+        key: 'PAY-231',
+        title: 'Support annual plans in billing',
+        points: 5,
+        labels: ['feature'],
+      },
+      {
+        provider: 'JIRA',
+        key: 'PAY-240',
+        title: 'Fix duplicate invoice emails',
+        points: 2,
+        labels: ['bug'],
+      },
+      {
+        provider: 'LINEAR',
+        key: 'ENG-42',
+        title: 'Speed up checkout page load',
+        points: 3,
+        labels: ['performance'],
+      },
       { provider: 'LINEAR', key: 'ENG-57', title: 'Document the billing runbook', points: null },
     ],
   }),

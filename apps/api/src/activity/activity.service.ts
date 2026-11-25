@@ -125,7 +125,11 @@ export class ActivityService {
       included: true,
       ...(filter.repoIds ? { id: { in: filter.repoIds } } : {}),
       ...(filter.providers
-        ? { integration: { provider: { in: filter.providers.map((p) => p.toUpperCase() as Provider) } } }
+        ? {
+            integration: {
+              provider: { in: filter.providers.map((p) => p.toUpperCase() as Provider) },
+            },
+          }
         : {}),
     };
   }
@@ -134,7 +138,9 @@ export class ActivityService {
   private issueProviders(filter: Filter): Provider[] {
     const wanted = filter.providers ?? [...ISSUE_PROVIDERS];
     return wanted
-      .filter((p): p is (typeof ISSUE_PROVIDERS)[number] => (ISSUE_PROVIDERS as readonly string[]).includes(p))
+      .filter((p): p is (typeof ISSUE_PROVIDERS)[number] =>
+        (ISSUE_PROVIDERS as readonly string[]).includes(p),
+      )
       .map((p) => p.toUpperCase() as Provider);
   }
 
@@ -759,7 +765,10 @@ export class ActivityService {
     };
   }
 
-  async issues(userId: string, query: IssueListQuery): Promise<{ items: IssueItem[]; meta: PageMeta }> {
+  async issues(
+    userId: string,
+    query: IssueListQuery,
+  ): Promise<{ items: IssueItem[]; meta: PageMeta }> {
     const timezone = await this.timezoneOf(userId);
     const range = await this.range(userId, query, timezone);
     const providers = this.issueProviders(query);
@@ -774,10 +783,7 @@ export class ActivityService {
         ...(query.status ? { status: query.status.toUpperCase() as IssueStatus } : {}),
         ...(query.q
           ? {
-              OR: [
-                { title: this.titleWhere(query.q) },
-                { key: { equals: query.q.toUpperCase() } },
-              ],
+              OR: [{ title: this.titleWhere(query.q) }, { key: { equals: query.q.toUpperCase() } }],
             }
           : {}),
         ...(field === 'completedAt' ? { completedAt: { not: null } } : {}),

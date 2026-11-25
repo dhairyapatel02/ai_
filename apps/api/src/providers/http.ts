@@ -68,6 +68,7 @@ export class ProviderHttp {
 
   constructor(private readonly options: ProviderHttpOptions) {}
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- callers name the JSON shape they expect
   async request<T>(req: ProviderRequest): Promise<{ data: T; headers: Headers; status: number }> {
     const { minRemaining } = this.options;
     if (
@@ -140,6 +141,7 @@ export class ProviderHttp {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- callers name the JSON shape they expect
   async get<T>(url: string | URL): Promise<{ data: T; headers: Headers }> {
     const res = await this.request<T>({ url });
     if (res.status === 400) {
@@ -191,7 +193,8 @@ export function toTokenSet(
   const refreshExpiresIn = Number(res.data.refresh_token_expires_in);
   return {
     accessToken: access,
-    accessTokenExpiresAt: Number.isFinite(expiresIn) && expiresIn > 0 ? new Date(now + expiresIn * 1000) : null,
+    accessTokenExpiresAt:
+      Number.isFinite(expiresIn) && expiresIn > 0 ? new Date(now + expiresIn * 1000) : null,
     refreshToken: typeof refresh === 'string' && refresh !== '' ? refresh : null,
     refreshTokenExpiresAt:
       Number.isFinite(refreshExpiresIn) && refreshExpiresIn > 0

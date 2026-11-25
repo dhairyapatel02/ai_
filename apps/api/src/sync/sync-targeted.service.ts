@@ -11,8 +11,8 @@ import {
 
 import { MetricsQueueService } from '../metrics/metrics-queue.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { ProviderAuthError } from '../providers/provider.errors';
 import { PROVIDER_ENUM } from '../providers/provider-registry';
+import { ProviderAuthError } from '../providers/provider.errors';
 import { ACTIVITY_PROVIDER } from '../providers/providers.module';
 import { IntegrationTokensService } from './integration-tokens.service';
 import { SyncEngine } from './sync-engine.service';

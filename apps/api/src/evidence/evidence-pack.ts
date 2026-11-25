@@ -485,7 +485,9 @@ export function buildEvidencePack(input: BuildPackInput): EvidencePack {
       let promptRef = ref;
       let project = i.projectName ? cleanText(i.projectName, 100) : null;
       if (input.redactPrivateRepos) {
-        const alias = issueAliases.get(ref) ?? `${i.provider === 'LINEAR' ? 'LIN' : 'JIRA'}-ISSUE-${issueAliases.size + 1}`;
+        const alias =
+          issueAliases.get(ref) ??
+          `${i.provider === 'LINEAR' ? 'LIN' : 'JIRA'}-ISSUE-${issueAliases.size + 1}`;
         issueAliases.set(ref, alias);
         promptRef = alias;
         project = project ? 'private/project' : null;

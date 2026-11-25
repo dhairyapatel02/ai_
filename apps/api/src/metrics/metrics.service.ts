@@ -214,7 +214,7 @@ export class MetricsService {
         key: section,
         title: SECTION_TITLES[section],
         metrics: METRIC_CATALOGUE.filter((m) => m.section === section && !m.deferred).map((m) =>
-          this.metricValue(m.key as ImplementedMetricKey, current, previous),
+          this.metricValue(m.key, current, previous),
         ),
         ...(section === 'issues' ? { available: issuesAvailable } : {}),
       })),
@@ -262,7 +262,9 @@ export class MetricsService {
     const order = PROVIDER_KINDS as readonly string[];
     return {
       period,
-      providers: [...totals.values()].sort((a, b) => order.indexOf(a.provider) - order.indexOf(b.provider)),
+      providers: [...totals.values()].sort(
+        (a, b) => order.indexOf(a.provider) - order.indexOf(b.provider),
+      ),
     };
   }
 

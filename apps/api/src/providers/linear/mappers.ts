@@ -59,7 +59,10 @@ export function mapLinearPriority(value: number | null | undefined): NormalizedI
 
 const date = (value: string | null | undefined): Date | null => (value ? new Date(value) : null);
 
-export function mapLinearIssue(node: LinearIssueNode, organizationId: string | null): NormalizedIssue {
+export function mapLinearIssue(
+  node: LinearIssueNode,
+  organizationId: string | null,
+): NormalizedIssue {
   const status = mapLinearStatus(node.state?.type);
   const completed = date(node.completedAt);
   const cycle = node.cycle

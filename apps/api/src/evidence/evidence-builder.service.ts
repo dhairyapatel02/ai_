@@ -27,7 +27,12 @@ import {
 import type { ImpactInputs } from '../metrics/score-inputs';
 
 const REPO_SELECT = {
-  select: { fullName: true, isPrivate: true, htmlUrl: true, integration: { select: { provider: true } } },
+  select: {
+    fullName: true,
+    isPrivate: true,
+    htmlUrl: true,
+    integration: { select: { provider: true } },
+  },
 } as const;
 /** Prisma repository row → pack `RepoRecord` (provider only for GitLab, so GitHub packs stay identical). */
 const toRepo = (r: {
@@ -411,7 +416,8 @@ export class EvidenceBuilder {
         ? {
             issues: issues.map((i) => ({
               id: i.id,
-              provider: i.integration.provider === 'LINEAR' ? ('LINEAR' as const) : ('JIRA' as const),
+              provider:
+                i.integration.provider === 'LINEAR' ? ('LINEAR' as const) : ('JIRA' as const),
               key: i.key,
               title: i.title,
               url: i.url,

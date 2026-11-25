@@ -108,7 +108,12 @@ export class JiraOAuthClient implements ProviderOAuthClient {
     const { id, secret } = this.credentials();
     const res = await tokenRequest(
       new URL('/oauth/token', this.auth).toString(),
-      { grant_type: 'refresh_token', client_id: id, client_secret: secret, refresh_token: refreshToken },
+      {
+        grant_type: 'refresh_token',
+        client_id: id,
+        client_secret: secret,
+        refresh_token: refreshToken,
+      },
       { json: true, timeoutMs: this.timeoutMs, label: 'Jira' },
     );
     return toTokenSet(res, 'Jira');
@@ -179,9 +184,9 @@ class JiraSession implements IssueTrackerSession {
 
   /** Accessible sites, their status categories and the story points field of each site. */
   async prepare(): Promise<Record<string, unknown>> {
-    const { data } = await this.http.get<{ id: string; name: string; url: string; scopes?: string[] }[]>(
-      `${this.api}/oauth/token/accessible-resources`,
-    );
+    const { data } = await this.http.get<
+      { id: string; name: string; url: string; scopes?: string[] }[]
+    >(`${this.api}/oauth/token/accessible-resources`);
     this.sites = (data ?? [])
       .filter((s) => !s.scopes || s.scopes.includes('read:jira-work'))
       .slice(0, MAX_SITES)

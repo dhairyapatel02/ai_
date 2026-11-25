@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { ProviderHttp, tokenRequest, toTokenSet, verifyHmacHex } from '../http';
-import { ProviderAuthError, ProviderRateLimitError, ProviderUnavailableError } from '../provider.errors';
+import {
+  ProviderAuthError,
+  ProviderRateLimitError,
+  ProviderUnavailableError,
+} from '../provider.errors';
 import {
   LINEAR_ISSUES_QUERY,
   LINEAR_VIEWER_QUERY,
@@ -61,9 +65,13 @@ async function graphql<T>(
   const errors = res.data?.errors ?? [];
   const code = errors[0]?.extensions?.code;
   if (code === 'RATELIMITED') {
-    throw new ProviderRateLimitError(http.stats.rateLimitResetAt ?? new Date(Date.now() + 60_000), 0);
+    throw new ProviderRateLimitError(
+      http.stats.rateLimitResetAt ?? new Date(Date.now() + 60_000),
+      0,
+    );
   }
-  if (code === 'AUTHENTICATION_ERROR' || code === 'FORBIDDEN') throw new ProviderAuthError('TOKEN_REVOKED');
+  if (code === 'AUTHENTICATION_ERROR' || code === 'FORBIDDEN')
+    throw new ProviderAuthError('TOKEN_REVOKED');
   if (errors.length > 0 || !res.data?.data) {
     throw new ProviderUnavailableError('Linear rejected the query', res.status);
   }
@@ -134,7 +142,12 @@ export class LinearOAuthClient implements ProviderOAuthClient {
     const { id, secret } = this.credentials();
     const res = await tokenRequest(
       new URL('/oauth/token', this.api).toString(),
-      { grant_type: 'refresh_token', client_id: id, client_secret: secret, refresh_token: refreshToken },
+      {
+        grant_type: 'refresh_token',
+        client_id: id,
+        client_secret: secret,
+        refresh_token: refreshToken,
+      },
       { timeoutMs: this.timeoutMs, label: 'Linear' },
     );
     return toTokenSet(res, 'Linear');
@@ -234,7 +247,10 @@ class LinearSession implements IssueTrackerSession {
     let after: string | null = null;
     for (;;) {
       const data: {
-        issues: { nodes: LinearIssueNode[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } };
+        issues: {
+          nodes: LinearIssueNode[];
+          pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        };
       } = await graphql(this.http, this.api, LINEAR_ISSUES_QUERY, {
         assignee: accountExternalId,
         from: window.from.toISOString(),
@@ -280,13 +296,24 @@ export class LinearProvider implements IssueTrackerProvider {
    * `Linear-Signature` = hex HMAC-SHA256(secret, raw body); then `webhookTimestamp` must be within
    * 60 s of now (replay protection on top of delivery-id idempotency).
    */
-  verifyWebhook(rawBody: Uint8Array, signatureHeader: string | undefined, now = Date.now()): boolean {
-    if (!verifyHmacHex(this.config.get('LINEAR_WEBHOOK_SECRET', { infer: true }), rawBody, signatureHeader)) {
+  verifyWebhook(
+    rawBody: Uint8Array,
+    signatureHeader: string | undefined,
+    now = Date.now(),
+  ): boolean {
+    if (
+      !verifyHmacHex(
+        this.config.get('LINEAR_WEBHOOK_SECRET', { infer: true }),
+        rawBody,
+        signatureHeader,
+      )
+    ) {
       return false;
     }
     try {
-      const ts = (JSON.parse(Buffer.from(rawBody).toString('utf8')) as { webhookTimestamp?: unknown })
-        .webhookTimestamp;
+      const ts = (
+        JSON.parse(Buffer.from(rawBody).toString('utf8')) as { webhookTimestamp?: unknown }
+      ).webhookTimestamp;
       return typeof ts === 'number' && Math.abs(now - ts) <= LINEAR_WEBHOOK_TOLERANCE_MS;
     } catch {
       return false;
@@ -306,7 +333,8 @@ export function parseLinearWebhook(event: string, payload: unknown): ProviderWeb
     data?: { assigneeId?: unknown };
     updatedFrom?: { assigneeId?: unknown };
   };
-  if (event !== 'Issue' || body.type !== 'Issue') return { kind: 'ignored', reason: `event ${event}` };
+  if (event !== 'Issue' || body.type !== 'Issue')
+    return { kind: 'ignored', reason: `event ${event}` };
   const accounts = [body.data?.assigneeId, body.updatedFrom?.assigneeId].filter(
     (v): v is string => typeof v === 'string' && v !== '',
   );

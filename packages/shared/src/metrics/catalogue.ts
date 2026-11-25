@@ -451,7 +451,8 @@ export const METRIC_CATALOGUE: readonly MetricMeta[] = [
       'Counts issues assigned to you in Jira or Linear when they were completed; cancelled issues are excluded.',
       'Issue sizes differ between teams — compare with your own history, not with others.',
     ],
-    antiGaming: 'Not part of the impact score; splitting work into many tiny issues does not raise it.',
+    antiGaming:
+      'Not part of the impact score; splitting work into many tiny issues does not raise it.',
     inScore: false,
     direction: 'neutral',
   }),
