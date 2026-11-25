@@ -332,7 +332,7 @@ function JiraSettings({ integration }: { integration: IntegrationDto }) {
                 href={site.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-foreground underline-offset-2 hover:underline"
+                className="text-link underline underline-offset-2"
               >
                 {site.name}
               </a>

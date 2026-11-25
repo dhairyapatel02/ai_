@@ -29,6 +29,8 @@ export interface FakeProvidersState {
   exchanges: Record<string, string>[];
   revoked: { provider: FakeProviderKind; token: string }[];
   invalidTokens: Set<string>;
+  /** Codes stay valid after an exchange (E2E server: tests rerun the same round trip). */
+  reusableCodes?: boolean;
   /** Next request to this provider answers 429. */
   throttle: Set<FakeProviderKind>;
   log: {
@@ -176,7 +178,7 @@ export function installFakeProviders(state = emptyProvidersState()): {
         : state.codes.get(String(body.code));
     if (grant?.provider !== provider) return json(400, { error: 'invalid_grant' });
     if (body.grant_type === 'refresh_token') state.refreshGrants.delete(String(body.refresh_token));
-    else state.codes.delete(String(body.code));
+    else if (!state.reusableCodes) state.codes.delete(String(body.code));
     return json(200, {
       access_token: grant.accessToken,
       token_type: 'Bearer',

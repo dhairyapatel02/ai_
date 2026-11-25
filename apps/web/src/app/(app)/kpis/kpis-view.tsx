@@ -283,7 +283,8 @@ function ProviderBreakdown({ period }: { period: string | null | undefined }) {
       <h2 id="by-source" className="border-b px-4 py-3 text-base font-semibold">
         By source
       </h2>
-      <div className="overflow-x-auto">
+      {/* Focusable so keyboard users can scroll the table at 390 px (axe scrollable-region). */}
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Activity by source">
         <table className="w-full text-sm">
           <caption className="sr-only">Activity per connected source in this period</caption>
           <thead>

@@ -171,7 +171,7 @@ pages and phases.
 | F-16 | Needs-reconnection detection and one-click reconnect | M | P06, P10 |
 | F-17 | Disconnect with choice: keep data or purge data (confirm dialog) | M | P05, P06, P10 |
 | F-18 | Authored vs reviewed PRs modelled distinctly (fixes DATA-01) | M | P06 |
-| F-19 | GitLab, Jira, Linear providers | W | v2.1 (P13 skipped) |
+| F-19 | GitLab, Jira, Linear providers | W | ✅ v2.0 — P13 (D-029 amends D-018) |
 
 ### 5.3 Insights
 | ID | Feature | Pri | Phase |

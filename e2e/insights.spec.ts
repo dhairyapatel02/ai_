@@ -21,7 +21,7 @@ const P10_PAGES = [
   { path: '/kpis', ready: (p: Page) => p.getByTestId('metric-prs_merged') },
   { path: '/kpis/impact', ready: (p: Page) => p.getByTestId('impact-overall') },
   { path: '/career', ready: (p: Page) => p.getByTestId('career-timeline') },
-  { path: '/settings/integrations', ready: (p: Page) => p.getByTestId('sync-history') },
+  { path: '/settings/integrations', ready: (p: Page) => p.getByTestId('sync-history').first() },
 ];
 
 test.describe('insight pages (P10)', () => {
@@ -85,16 +85,18 @@ test.describe('insight pages (P10)', () => {
     await interceptSync(page);
     await page.goto('/settings/integrations');
     await hideDevOverlay(page);
-    await expect(page.getByTestId('sync-status-badge')).toHaveText('Connected');
-    await page.getByRole('button', { name: 'Sync now' }).click();
+    // P13: S19 shows a card per connected source; this journey is about the GitHub card.
+    const github = page.getByTestId('github-card');
+    await expect(github.getByTestId('sync-status-badge')).toHaveText('Connected');
+    await github.getByRole('button', { name: 'Sync now' }).click();
     await expect(
       page.getByText('Sync started. New activity appears in a minute or two.'),
     ).toBeVisible();
-    await expect(page.getByTestId('sync-status-badge')).toHaveText(/Syncing · \d+%/);
-    await expect(page.getByTestId('sync-progress')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Sync now' })).toBeDisabled();
+    await expect(github.getByTestId('sync-status-badge')).toHaveText(/Syncing · \d+%/);
+    await expect(github.getByTestId('sync-progress')).toBeVisible();
+    await expect(github.getByRole('button', { name: 'Sync now' })).toBeDisabled();
     await expect(page.getByText('Sync finished — 3 new items.')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByTestId('sync-status-badge')).toHaveText('Connected');
+    await expect(github.getByTestId('sync-status-badge')).toHaveText('Connected');
   });
 
   for (const viewport of [

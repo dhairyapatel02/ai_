@@ -334,3 +334,35 @@ raw-JSON documents (UX-03/04), no tests/lint/CI (DEBT-02/03).
   delivered digest, and the disposable `delete-me@devimpact.dev` user.
 - **Deferred:** monthly digest and in-app notification centre → v2.1; goals in the appraisal prompt
   (GAP-19), email bounce handling (GAP-21), DigestDelivery retention (OPS-18) → P14.
+
+### After Phase 13 (2026-11-25)
+- **Scope:** P13 was pulled into v2.0 before P14 (D-029 amends D-018). GitLab (gitlab.com +
+  allow-listed self-managed), Jira Cloud and Linear are live sources next to GitHub (D-030).
+- **Provider abstraction:** `ProviderRegistry` + two categories — code hosts (`ActivityProvider`:
+  GitHub, GitLab) and issue trackers (`IssueTrackerProvider`: Jira, Linear). The sync engine runs
+  the same lifecycle for both (issue trackers: prepare + `ISSUES` stage). Plain `fetch` clients via
+  `ProviderHttp` (no new SDKs). OAuth per provider (PKCE for GitLab/Linear, signed state bound to
+  user + provider), encrypted tokens, refresh → `NEEDS_REAUTH`, revoke on disconnect (not Jira),
+  webhooks `/api/webhooks/{gitlab,jira,linear}` (token / HMAC / HMAC + timestamp, idempotent).
+- **Schema:** migration P13-1 `additional_integrations` — Issue v2 columns, `provider_identities`,
+  `integrations.base_url/config`, `SyncStage.ISSUES`, `IntegrationMechanism.OAUTH2`,
+  `metric_snapshots.issues_completed/story_points/by_provider`.
+- **Metrics / AI:** `metrics@2.1.0` adds the §3.6 issue metrics (never scored; `impact@2.0.0`
+  unchanged), provider rollup dimension (`GET /metrics/providers`), KPIs `issues` section.
+  Evidence refs `MR-…!n`, `REV-…!n`, `JIRA-…`, `LIN-…`; packs include completed issues; prompts v2
+  for resume/appraisal/promotion/impact narrative; evals 8 personas × 6 (re-recorded).
+- **Entitlements:** FREE 2 connected sources / PRO 4, one account per provider
+  (`integrationsPerProvider`).
+- **Web:** S19 live cards per provider (status, Sync now / Reconnect, Manage, Disconnect keep/purge,
+  history, Jira sites + story points field, GitLab commit emails, connect tiles with plan/config
+  reasons), `/integrations/:provider/callback`, Activity Issues chip + Source filter + issue drawer,
+  KPIs Issues section + "By source", career "Issues completed", MR/JIRA/LIN evidence chips.
+- **New env:** `GITLAB_URL`, `GITLAB_CLIENT_ID/SECRET`, `GITLAB_INSTANCES_JSON`,
+  `GITLAB_WEBHOOK_SECRET`, `JIRA_CLIENT_ID/SECRET`, `JIRA_AUTH_URL`, `JIRA_API_URL`,
+  `JIRA_WEBHOOK_SECRET`, `LINEAR_CLIENT_ID/SECRET`, `LINEAR_WEB_URL`, `LINEAR_API_URL`,
+  `LINEAR_WEBHOOK_SECRET`, `PROVIDER_REQUEST_TIMEOUT_MS`, `PROVIDER_REQUEST_RETRIES` (all optional).
+- **Seed:** demo user also has GitLab (two projects, MRs, a manual commit email), Jira (issues,
+  detected story points field) and Linear (needs reconnection) — display-only, no tokens.
+- **Tests:** fake GitLab/Atlassian/Linear (`test/utils/fake-providers.ts`, HTTP server
+  `npm run providers:mock --workspace=apps/api`), per-provider integration tests, E2E with
+  intercepted OAuth.

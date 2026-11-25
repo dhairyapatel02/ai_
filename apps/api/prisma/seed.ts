@@ -1005,6 +1005,18 @@ async function seedGitLab(
   await prisma.pullRequest.createMany({ data: prs });
   // skipDuplicates: commit SHAs are unique per user, so a mirrored commit is stored once.
   await prisma.commit.createMany({ data: commits, skipDuplicates: true });
+  // Repository manager "last activity" (the GitHub update above ran before these rows existed).
+  for (const repo of repos) {
+    const last = prs
+      .filter((p) => p.repositoryId === repo.id)
+      .reduce<Date | null>((m, p) => {
+        const t = p.mergedAt instanceof Date ? p.mergedAt : null;
+        return t && (!m || t > m) ? t : m;
+      }, null);
+    if (last) {
+      await prisma.repository.update({ where: { id: repo.id }, data: { lastActivityAt: last } });
+    }
+  }
 }
 
 /** Sync history + linked identities for the P13 connections (S19 states). */

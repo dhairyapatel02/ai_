@@ -16,6 +16,9 @@ import { defineConfig, devices } from '@playwright/test';
  *   returns 404 in production.
  * - Fake Anthropic Messages API (`npm run ai:mock`, :4010, P11): the API generates documents
  *   against it, slowed down so the streaming viewer is observable. No real Anthropic call.
+ * - Fake GitLab / Jira / Linear (`npm run providers:mock`, :4021–4025, P13): OAuth token
+ *   endpoints and APIs the API's sync talks to. The browser's authorize redirects are intercepted
+ *   in the tests (`page.route`). No real provider call.
  */
 const WEB_URL = process.env.E2E_WEB_URL ?? 'http://localhost:3000';
 const WEB_PROD_URL = process.env.E2E_WEB_PROD_URL ?? 'http://localhost:3001';
@@ -45,6 +48,13 @@ export default defineConfig({
       stdout: 'pipe',
     },
     {
+      command: 'npm run providers:mock --workspace=apps/api -- 4020',
+      port: 4021,
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+      stdout: 'pipe',
+    },
+    {
       command: 'node apps/api/dist/main.js',
       url: `${API_URL}/health`,
       // The P10 axe loops visit every insight page in four browser contexts (> 300 requests/min);
@@ -56,6 +66,19 @@ export default defineConfig({
         ANTHROPIC_BASE_URL: 'http://127.0.0.1:4010',
         ANTHROPIC_API_KEY: 'mock',
         RUN_WORKER_IN_API: 'true',
+        // P13 providers → the fake servers above (placeholder client credentials).
+        GITLAB_URL: 'http://127.0.0.1:4021',
+        GITLAB_CLIENT_ID: 'e2e-gitlab',
+        GITLAB_CLIENT_SECRET: 'e2e-gitlab-secret',
+        JIRA_CLIENT_ID: 'e2e-jira',
+        JIRA_CLIENT_SECRET: 'e2e-jira-secret',
+        JIRA_AUTH_URL: 'http://127.0.0.1:4022',
+        JIRA_API_URL: 'http://127.0.0.1:4023',
+        LINEAR_CLIENT_ID: 'e2e-linear',
+        LINEAR_CLIENT_SECRET: 'e2e-linear-secret',
+        LINEAR_WEB_URL: 'http://127.0.0.1:4024',
+        LINEAR_API_URL: 'http://127.0.0.1:4025',
+        PROVIDER_REQUEST_RETRIES: '0',
       },
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,

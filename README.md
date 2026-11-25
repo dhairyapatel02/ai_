@@ -186,6 +186,41 @@ Then **Integrations → Connect** installs the app (or asks you to authorize it 
 installed). The connect `state` is HMAC-signed, single-use and expires after 10 minutes; tokens are
 stored AES-256-GCM encrypted.
 
+### Additional integrations: GitLab, Jira, Linear (P13)
+
+Optional sources next to GitHub (D-029, D-030). Each one appears on **Settings → Integrations** as
+a live card once its client id + secret are set; otherwise its tile says it isn't set up. Tokens
+are AES-256-GCM encrypted with AAD bound to the integration (like GitHub), refreshed under a row
+lock, and an unrecoverable 401 marks the connection _Needs reconnection_ (plus a "Sync problems"
+email). Every connection syncs once a day at its slot, on demand (Sync now) and on webhooks.
+
+| Provider                            | Register at                                                        | Callback URL                              | Scopes                                         | PKCE                                                            | Webhook (optional)                                                                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------ | ----------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| GitLab (gitlab.com or self-managed) | User/Group → Applications (or Admin → Applications)                | `${WEB_URL}/integrations/gitlab/callback` | `read_api read_user`                           | S256                                                            | Project/group webhook → `${API}/api/webhooks/gitlab`, secret token = `GITLAB_WEBHOOK_SECRET`, events: merge request, comments, push |
+| Jira Cloud                          | developer.atlassian.com → OAuth 2.0 (3LO) app, add Jira API scopes | `${WEB_URL}/integrations/jira/callback`   | `read:jira-work read:jira-user offline_access` | — (Atlassian has none; signed single-use state + client secret) | Jira admin → System → Webhooks → `${API}/api/webhooks/jira`, secret = `JIRA_WEBHOOK_SECRET`, events: issue created/updated/deleted  |
+| Linear                              | Settings → API → OAuth applications                                | `${WEB_URL}/integrations/linear/callback` | `read`                                         | S256                                                            | Enable the app webhook → `${API}/api/webhooks/linear`, signing secret = `LINEAR_WEBHOOK_SECRET`, resource: Issues                   |
+
+- **Env:** `GITLAB_URL`, `GITLAB_CLIENT_ID`, `GITLAB_CLIENT_SECRET`, `GITLAB_INSTANCES_JSON`,
+  `GITLAB_WEBHOOK_SECRET`, `JIRA_CLIENT_ID`, `JIRA_CLIENT_SECRET`, `JIRA_WEBHOOK_SECRET`,
+  `LINEAR_CLIENT_ID`, `LINEAR_CLIENT_SECRET`, `LINEAR_WEBHOOK_SECRET` (+ base-URL overrides and
+  `PROVIDER_REQUEST_TIMEOUT_MS` / `PROVIDER_REQUEST_RETRIES`, see `.env.example`).
+- **Self-managed GitLab:** set `GITLAB_URL=https://gitlab.example.com` with that instance's OAuth
+  app, or list several instances in `GITLAB_INSTANCES_JSON` (each with its own client id/secret).
+  Users pick an instance on the GitLab tile; any origin that is not configured is refused (SSRF
+  guard). gitlab.com and self-managed ids never collide (`<host>/<id>`).
+- **What is read:** GitLab — member projects, your MRs (+ notes for approvals / change requests /
+  "ready" time), MRs where you are a reviewer, default-branch commits by your linked emails. Jira /
+  Linear — issues assigned to you (title, status, priority, story points / estimate, project,
+  cycle, start/complete times); never descriptions or comments.
+- **Identities:** provider-verified emails/usernames are linked at connect; add extra commit emails
+  on the GitLab card (unverified, one owner per email). Commits are stored once per SHA, so a
+  repository mirrored between GitHub and GitLab never counts twice.
+- **Jira story points:** detected per site (`Story Points` / `Story point estimate`); override the
+  field id on the Jira card (re-reads every issue).
+- **Plan limits:** FREE 2 connected sources, PRO 4, at most one account per provider (D-030).
+- **Local fakes:** `npm run providers:mock --workspace=apps/api -- 4020` serves GitLab / Atlassian /
+  Linear on :4021–:4025 (the E2E setup in `playwright.config.ts` shows the env to point the API at it).
+
 ### How sync works
 
 Implementation: `apps/api/src/sync/` (orchestrator, queues, scheduler, webhooks handler) and
@@ -348,7 +383,8 @@ signing in (`/unsubscribe`). Preview last week's digest from Settings → Notifi
 ### Plans and limits (admin)
 
 No billing in v2.0 (D-014). New users are on FREE (12-month history, 15 generations + 100 quick
-actions a month, 1 GitHub connection); PRO raises them to 36 months, 150 and 1,000. Limits live in
+actions a month, 2 connected sources — one per provider); PRO raises them to 36 months, 150 and
+1,000 and 4 sources. Limits live in
 `apps/api/src/entitlements/entitlements.ts` (override with `ENTITLEMENTS_JSON`). Assign a plan:
 
 ```bash
@@ -514,7 +550,7 @@ apps/web/src/
 ├── app/
 │   ├── (auth)/sign-in           # S1 — public
 │   ├── (onboarding)/onboarding  # S2–S5 wizard (connect, pending, repositories, sync)
-│   ├── (system)/integrations/github/callback, (system)/unsubscribe   # no shell; /unsubscribe is public
+│   ├── (system)/integrations/{github,[provider]}/callback, (system)/unsubscribe   # no shell; /unsubscribe is public
 │   ├── (app)/…                  # signed-in pages inside the AppShell (loading/error/not-found):
 │   │                            # dashboard, activity, kpis (+ impact), career, settings/integrations,
 │   │                            # documents (library, new/{appraisal,promotion,resume}, [id] viewer),
@@ -565,7 +601,11 @@ without a token.
 
 **View tests** mock `@/lib/api/browser` with `test/api-mock.tsx` (route table → the real hooks and
 Zod schemas; `renderWithQuery` includes the shell provider) and use responses captured from the
-seeded demo user in `test/fixtures-p10/`, `test/fixtures-p11/` and `test/fixtures-p12/`.
+seeded demo user in `test/fixtures-p10/` … `test/fixtures-p13/`. Refresh P13 fixtures after
+`npm run db:seed` and `npm run build --workspace=apps/api` with
+`cd apps/api && npx tsx test/utils/capture-fixtures.ts ../web/test/fixtures-p13 "<name>=<api path>" …`
+(starts the built API against a local JWKS and signs a demo-user token; `{gitlab}` / `{jira}` /
+`{linear}` / `{issue}` in a path are replaced by the seeded ids).
 
 ### Adding a page
 
@@ -584,7 +624,7 @@ seeded demo user in `test/fixtures-p10/`, `test/fixtures-p11/` and `test/fixture
 ## API endpoints
 
 All routes are prefixed with `/api` and require `Authorization: Bearer <jwt>` except health and
-the signature-gated GitHub webhook.
+the signature-gated provider webhooks.
 Responses use the envelope `{ success: true, data, meta? }` / `{ success: false, error: { code,
 message, details?, requestId } }` with real HTTP status codes; the full contract (error codes,
 rate-limit classes, pagination) is [`docs/v2/blueprint/API_CONTRACT_V2.md`](docs/v2/blueprint/API_CONTRACT_V2.md)
@@ -609,22 +649,29 @@ and the live schema is at `/api/docs` outside production.
 | POST   | /api/integrations/github/callback               | Verify state, exchange code, store encrypted tokens         |
 | POST   | /api/integrations/:id/reconnect                 | Authorize again                                             |
 | DELETE | /api/integrations/:id?purgeData=                | Disconnect (revoke token; keep or purge data)               |
+| GET    | /api/integrations/providers                     | Providers this server can connect (+ GitLab instances)      |
+| POST   | /api/integrations/:provider/connect · /callback | GitLab / Jira / Linear OAuth (signed state, PKCE)           |
+| PATCH  | /api/integrations/:id                           | Jira story points field (re-reads issues)                   |
+| GET    | /api/integrations/:id/identities                | Linked identities; POST adds an email, DELETE …/:identityId |
 | POST   | /api/sync                                       | Queue a sync (202; 409 in progress / needs reauth)          |
 | GET    | /api/sync/status · /sync/runs · /runs/:id       | DB-backed state, progress, history                          |
 | GET    | /api/repos · PATCH /repos · /repos/:id          | Repositories; include/exclude (recomputes KPIs)             |
 | POST   | /api/repos/:id/purge                            | Delete a repository's synced activity                       |
 | POST   | /api/webhooks/github                            | GitHub App webhook (public, HMAC, idempotent, 202)          |
+| POST   | /api/webhooks/gitlab · /jira · /linear          | Provider webhooks (public, token/HMAC, idempotent, 202)     |
 | GET    | /api/metrics/definitions                        | Metric catalogue, versions, score bands (cacheable)         |
 | GET    | /api/metrics/overview?period=                   | Stat cards with deltas, impact summary, freshness           |
 | GET    | /api/metrics/kpis?period=                       | Five KPI sections (value, n, status, delta, evidence)       |
 | GET    | /api/metrics/timeseries?metric=&interval=       | One metric per day/week/month (`period` or `from/to`)       |
 | GET    | /api/metrics/heatmap?from=&to=                  | Daily activity counts (≤ 366 days)                          |
 | GET    | /api/metrics/repos · /trends · /evidence        | Per-repo contributions · N-period trends · evidence         |
+| GET    | /api/metrics/providers?period=                  | Per-provider totals (commits, PRs, issues, points)          |
 | GET    | /api/impact?period= · /impact/history           | Deterministic impact score `impact@2.0.0` + history         |
 | GET    | /api/career/timeline?year=                      | The year by quarter (merged PRs, reviews, milestones)       |
 | GET    | /api/activity/feed                              | Unified feed (commits, PR events, reviews)                  |
 | GET    | /api/activity/prs?role= · /prs/:id              | Authored or reviewed PRs (cycle time, my reviews)           |
 | GET    | /api/activity/reviews · /commits · /commits/:id | Reviews (turnaround) · commits                              |
+| GET    | /api/activity/issues · /issues/:id              | Jira / Linear issues assigned to you (cycle time, points)   |
 | GET    | /api/me/usage?month=                            | AI usage vs monthly quota, tokens, estimated cost           |
 | POST   | /api/impact/highlights                          | AI narrative for a period's score (fast, cached; ai)        |
 | GET    | /api/documents?type=&q=&sort=&status=           | Document library (cursor pagination)                        |

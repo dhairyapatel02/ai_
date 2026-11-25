@@ -158,6 +158,7 @@ export class LinearOAuthClient implements ProviderOAuthClient {
       const res = await fetch(new URL('/oauth/revoke', this.api), {
         method: 'POST',
         headers: { Authorization: `Bearer ${accessToken}` },
+        redirect: 'error',
         signal: AbortSignal.timeout(this.timeoutMs),
       });
       return res.ok;

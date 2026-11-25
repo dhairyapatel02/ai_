@@ -94,6 +94,8 @@ export class ProviderHttp {
             Authorization: `Bearer ${this.token}`,
           },
           body: req.json !== undefined ? JSON.stringify(req.json) : undefined,
+          // Never replay the bearer token to another location (redirects are refused).
+          redirect: 'error',
           signal: AbortSignal.timeout(this.options.timeoutMs),
         });
       } catch {
@@ -166,6 +168,7 @@ export async function tokenRequest(
         'Content-Type': options.json ? 'application/json' : 'application/x-www-form-urlencoded',
       },
       body: options.json ? JSON.stringify(body) : new URLSearchParams(body).toString(),
+      redirect: 'error',
       signal: AbortSignal.timeout(options.timeoutMs),
     });
   } catch {
