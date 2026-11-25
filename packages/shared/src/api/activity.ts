@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { Id, LocalDate, PageQuery, Timestamp } from './common';
+import { Id, LocalDate, PageQuery, ProviderWire, Timestamp } from './common';
 import { EvidenceRef, PeriodSpec, QueryList } from './metrics';
 
 /**
@@ -28,6 +28,7 @@ export const ActivityType = z.enum([
   'pr_closed',
   'review',
   'achievement',
+  'issue',
 ]);
 export type ActivityType = z.infer<typeof ActivityType>;
 
@@ -37,6 +38,8 @@ export const ActivityFilterShape = PageQuery.extend({
   from: DateBound.optional(),
   to: DateBound.optional(),
   repoIds: QueryList(Id, 50).optional(),
+  /** P13: restrict to records from these providers (achievements have none and are kept). */
+  providers: QueryList(ProviderWire, 4).optional(),
   q: z.string().trim().min(1).max(100).optional(),
 });
 
@@ -49,10 +52,15 @@ function filter<T extends z.ZodRawShape>(extra: T) {
 export const ActivityListQuery = filter({});
 export type ActivityListQuery = z.infer<typeof ActivityListQuery>;
 
-export const FeedQuery = filter({ types: QueryList(ActivityType, 6).optional() });
+export const FeedQuery = filter({ types: QueryList(ActivityType, 7).optional() });
 export type FeedQuery = z.infer<typeof FeedQuery>;
 
-export const RepoRef = z.object({ id: Id, fullName: z.string() });
+export const RepoRef = z.object({
+  id: Id,
+  fullName: z.string(),
+  /** P13: `gitlab` repositories are GitLab projects (MRs use `!n`). */
+  provider: ProviderWire.optional(),
+});
 
 export const FeedItem = z.object({
   id: z.string(),
@@ -62,6 +70,8 @@ export const FeedItem = z.object({
   title: z.string(),
   url: z.url().nullable(),
   ref: EvidenceRef,
+  /** Source provider; null for achievements (P13). */
+  provider: ProviderWire.nullable().optional(),
   meta: z.record(z.string(), z.unknown()),
 });
 export type FeedItem = z.infer<typeof FeedItem>;
@@ -163,3 +173,44 @@ export type CommitItem = z.infer<typeof CommitItem>;
 
 export const CommitDetail = CommitItem.extend({ messageBody: z.string().nullable() });
 export type CommitDetail = z.infer<typeof CommitDetail>;
+
+// ── Issues (Jira / Linear, P13 — API_CONTRACT_V2 §22 A-8) ─────────────────────────────────────
+
+export const IssueStatusWire = z.enum(['todo', 'in_progress', 'done', 'cancelled']);
+export type IssueStatusWire = z.infer<typeof IssueStatusWire>;
+export const IssuePriorityWire = z.enum(['urgent', 'high', 'medium', 'low', 'none']);
+export type IssuePriorityWire = z.infer<typeof IssuePriorityWire>;
+
+export const IssueListQuery = filter({
+  status: IssueStatusWire.optional(),
+  sort: z.enum(['-updatedAt', '-completedAt']).default('-updatedAt'),
+});
+export type IssueListQuery = z.infer<typeof IssueListQuery>;
+
+export const IssueItem = z.object({
+  id: Id,
+  ref: EvidenceRef,
+  provider: z.enum(['jira', 'linear']),
+  key: z.string(),
+  title: z.string(),
+  url: z.url().nullable(),
+  status: IssueStatusWire,
+  statusName: z.string().nullable(),
+  priority: IssuePriorityWire,
+  storyPoints: z.number().nullable(),
+  project: z.object({ key: z.string().nullable(), name: z.string().nullable() }),
+  cycleName: z.string().nullable(),
+  labels: z.array(z.string()),
+  createdAt: Timestamp,
+  updatedAt: Timestamp,
+  startedAt: Timestamp.nullable(),
+  completedAt: Timestamp.nullable(),
+  cycleTimeHours: z.number().nullable(),
+});
+export type IssueItem = z.infer<typeof IssueItem>;
+
+export const IssueDetail = IssueItem.extend({
+  canceledAt: Timestamp.nullable(),
+  achievementIds: z.array(Id),
+});
+export type IssueDetail = z.infer<typeof IssueDetail>;

@@ -4,8 +4,8 @@ import { IntegrationMechanism, IntegrationStatus, Provider, SyncTrigger } from '
 
 import { AppException } from '../common/app-exception';
 import { TokenCipher, TokenCipherService } from '../crypto/token-cipher';
-import { limitsFor } from '../entitlements/entitlements';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProviderRegistry, kindOf } from '../providers/provider-registry';
 import { SyncService } from '../sync/sync.service';
 import {
   GitHubAppClient,
@@ -18,7 +18,9 @@ import {
   toIntegrationDto,
   type SafeIntegration,
 } from './integration.mapper';
+import { assertIntegrationSlot } from './integration-slots';
 import { OAuthStateService } from './oauth-state.service';
+import { ProviderConnectService } from './provider-connect.service';
 
 import type { Env } from '../config/env';
 import type {
@@ -28,13 +30,6 @@ import type {
   IntegrationDto,
   SyncRunDto,
 } from '@devimpact/shared';
-
-/** Statuses that occupy the user's integration slot (PRD §6). */
-const SLOT_STATUSES: IntegrationStatus[] = [
-  IntegrationStatus.ACTIVE,
-  IntegrationStatus.SUSPENDED,
-  IntegrationStatus.ERROR,
-];
 
 @Injectable()
 export class IntegrationsService {
@@ -47,6 +42,8 @@ export class IntegrationsService {
     private readonly state: OAuthStateService,
     private readonly cipher: TokenCipherService,
     private readonly sync: SyncService,
+    private readonly registry: ProviderRegistry,
+    private readonly providerConnect: ProviderConnectService,
   ) {}
 
   private get callbackUrl(): string {
@@ -54,7 +51,11 @@ export class IntegrationsService {
   }
 
   private dto(row: SafeIntegration): IntegrationDto {
-    return toIntegrationDto(row, this.github.manageUrl());
+    const manage =
+      row.provider === Provider.GITHUB
+        ? this.github.manageUrl()
+        : this.registry.oauth(kindOf(row.provider) as 'gitlab' | 'jira' | 'linear').manageUrl(row.baseUrl);
+    return toIntegrationDto(row, manage);
   }
 
   async list(userId: string): Promise<IntegrationDto[]> {
@@ -88,15 +89,7 @@ export class IntegrationsService {
         select: { status: true, mechanism: true, _count: { select: { installations: true } } },
       }),
     ]);
-    const limit = limitsFor(user.plan).integrations;
-    const occupied = rows.filter((row) => SLOT_STATUSES.includes(row.status)).length;
-    if (occupied >= limit) {
-      throw new AppException('ENTITLEMENT_REQUIRED', 'Your plan allows one GitHub connection', {
-        entitlement: 'integrations',
-        limit,
-        plan: user.plan.toLowerCase(),
-      });
-    }
+    await assertIntegrationSlot(this.prisma, userId, user.plan, Provider.GITHUB);
     const hasInstallation = rows.some(
       (row) => row.mechanism === IntegrationMechanism.GITHUB_APP && row._count.installations > 0,
     );
@@ -109,9 +102,16 @@ export class IntegrationsService {
   async reconnect(userId: string, id: string): Promise<ConnectGitHubResult> {
     const row = await this.prisma.integration.findFirst({
       where: { id, userId },
-      select: { id: true },
+      select: { id: true, provider: true, baseUrl: true },
     });
     if (!row) throw AppException.notFound('Integration');
+    if (row.provider !== Provider.GITHUB) {
+      return this.providerConnect.authorizeLink(
+        userId,
+        kindOf(row.provider) as 'gitlab' | 'jira' | 'linear',
+        { integrationId: row.id, baseUrl: row.baseUrl ?? undefined },
+      );
+    }
     this.github.assertConfigured();
     return this.authorizeLink(userId, { integrationId: row.id });
   }
@@ -272,16 +272,7 @@ export class IntegrationsService {
           where: { id: userId },
           select: { plan: true },
         });
-        const occupied = await tx.integration.count({
-          where: { userId, provider: Provider.GITHUB, status: { in: SLOT_STATUSES } },
-        });
-        if (occupied >= limitsFor(user.plan).integrations) {
-          throw new AppException('ENTITLEMENT_REQUIRED', 'Your plan allows one GitHub connection', {
-            entitlement: 'integrations',
-            limit: limitsFor(user.plan).integrations,
-            plan: user.plan.toLowerCase(),
-          });
-        }
+        await assertIntegrationSlot(tx, userId, user.plan, Provider.GITHUB);
         targetId = (
           await tx.integration.create({
             data: { userId, provider: Provider.GITHUB },
@@ -345,7 +336,7 @@ export class IntegrationsService {
   async disconnect(userId: string, id: string, purgeData: boolean): Promise<DisconnectResult> {
     const row = await this.prisma.integration.findFirst({
       where: { id, userId },
-      select: { id: true, accessTokenEnc: true },
+      select: { id: true, provider: true, baseUrl: true, accessTokenEnc: true },
     });
     if (!row) throw AppException.notFound('Integration');
 
@@ -356,9 +347,12 @@ export class IntegrationsService {
           row.accessTokenEnc,
           TokenCipher.aad(row.id, 'accessToken'),
         );
-        tokenRevoked = await this.github.revokeToken(token);
+        tokenRevoked =
+          row.provider === Provider.GITHUB
+            ? await this.github.revokeToken(token)
+            : await this.registry.get(row.provider).revokeToken(token, row.baseUrl);
       } catch (error) {
-        this.logger.warn({ integrationId: row.id, err: error }, 'Could not revoke GitHub token');
+        this.logger.warn({ integrationId: row.id, err: error }, 'Could not revoke provider token');
       }
     }
 
@@ -375,6 +369,8 @@ export class IntegrationsService {
           refreshTokenExpiresAt: null,
         },
       });
+      // Linked identities belong to the connection (D-030): freed so they can be linked elsewhere.
+      await tx.providerIdentity.deleteMany({ where: { userId, integrationId: row.id } });
       if (purgeData) {
         // Activity only; sync history stays (DATA_MODEL_V2 §6). Never purged implicitly (DATA-07).
         await tx.pullRequestReview.deleteMany({ where: { userId, integrationId: row.id } });
@@ -392,14 +388,14 @@ export class IntegrationsService {
   async revokeAllTokens(userId: string): Promise<void> {
     const rows = await this.prisma.integration.findMany({
       where: { userId, accessTokenEnc: { not: null } },
-      select: { id: true, accessTokenEnc: true },
+      select: { id: true, provider: true, baseUrl: true, accessTokenEnc: true },
     });
     for (const row of rows) {
       if (!row.accessTokenEnc) continue;
       try {
-        await this.github.revokeToken(
-          this.cipher.decrypt(row.accessTokenEnc, TokenCipher.aad(row.id, 'accessToken')),
-        );
+        const token = this.cipher.decrypt(row.accessTokenEnc, TokenCipher.aad(row.id, 'accessToken'));
+        if (row.provider === Provider.GITHUB) await this.github.revokeToken(token);
+        else await this.registry.get(row.provider).revokeToken(token, row.baseUrl);
       } catch (error) {
         this.logger.warn({ integrationId: row.id, err: error }, 'Could not revoke GitHub token');
       }

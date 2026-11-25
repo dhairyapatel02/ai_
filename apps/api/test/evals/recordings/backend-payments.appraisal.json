@@ -2,9 +2,9 @@
   "persona": "backend-payments",
   "generator": "appraisal",
   "promptId": "appraisal",
-  "promptVersion": 1,
+  "promptVersion": 2,
   "model": "reference-writer",
   "source": "synthetic",
-  "recordedAt": "2026-11-17",
+  "recordedAt": "2026-11-25",
   "text": "{\"executiveSummary\":{\"text\":\"Engineer who merged 12 pull requests across 2 repositories in October 2026.\",\"citations\":[\"PR-acme/ledger#109\"]},\"keyContributions\":[{\"text\":\"Resolved a defect: fix double charge on webhook retry in acme/ledger.\",\"citations\":[\"PR-acme/ledger#109\"],\"title\":\"Fix double charge on webhook retry\"},{\"text\":\"Delivered the change to make payment intent creation idempotent in acme/payments.\",\"citations\":[\"PR-acme/payments#100\"],\"title\":\"Make payment intent creation idempotent\"},{\"text\":\"Improved performance with the change to add composite index for invoice lookups in acme/payments.\",\"citations\":[\"PR-acme/payments#112\"],\"title\":\"Add composite index for invoice lookups\"},{\"text\":\"Improved performance with the change to batch ledger writes to cut lock contention in acme/ledger.\",\"citations\":[\"PR-acme/ledger#103\"],\"title\":\"Batch ledger writes to cut lock contention\"}],\"areasOfImpact\":[{\"text\":\"Sustained improvements to acme/ledger.\",\"citations\":[\"PR-acme/ledger#109\"]},{\"text\":\"Sustained improvements to acme/payments.\",\"citations\":[\"PR-acme/payments#100\"]}],\"growth\":[{\"text\":\"Took on more code review, e.g. \\\"Payment method vaulting\\\".\",\"citations\":[\"REV-acme/payments#505\"]}],\"nextGoals\":[{\"text\":\"Share the design behind the main changes with the team.\"},{\"text\":\"Keep pull requests small and well-tested.\"}]}"
 }

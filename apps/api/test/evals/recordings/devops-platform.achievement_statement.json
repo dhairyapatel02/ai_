@@ -5,6 +5,6 @@
   "promptVersion": 1,
   "model": "reference-writer",
   "source": "synthetic",
-  "recordedAt": "2026-11-17",
+  "recordedAt": "2026-11-25",
   "text": "{\"title\":\"Cut deploy time by caching Docker layers\",\"statement\":\"Improved performance with the change to cut deploy time by caching Docker layers in acme/infra.\",\"category\":\"delivery\",\"citations\":[\"PR-acme/infra#106\"]}"
 }

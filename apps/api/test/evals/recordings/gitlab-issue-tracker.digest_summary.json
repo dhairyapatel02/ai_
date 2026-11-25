@@ -1,0 +1,10 @@
+{
+  "persona": "gitlab-issue-tracker",
+  "generator": "digest_summary",
+  "promptId": "digest-summary",
+  "promptVersion": 1,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-25",
+  "text": "{\"summary\":{\"text\":\"A focused week in Oct 19 – Oct 25, 2026.\",\"citations\":[\"PR-acme/web#103\"]},\"highlights\":[{\"text\":\"Delivered the change to retry webhook deliveries with jitter in acme/web.\",\"citations\":[\"PR-acme/web#103\"]},{\"text\":\"Resolved a defect: fix rounding in proration in acme/web.\",\"citations\":[\"PR-acme/web#109\"]},{\"text\":\"Delivered the change to add idempotency keys to invoice generation in acme/platform/billing-service.\",\"citations\":[\"MR-acme/platform/billing-service!100\"]}]}"
+}

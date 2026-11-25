@@ -1,11 +1,11 @@
 /**
- * Metric catalogue `metrics@2.0.0` and impact score `impact@2.0.0` metadata
+ * Metric catalogue `metrics@2.1.0` (P13 adds the §3.6 issue metrics — MINOR bump, KPI §9) and impact score `impact@2.0.0` metadata
  * (KPI_METHODOLOGY §3, §6). Keys, labels and definitions here are the source of truth for the API
  * (`/metrics/definitions`) and UI copy. Changing a formula, threshold, band or weight is a version
  * bump (§9) and needs a DECISIONS.md entry.
  */
 
-export const METRICS_VERSION = 'metrics@2.0.0';
+export const METRICS_VERSION = 'metrics@2.1.0';
 export const SCORE_VERSION = 'impact@2.0.0';
 
 export const IMPLEMENTED_METRIC_KEYS = [
@@ -35,19 +35,18 @@ export const IMPLEMENTED_METRIC_KEYS = [
   'active_weeks_ratio',
   'commits',
   'longest_active_week_streak',
-] as const;
-export type ImplementedMetricKey = (typeof IMPLEMENTED_METRIC_KEYS)[number];
-
-/** §3.6 — specified but deferred to v2.1 (needs Jira/Linear, D-018). */
-export const DEFERRED_METRIC_KEYS = [
+  // Issues §3.6 (Jira / Linear, P13 — metrics@2.1.0; never in the impact score)
   'issues_completed',
   'story_points_completed',
   'issue_cycle_time_median_hours',
 ] as const;
-export type DeferredMetricKey = (typeof DEFERRED_METRIC_KEYS)[number];
+export type ImplementedMetricKey = (typeof IMPLEMENTED_METRIC_KEYS)[number];
 
-export const METRIC_KEYS = [...IMPLEMENTED_METRIC_KEYS, ...DEFERRED_METRIC_KEYS] as const;
-export type MetricKey = ImplementedMetricKey | DeferredMetricKey;
+/** Specified but not computed. Empty since P13 implemented §3.6 (D-030); kept for the contract. */
+export const DEFERRED_METRIC_KEYS = [] as const;
+
+export const METRIC_KEYS = IMPLEMENTED_METRIC_KEYS;
+export type MetricKey = ImplementedMetricKey;
 
 export const METRIC_SECTIONS = [
   'delivery',
@@ -58,13 +57,17 @@ export const METRIC_SECTIONS = [
 ] as const;
 export type MetricSection = (typeof METRIC_SECTIONS)[number];
 export type MetricSectionOrIssues = MetricSection | 'issues';
+/** KPI page sections: the five code sections + Issues (P13). */
+export const KPI_SECTIONS = [...METRIC_SECTIONS, 'issues'] as const;
+export type KpiSectionKey = (typeof KPI_SECTIONS)[number];
 
-export const SECTION_TITLES: Record<MetricSection, string> = {
+export const SECTION_TITLES: Record<KpiSectionKey, string> = {
   delivery: 'Delivery',
   quality: 'Quality',
   collaboration: 'Collaboration',
   ownership: 'Ownership',
   consistency: 'Consistency',
+  issues: 'Issues',
 };
 
 export type MetricUnit = 'count' | 'hours' | 'ratio' | 'repos' | 'days' | 'weeks';
@@ -444,10 +447,12 @@ export const METRIC_CATALOGUE: readonly MetricMeta[] = [
     unit: 'count',
     minN: 0,
     goodRange: '—',
-    caveats: ['Requires Jira or Linear (v2.1).'],
-    antiGaming: null,
+    caveats: [
+      'Counts issues assigned to you in Jira or Linear when they were completed; cancelled issues are excluded.',
+      'Issue sizes differ between teams — compare with your own history, not with others.',
+    ],
+    antiGaming: 'Not part of the impact score; splitting work into many tiny issues does not raise it.',
     inScore: false,
-    deferred: true,
     direction: 'neutral',
   }),
   m({
@@ -459,10 +464,12 @@ export const METRIC_CATALOGUE: readonly MetricMeta[] = [
     unit: 'count',
     minN: 0,
     goodRange: '—',
-    caveats: ['Requires Jira or Linear (v2.1).'],
-    antiGaming: null,
+    caveats: [
+      'Jira story points field or Linear estimate; issues without an estimate are ignored (n = issues with points).',
+      'Point scales are team-specific and not comparable across teams.',
+    ],
+    antiGaming: 'Not part of the impact score; inflating estimates changes nothing that is scored.',
     inScore: false,
-    deferred: true,
     direction: 'neutral',
   }),
   m({
@@ -474,10 +481,12 @@ export const METRIC_CATALOGUE: readonly MetricMeta[] = [
     unit: 'hours',
     minN: 3,
     goodRange: '—',
-    caveats: ['Requires Jira or Linear (v2.1).'],
-    antiGaming: null,
+    caveats: [
+      'From the first move to an in-progress status to completion; issues never started are skipped.',
+      'Waiting on others counts too — read it as flow, not effort.',
+    ],
+    antiGaming: 'Not part of the impact score.',
     inScore: false,
-    deferred: true,
     direction: 'lower_is_better',
   }),
 ];

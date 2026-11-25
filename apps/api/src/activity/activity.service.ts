@@ -12,6 +12,9 @@ import {
   type CommitItem,
   type FeedItem,
   type FeedQuery,
+  type IssueDetail,
+  type IssueItem,
+  type IssueListQuery,
   type PageMeta,
   type PullRequestDetail,
   type PullRequestListItem,
@@ -21,10 +24,19 @@ import {
   type ReviewStateWire,
 } from '@devimpact/shared';
 import { Injectable } from '@nestjs/common';
-import { PRState, Prisma, type ReviewState } from '@prisma/client';
+import { IssueStatus, PRState, Prisma, type Provider, type ReviewState } from '@prisma/client';
 
 import { AppException } from '../common/app-exception';
-import { commitRef, commitUrl, prRef, reviewRef, safeUrl } from '../common/evidence-refs';
+import {
+  REPO_PROVIDER,
+  commitRef,
+  commitUrl,
+  issueRef,
+  prRef,
+  repoRef,
+  reviewRef,
+  safeUrl,
+} from '../common/evidence-refs';
 import {
   afterCursor,
   decodeCursor,
@@ -37,7 +49,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 
 type Range = { gte?: Date; lt?: Date } | undefined;
-type Filter = Pick<ActivityListQuery, 'period' | 'from' | 'to' | 'repoIds' | 'q'>;
+type Filter = Pick<ActivityListQuery, 'period' | 'from' | 'to' | 'repoIds' | 'providers' | 'q'>;
 
 const FEED_TYPES: ActivityType[] = [
   'commit',
@@ -46,8 +58,12 @@ const FEED_TYPES: ActivityType[] = [
   'pr_closed',
   'review',
   'achievement',
+  'issue',
 ];
-const REPO_SELECT = { select: { id: true, fullName: true, htmlUrl: true } } as const;
+const REPO_SELECT = {
+  select: { id: true, fullName: true, htmlUrl: true, ...REPO_PROVIDER },
+} as const;
+const ISSUE_PROVIDERS = ['jira', 'linear'] as const;
 
 const prStateWire = (state: PRState) => state.toLowerCase() as 'open' | 'merged' | 'closed';
 const reviewStateWire = (state: ReviewState) => state.toLowerCase() as ReviewStateWire;
@@ -105,7 +121,21 @@ export class ActivityService {
   }
 
   private repoWhere(filter: Filter): Prisma.RepositoryWhereInput {
-    return { included: true, ...(filter.repoIds ? { id: { in: filter.repoIds } } : {}) };
+    return {
+      included: true,
+      ...(filter.repoIds ? { id: { in: filter.repoIds } } : {}),
+      ...(filter.providers
+        ? { integration: { provider: { in: filter.providers.map((p) => p.toUpperCase() as Provider) } } }
+        : {}),
+    };
+  }
+
+  /** Issue providers selected by the filter (all when no provider filter is set). */
+  private issueProviders(filter: Filter): Provider[] {
+    const wanted = filter.providers ?? [...ISSUE_PROVIDERS];
+    return wanted
+      .filter((p): p is (typeof ISSUE_PROVIDERS)[number] => (ISSUE_PROVIDERS as readonly string[]).includes(p))
+      .map((p) => p.toUpperCase() as Provider);
   }
 
   private titleWhere(q: string | undefined) {
@@ -296,21 +326,57 @@ export class ActivityService {
             take,
           })
         : [],
-      types.has('achievement') && !query.repoIds?.length
+      types.has('achievement') && !query.repoIds?.length && !query.providers?.length
         ? this.achievementFeed(userId, timezone, range, key, query.q, take)
         : [],
     ]);
+    // Completed issues (Jira / Linear, P13): no repository, so a repository filter excludes them.
+    const issueProviders = this.issueProviders(query);
+    const issues =
+      types.has('issue') && !query.repoIds?.length && issueProviders.length > 0
+        ? await this.prisma.issue.findMany({
+            where: {
+              userId,
+              status: IssueStatus.DONE,
+              completedAt: { not: null },
+              integration: { provider: { in: issueProviders } },
+              ...(query.q ? { title } : {}),
+              AND: [range ? { completedAt: range } : {}, feedAfter('completedAt', 'issue', key)],
+            },
+            include: { integration: { select: { provider: true } } },
+            orderBy: order('completedAt'),
+            take,
+          })
+        : [];
 
     const items: FeedItem[] = [
-      ...achievements,
+      ...achievements.map((a) => ({ ...a, provider: null })),
+      ...issues.map((i) => ({
+        id: `issue:${i.id}`,
+        type: 'issue' as const,
+        occurredAt: (i.completedAt ?? i.updatedAtRemote).toISOString(),
+        repo: null,
+        title: i.title,
+        url: safeUrl(i.url),
+        ref: issueRef(i.integration.provider, i.key),
+        provider: i.integration.provider.toLowerCase() as FeedItem['provider'],
+        meta: {
+          recordId: i.id,
+          key: i.key,
+          status: i.status.toLowerCase(),
+          storyPoints: i.storyPoints,
+          project: i.projectName,
+        },
+      })),
       ...commits.map((c) => ({
         id: `commit:${c.id}`,
         type: 'commit' as const,
         occurredAt: c.authoredAt.toISOString(),
-        repo: { id: c.repository.id, fullName: c.repository.fullName },
+        repo: repoRef(c.repository),
         title: c.messageHeadline,
-        url: commitUrl(c.repository.htmlUrl, c.sha),
+        url: commitUrl(c.repository.htmlUrl, c.sha, c.repository.integration.provider),
         ref: commitRef(c.repository.fullName, c.sha),
+        provider: repoRef(c.repository).provider,
         meta: { recordId: c.id, sha: c.sha, additions: c.additions, deletions: c.deletions },
       })),
       ...(
@@ -324,10 +390,11 @@ export class ActivityService {
           id: `${type}:${p.id}`,
           type,
           occurredAt: at(p).toISOString(),
-          repo: { id: p.repository.id, fullName: p.repository.fullName },
+          repo: repoRef(p.repository),
           title: p.title,
           url: safeUrl(p.url),
-          ref: prRef(p.repository.fullName, p.number),
+          ref: prRef(p.repository.fullName, p.number, p.repository.integration.provider),
+          provider: repoRef(p.repository).provider,
           meta: {
             recordId: p.id,
             number: p.number,
@@ -342,10 +409,15 @@ export class ActivityService {
         id: `review:${r.id}`,
         type: 'review' as const,
         occurredAt: r.submittedAt.toISOString(),
-        repo: { id: r.pullRequest.repository.id, fullName: r.pullRequest.repository.fullName },
+        repo: repoRef(r.pullRequest.repository),
         title: r.pullRequest.title,
         url: safeUrl(r.pullRequest.url),
-        ref: reviewRef(r.pullRequest.repository.fullName, r.pullRequest.number),
+        ref: reviewRef(
+          r.pullRequest.repository.fullName,
+          r.pullRequest.number,
+          r.pullRequest.repository.integration.provider,
+        ),
+        provider: repoRef(r.pullRequest.repository).provider,
         meta: {
           recordId: r.id,
           pullRequestId: r.pullRequest.id,
@@ -395,8 +467,8 @@ export class ActivityService {
     const latest = p.reviews[0];
     return {
       id: p.id,
-      ref: prRef(p.repository.fullName, p.number),
-      repo: { id: p.repository.id, fullName: p.repository.fullName },
+      ref: prRef(p.repository.fullName, p.number, p.repository.integration.provider),
+      repo: repoRef(p.repository),
       number: p.number,
       title: p.title,
       url: safeUrl(p.url),
@@ -540,7 +612,7 @@ export class ActivityService {
         title: string;
         url: string | null;
         authorLogin: string | null;
-        repository: { id: string; fullName: string };
+        repository: { id: string; fullName: string; integration?: { provider: string } | null };
       };
     },
     timezone: string,
@@ -548,10 +620,10 @@ export class ActivityService {
     const repo = r.pullRequest.repository;
     return {
       id: r.id,
-      ref: reviewRef(repo.fullName, r.pullRequest.number),
+      ref: reviewRef(repo.fullName, r.pullRequest.number, repo.integration?.provider),
       pullRequest: {
         id: r.pullRequest.id,
-        repo: { id: repo.id, fullName: repo.fullName },
+        repo: repoRef(repo),
         number: r.pullRequest.number,
         title: r.pullRequest.title,
         url: safeUrl(r.pullRequest.url),
@@ -613,7 +685,7 @@ export class ActivityService {
     return {
       id: c.id,
       ref: commitRef(c.repository.fullName, c.sha),
-      repo: { id: c.repository.id, fullName: c.repository.fullName },
+      repo: repoRef(c.repository),
       sha: c.sha,
       messageHeadline: c.messageHeadline,
       authoredAt: c.authoredAt.toISOString(),
@@ -621,7 +693,7 @@ export class ActivityService {
       deletions: c.deletions,
       branch: c.branch,
       associatedPrNumber: c.associatedPrNumber,
-      url: commitUrl(c.repository.htmlUrl, c.sha),
+      url: commitUrl(c.repository.htmlUrl, c.sha, c.repository.integration.provider),
     };
   }
 
@@ -654,5 +726,86 @@ export class ActivityService {
     });
     if (!row) throw AppException.notFound('Commit');
     return { ...this.commitItem(row), messageBody: row.messageBody };
+  }
+
+  // ── Issues (Jira / Linear, P13) ────────────────────────────────────────────────────────
+
+  private issueItem(
+    i: Prisma.IssueGetPayload<{ include: { integration: { select: { provider: true } } } }>,
+    timezone: string,
+  ): IssueItem {
+    return {
+      id: i.id,
+      ref: issueRef(i.integration.provider, i.key),
+      provider: i.integration.provider === 'LINEAR' ? 'linear' : 'jira',
+      key: i.key,
+      title: i.title,
+      url: safeUrl(i.url),
+      status: i.status.toLowerCase() as IssueItem['status'],
+      statusName: i.statusName,
+      priority: i.priority.toLowerCase() as IssueItem['priority'],
+      storyPoints: i.storyPoints,
+      project: { key: i.projectKey, name: i.projectName },
+      cycleName: i.cycleName,
+      labels: i.labels,
+      createdAt: i.createdAtRemote.toISOString(),
+      updatedAt: i.updatedAtRemote.toISOString(),
+      startedAt: i.startedAt?.toISOString() ?? null,
+      completedAt: i.completedAt?.toISOString() ?? null,
+      cycleTimeHours:
+        i.startedAt && i.completedAt && i.startedAt <= i.completedAt
+          ? businessHours(i.startedAt, i.completedAt, timezone)
+          : null,
+    };
+  }
+
+  async issues(userId: string, query: IssueListQuery): Promise<{ items: IssueItem[]; meta: PageMeta }> {
+    const timezone = await this.timezoneOf(userId);
+    const range = await this.range(userId, query, timezone);
+    const providers = this.issueProviders(query);
+    if (providers.length === 0 || query.repoIds?.length) {
+      return { items: [], meta: { nextCursor: null, hasMore: false } };
+    }
+    const field = query.sort === '-completedAt' ? 'completedAt' : 'updatedAtRemote';
+    const rows = await this.prisma.issue.findMany({
+      where: {
+        userId,
+        integration: { provider: { in: providers } },
+        ...(query.status ? { status: query.status.toUpperCase() as IssueStatus } : {}),
+        ...(query.q
+          ? {
+              OR: [
+                { title: this.titleWhere(query.q) },
+                { key: { equals: query.q.toUpperCase() } },
+              ],
+            }
+          : {}),
+        ...(field === 'completedAt' ? { completedAt: { not: null } } : {}),
+        ...(range ? { [field]: range } : {}),
+        ...afterCursor(field, decodeCursor(query.cursor)),
+      },
+      include: { integration: { select: { provider: true } } },
+      orderBy: [{ [field]: 'desc' }, { id: 'desc' }],
+      take: query.limit + 1,
+    });
+    const page = toPage(rows, query.limit, (row) =>
+      field === 'completedAt' ? (row.completedAt ?? row.updatedAtRemote) : row.updatedAtRemote,
+    );
+    return { meta: page.meta, items: page.items.map((i) => this.issueItem(i, timezone)) };
+  }
+
+  async issue(userId: string, id: string): Promise<IssueDetail> {
+    const timezone = await this.timezoneOf(userId);
+    const row = await this.prisma.issue.findFirst({
+      where: { id, userId },
+      include: { integration: { select: { provider: true } } },
+    });
+    if (!row) throw AppException.notFound('Issue');
+    return {
+      ...this.issueItem(row, timezone),
+      canceledAt: row.canceledAt?.toISOString() ?? null,
+      // Achievement evidence links PRs / commits / reviews only (P12 CHECK); none for issues yet.
+      achievementIds: [],
+    };
   }
 }

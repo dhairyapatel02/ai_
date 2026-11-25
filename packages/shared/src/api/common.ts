@@ -121,6 +121,9 @@ export const IntegrationStatus = z.enum([
   'error',
 ]);
 export type IntegrationStatus = z.infer<typeof IntegrationStatus>;
+/** Data-source providers (P13). */
+export const ProviderWire = z.enum(['github', 'gitlab', 'jira', 'linear']);
+export type ProviderWire = z.infer<typeof ProviderWire>;
 export const PlanWire = z.enum(['free', 'pro', 'team', 'enterprise']);
 export type PlanWire = z.infer<typeof PlanWire>;
 export const PeriodTypeWire = z.enum(['month', 'quarter', 'half', 'year']);

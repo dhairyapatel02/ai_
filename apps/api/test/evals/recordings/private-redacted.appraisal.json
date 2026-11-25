@@ -2,9 +2,9 @@
   "persona": "private-redacted",
   "generator": "appraisal",
   "promptId": "appraisal",
-  "promptVersion": 1,
+  "promptVersion": 2,
   "model": "reference-writer",
   "source": "synthetic",
-  "recordedAt": "2026-11-17",
+  "recordedAt": "2026-11-25",
   "text": "{\"executiveSummary\":{\"text\":\"Engineer who merged 4 pull requests across 2 repositories in October 2026.\",\"citations\":[\"PR-private/repo-1#106\"]},\"keyContributions\":[{\"text\":\"Strengthened security: harden file type validation in private/repo-1.\",\"citations\":[\"PR-private/repo-1#106\"],\"title\":\"Harden file type validation\"},{\"text\":\"Delivered the change to build deal-room document upload in private/repo-1.\",\"citations\":[\"PR-private/repo-1#100\"],\"title\":\"Build deal-room document upload\"},{\"text\":\"Delivered the change to add SDK pagination helpers in acme/public-sdk.\",\"citations\":[\"PR-acme/public-sdk#103\"],\"title\":\"Add SDK pagination helpers\"},{\"text\":\"Delivered the change to publish SDK changelog automation in acme/public-sdk.\",\"citations\":[\"PR-acme/public-sdk#109\"],\"title\":\"Publish SDK changelog automation\"}],\"areasOfImpact\":[{\"text\":\"Sustained improvements to private/repo-1.\",\"citations\":[\"PR-private/repo-1#106\"]},{\"text\":\"Sustained improvements to acme/public-sdk.\",\"citations\":[\"PR-acme/public-sdk#103\"]}],\"growth\":[{\"text\":\"Took on more code review, e.g. \\\"SDK retries\\\".\",\"citations\":[\"REV-private/repo-1#501\"]}],\"nextGoals\":[{\"text\":\"Share the design behind the main changes with the team.\"},{\"text\":\"Keep pull requests small and well-tested.\"}]}"
 }

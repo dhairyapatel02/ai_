@@ -84,7 +84,25 @@ describe('Account data: export, deletion, entitlements (integration)', () => {
     const commit = await f.commit(user.id, gh.id);
     const review = await f.review(user.id, gh.id);
     await t.prisma.issue.create({
-      data: { userId: user.id, integrationId: gh.id, title: 'Issue', timestamp: new Date() },
+      data: {
+        userId: user.id,
+        integrationId: gh.id,
+        externalId: 'issue-1',
+        key: 'PAY-1',
+        title: 'Issue',
+        createdAtRemote: new Date(),
+        updatedAtRemote: new Date(),
+      },
+    });
+    await t.prisma.providerIdentity.create({
+      data: {
+        userId: user.id,
+        integrationId: gh.id,
+        provider: 'GITHUB',
+        kind: 'EMAIL',
+        value: `${user.id}@example.test`,
+        source: 'MANUAL',
+      },
     });
     await t.prisma.syncRun.create({
       data: { userId: user.id, integrationId: gh.id, trigger: 'MANUAL', kind: 'INCREMENTAL' },
@@ -329,13 +347,14 @@ describe('Account data: export, deletion, entitlements (integration)', () => {
       expect(res.body.data).toEqual({
         plan: 'free',
         limits: {
-          integrations: 1,
+          integrations: 2,
+          integrationsPerProvider: 1,
           historyMonths: 12,
           aiGenerationsPerMonth: 15,
           aiQuickPerMonth: 100,
           weeklyDigest: true,
         },
-        usage: { integrations: 0 },
+        usage: { integrations: 0, byProvider: {} },
       });
     });
 

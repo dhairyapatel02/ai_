@@ -3,7 +3,9 @@ import {
   IMPACT_DIMENSIONS,
   IMPLEMENTED_METRIC_KEYS,
   METRIC_CATALOGUE,
-  METRIC_SECTIONS,
+  KPI_SECTIONS,
+  PROVIDER_KINDS,
+  type ProviderBreakdownResponse,
   METRICS_VERSION,
   PeriodError,
   SCORE_VERSION,
@@ -200,23 +202,67 @@ export class MetricsService {
 
   async kpis(userId: string, spec?: string): Promise<KpisResponse> {
     const { period } = await this.resolve(userId, spec);
-    const { current, previous, previousPeriod, comparison } = await this.withComparison(
-      userId,
-      period,
-    );
+    const [{ current, previous, previousPeriod, comparison }, issuesAvailable] = await Promise.all([
+      this.withComparison(userId, period),
+      this.issuesAvailable(userId),
+    ]);
     return {
       period,
       previousPeriod,
       comparison,
-      sections: METRIC_SECTIONS.map((section) => ({
+      sections: KPI_SECTIONS.map((section) => ({
         key: section,
         title: SECTION_TITLES[section],
         metrics: METRIC_CATALOGUE.filter((m) => m.section === section && !m.deferred).map((m) =>
           this.metricValue(m.key as ImplementedMetricKey, current, previous),
         ),
+        ...(section === 'issues' ? { available: issuesAvailable } : {}),
       })),
       impactStatus: current.inputs.status,
       metricsVersion: METRICS_VERSION,
+    };
+  }
+
+  /** Issues section is "available" once Jira / Linear is connected or issues exist (P13). */
+  private async issuesAvailable(userId: string): Promise<boolean> {
+    const [trackers, issues] = await Promise.all([
+      this.prisma.integration.count({
+        where: { userId, provider: { in: ['JIRA', 'LINEAR'] }, status: { not: 'DISCONNECTED' } },
+      }),
+      this.prisma.issue.count({ where: { userId }, take: 1 }),
+    ]);
+    return trackers > 0 || issues > 0;
+  }
+
+  /** `GET /metrics/providers?period=` — per-provider totals from the daily rollups (P13, A-8). */
+  async providers(userId: string, spec?: string): Promise<ProviderBreakdownResponse> {
+    const { period, timezone } = await this.resolve(userId, spec);
+    const rows = await this.repo.snapshots(userId, timezone, period.startDate, period.endDate);
+    const totals = new Map<string, ProviderBreakdownResponse['providers'][number]>();
+    for (const row of rows) {
+      const byProvider = (row.byProvider ?? {}) as Record<string, Partial<Record<string, number>>>;
+      for (const [provider, c] of Object.entries(byProvider)) {
+        if (!(PROVIDER_KINDS as readonly string[]).includes(provider)) continue;
+        const t = totals.get(provider) ?? {
+          provider: provider as ProviderBreakdownResponse['providers'][number]['provider'],
+          commits: 0,
+          prsMerged: 0,
+          prsReviewed: 0,
+          issuesCompleted: 0,
+          storyPoints: 0,
+        };
+        t.commits += c.commits ?? 0;
+        t.prsMerged += c.prsMerged ?? 0;
+        t.prsReviewed += c.prsReviewed ?? 0;
+        t.issuesCompleted += c.issuesCompleted ?? 0;
+        t.storyPoints = Math.round((t.storyPoints + (c.storyPoints ?? 0)) * 100) / 100;
+        totals.set(provider, t);
+      }
+    }
+    const order = PROVIDER_KINDS as readonly string[];
+    return {
+      period,
+      providers: [...totals.values()].sort((a, b) => order.indexOf(a.provider) - order.indexOf(b.provider)),
     };
   }
 

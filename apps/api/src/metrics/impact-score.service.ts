@@ -56,6 +56,7 @@ export class ImpactScoreService {
       userId,
       SCORE_VERSION,
       timezone,
+      METRICS_VERSION,
       periods.map((p) => ({
         periodType: toPeriodTypeEnum(p.type),
         startDate: p.startDate,

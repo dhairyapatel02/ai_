@@ -2,9 +2,9 @@
   "persona": "newcomer-sparse",
   "generator": "resume",
   "promptId": "resume",
-  "promptVersion": 1,
+  "promptVersion": 2,
   "model": "reference-writer",
   "source": "synthetic",
-  "recordedAt": "2026-11-17",
+  "recordedAt": "2026-11-25",
   "text": "{\"summary\":{\"text\":\"Engineer who merged 2 pull requests across 1 repository in October 2026.\",\"citations\":[\"PR-acme/api#103\"]},\"bullets\":[{\"text\":\"Delivered the change to add loading state to profile page in acme/api.\",\"citations\":[\"PR-acme/api#103\"],\"theme\":\"Feature\"},{\"text\":\"Resolved a defect: fix typo in signup email copy in acme/api.\",\"citations\":[\"PR-acme/api#100\"],\"theme\":\"Bugfix\"},{\"text\":\"Reviewed the change \\\"Profile avatar upload\\\" in acme/api, giving the author detailed feedback.\",\"citations\":[\"REV-acme/api#500\"],\"theme\":\"acme/api\"}]}"
 }

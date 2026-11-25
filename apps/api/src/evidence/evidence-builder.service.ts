@@ -26,7 +26,21 @@ import {
 
 import type { ImpactInputs } from '../metrics/score-inputs';
 
-const REPO_SELECT = { select: { fullName: true, isPrivate: true, htmlUrl: true } } as const;
+const REPO_SELECT = {
+  select: { fullName: true, isPrivate: true, htmlUrl: true, integration: { select: { provider: true } } },
+} as const;
+/** Prisma repository row → pack `RepoRecord` (provider only for GitLab, so GitHub packs stay identical). */
+const toRepo = (r: {
+  fullName: string;
+  isPrivate: boolean;
+  htmlUrl: string | null;
+  integration: { provider: string };
+}) => ({
+  fullName: r.fullName,
+  isPrivate: r.isPrivate,
+  htmlUrl: r.htmlUrl,
+  ...(r.integration.provider === 'GITLAB' ? { provider: 'GITLAB' } : {}),
+});
 const PR_SELECT = {
   id: true,
   number: true,
@@ -59,7 +73,7 @@ const ITEM_INPUTS = {
 } as unknown as ImpactInputs;
 
 /** Volume caps for one load (heavy users); ranking happens on what is loaded, newest first. */
-const LOAD_CAPS = { prs: 600, reviews: 600, commits: 400 };
+const LOAD_CAPS = { prs: 600, reviews: 600, commits: 400, issues: 300 };
 
 export interface PeriodContext {
   period: ResolvedPeriod;
@@ -200,7 +214,7 @@ export class EvidenceBuilder {
         deletions: c.deletions,
         associatedPrNumber: null,
         updatedAt: c.authoredAt,
-        repo: c.repository,
+        repo: toRepo(c.repository),
       });
       title = c.messageHeadline;
     }
@@ -237,7 +251,12 @@ export class EvidenceBuilder {
     isRevert: boolean;
     updatedAtRemote: Date | null;
     syncedAt: Date;
-    repository: { fullName: string; isPrivate: boolean; htmlUrl: string | null };
+    repository: {
+      fullName: string;
+      isPrivate: boolean;
+      htmlUrl: string | null;
+      integration: { provider: string };
+    };
   }): PrRecord {
     return {
       id: pr.id,
@@ -258,7 +277,7 @@ export class EvidenceBuilder {
       revertedAt: pr.revertedAt,
       isRevert: pr.isRevert,
       updatedAt: pr.updatedAtRemote ?? pr.mergedAt ?? pr.createdAtRemote,
-      repo: pr.repository,
+      repo: toRepo(pr.repository),
     };
   }
 
@@ -269,7 +288,7 @@ export class EvidenceBuilder {
     end: Date,
   ): Promise<EvidenceRecords> {
     const range = { gte: start, lt: end };
-    const [prs, reviews, commits, achievements] = await Promise.all([
+    const [prs, reviews, commits, achievements, issues] = await Promise.all([
       this.prisma.pullRequest.findMany({
         where: {
           userId,
@@ -334,6 +353,28 @@ export class EvidenceBuilder {
         take: LOAD_CAPS.commits,
       }),
       this.achievements.listForPeriod(userId, period.startDate, period.endDate),
+      // Jira / Linear issues completed in the period (P13).
+      this.prisma.issue.findMany({
+        where: { userId, status: 'DONE', completedAt: range },
+        select: {
+          id: true,
+          key: true,
+          title: true,
+          url: true,
+          status: true,
+          priority: true,
+          storyPoints: true,
+          labels: true,
+          projectName: true,
+          cycleName: true,
+          completedAt: true,
+          updatedAtRemote: true,
+          updatedAt: true,
+          integration: { select: { provider: true } },
+        },
+        orderBy: [{ completedAt: 'desc' }, { id: 'asc' }],
+        take: LOAD_CAPS.issues,
+      }),
     ]);
     return {
       prs: prs.map((pr) => this.toPr(pr)),
@@ -351,7 +392,7 @@ export class EvidenceBuilder {
           url: r.pullRequest.url,
           authorLogin: r.pullRequest.authorLogin,
         },
-        repo: r.pullRequest.repository,
+        repo: toRepo(r.pullRequest.repository),
       })),
       commits: commits.map((c) => ({
         id: c.id,
@@ -366,6 +407,26 @@ export class EvidenceBuilder {
         repo: c.repository,
       })),
       achievements,
+      ...(issues.length > 0
+        ? {
+            issues: issues.map((i) => ({
+              id: i.id,
+              provider: i.integration.provider === 'LINEAR' ? ('LINEAR' as const) : ('JIRA' as const),
+              key: i.key,
+              title: i.title,
+              url: i.url,
+              status: i.status,
+              priority: i.priority,
+              storyPoints: i.storyPoints,
+              labels: i.labels,
+              projectName: i.projectName,
+              cycleName: i.cycleName,
+              completedAt: i.completedAt,
+              updatedAtRemote: i.updatedAtRemote,
+              updatedAt: i.updatedAt,
+            })),
+          }
+        : {}),
     };
   }
 }

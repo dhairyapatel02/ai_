@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { Id, IntegrationStatus, QueryBoolean, Timestamp } from './common';
+import { Id, IntegrationStatus, ProviderWire, QueryBoolean, Timestamp } from './common';
 import { SyncRunDto } from './sync';
 
 /** API_CONTRACT_V2 §3.5 / §6. Tokens are never part of any DTO. */
@@ -13,9 +13,26 @@ export const InstallationDto = z.object({
 });
 export type InstallationDto = z.infer<typeof InstallationDto>;
 
+/** Jira Cloud site the integration reads (accessible resources). */
+export const JiraSiteDto = z.object({ id: z.string(), name: z.string(), url: z.url() });
+export type JiraSiteDto = z.infer<typeof JiraSiteDto>;
+
 export const IntegrationDto = z.object({
   id: Id,
-  provider: z.literal('github'),
+  provider: ProviderWire,
+  /** `code` = repositories/PRs/commits (GitHub, GitLab); `issues` = Jira, Linear (P13). */
+  category: z.enum(['code', 'issues']).default('code'),
+  /** Self-managed GitLab origin; null = provider default (P13). */
+  baseUrl: z.url().nullable().default(null),
+  /** Jira: sites read + the story points field in use (detected or chosen). Linear: workspace. */
+  settings: z
+    .object({
+      sites: z.array(JiraSiteDto).optional(),
+      storyPointsField: z.string().nullable().optional(),
+      storyPointsFieldDetected: z.string().nullable().optional(),
+      workspace: z.object({ id: z.string(), name: z.string(), urlKey: z.string() }).optional(),
+    })
+    .default({}),
   status: IntegrationStatus,
   statusReason: z.string().nullable(),
   externalLogin: z.string().nullable(),
@@ -71,6 +88,100 @@ export type GitHubCallbackInput = z.infer<typeof GitHubCallbackInput>;
 /** `GET /integrations/:id`. */
 export const IntegrationDetail = IntegrationDto.extend({ currentRun: SyncRunDto.nullable() });
 export type IntegrationDetail = z.infer<typeof IntegrationDetail>;
+
+// ── GitLab / Jira / Linear OAuth (P13, API_CONTRACT_V2 §22 A-8) ────────────────────────────────
+
+export const OAuthProviderWire = z.enum(['gitlab', 'jira', 'linear']);
+export type OAuthProviderWire = z.infer<typeof OAuthProviderWire>;
+export const ProviderParams = z.strictObject({ provider: OAuthProviderWire });
+
+/** `https://host[:port]` only — no path, query, credentials or fragment (SSRF guard, D-030). */
+export const SelfManagedBaseUrl = z
+  .url({ protocol: /^https$/ })
+  .max(200)
+  .refine(
+    (value) => {
+      try {
+        const u = new URL(value);
+        return (
+          u.username === '' &&
+          u.password === '' &&
+          (u.pathname === '/' || u.pathname === '') &&
+          u.search === '' &&
+          u.hash === ''
+        );
+      } catch {
+        return false;
+      }
+    },
+    { message: 'Use the instance origin, e.g. https://gitlab.example.com' },
+  );
+
+/** `POST /integrations/:provider/connect`. `baseUrl` = self-managed GitLab (allow-listed). */
+export const ConnectProviderInput = z.strictObject({
+  returnTo: ConnectReturnTo.optional(),
+  baseUrl: SelfManagedBaseUrl.optional(),
+});
+export type ConnectProviderInput = z.infer<typeof ConnectProviderInput>;
+
+export const ConnectProviderResult = z.object({
+  url: z.url(),
+  mode: z.literal('authorize'),
+  expiresAt: Timestamp,
+});
+export type ConnectProviderResult = z.infer<typeof ConnectProviderResult>;
+
+/** `POST /integrations/:provider/callback` — the web callback page forwards `code` + `state`. */
+export const ProviderCallbackInput = z
+  .strictObject({
+    code: z.string().min(1).max(2048).optional(),
+    state: z.string().min(1).max(1024),
+    error: z.string().max(100).optional(),
+    errorDescription: z.string().max(500).optional(),
+  })
+  .refine((v) => v.code !== undefined || v.error !== undefined, {
+    message: 'code is required',
+    path: ['code'],
+  });
+export type ProviderCallbackInput = z.infer<typeof ProviderCallbackInput>;
+
+export const ProviderCallbackResult = z.object({
+  integration: IntegrationDto,
+  syncRun: SyncRunDto,
+  returnTo: z.string().nullable(),
+});
+export type ProviderCallbackResult = z.infer<typeof ProviderCallbackResult>;
+
+/** `PATCH /integrations/:id` (P13): Jira story points field override (`null` = auto-detect). */
+export const UpdateIntegrationInput = z.strictObject({
+  storyPointsField: z
+    .string()
+    .regex(/^customfield_\d{1,10}$/)
+    .nullable()
+    .optional(),
+});
+export type UpdateIntegrationInput = z.infer<typeof UpdateIntegrationInput>;
+
+// ── Identity linking (P13, D-030) ──────────────────────────────────────────────────────────
+
+export const IdentityDto = z.object({
+  id: Id,
+  integrationId: Id,
+  provider: ProviderWire,
+  kind: z.enum(['account', 'username', 'email']),
+  value: z.string(),
+  source: z.enum(['provider', 'manual']),
+  verified: z.boolean(),
+  createdAt: Timestamp,
+});
+export type IdentityDto = z.infer<typeof IdentityDto>;
+
+export const AddIdentityInput = z.strictObject({
+  email: z.email().max(254).transform((v) => v.trim().toLowerCase()),
+});
+export type AddIdentityInput = z.infer<typeof AddIdentityInput>;
+
+export const IdentityParams = z.strictObject({ id: Id, identityId: Id });
 
 /**
  * `POST /integrations/github/callback` result: `201` connected (backfill queued) or `200` org

@@ -226,6 +226,8 @@ subtle motion; credible in front of a manager. Binding input for P04's design sy
 P06 still builds the `ActivityProvider` abstraction. Issue metrics (`issues_completed`,
 `story_points_completed`) are specified but deferred. ISSUES GAP-10 → won't fix in v2.0.
 **ADR:** [ADR-0014](blueprint/adr/ADR-0014-product-scope-v2.md)
+**Amended by [D-029](#d-029--phase-13-pulled-into-v20-amends-d-018--confirmed--p13--user-decision)
+(2026-11-25): P13 now runs in v2.0, before P14.**
 
 ### D-019 · Time zones and period semantics · CONFIRMED · P03
 **Summary:** every user has an IANA timezone (default UTC, prefilled at onboarding); periods are
@@ -761,3 +763,17 @@ Within D-007/D-009/D-014/D-019/D-020, PRD §5.5/§6 and API_CONTRACT §5/§15–
 *Consequences:* P14 load/security-tests the public unsubscribe endpoint, `/me/export`, `DELETE /me`
 and the digest fan-out (see PROGRESS P12 handoff), adds DigestDelivery retention (OPS-18) and
 decides GAP-19 with the live eval.
+
+### D-029 · Phase 13 pulled into v2.0 (amends D-018) · CONFIRMED · P13 · **USER DECISION**
+**Question (asked at the start of P13, 2026-11-25):** D-018 moved Phase 13 to v2.1 and the P13
+blueprint amendment said not to start it before v2.0 is released. Should we (a) reverse D-018 and
+pull P13 into v2.0 before P14, or (b) run it as the first v2.1 phase after `v2.0.0` is tagged?
+**User answer:** "(a) Pull into v2.0".
+**Summary:** GitLab, Jira and Linear ship in v2.0. Order becomes P12 → **P13** → P14 → P15; P14's
+prerequisite is "P13 merged" (README phase overview + dependency graph updated). P14 hardens,
+load-tests and security-tests the new providers too (webhook endpoints, token refresh, per-provider
+sync budgets); P15 documents and releases them. P14/P15 scope is otherwise unchanged. ISSUES GAP-10
+is reopened for v2.0 and fixed by P13; KPI_METHODOLOGY §3.6 issue metrics are implemented in P13.
+P15 no longer carries P13 into `ROADMAP_V2_1.md` (manager views, shareable links and the other
+v2.1 items stay there).
+**Supersedes:** D-018's "Out — v2.1" (the ADR-0014 scope table is read with this amendment).

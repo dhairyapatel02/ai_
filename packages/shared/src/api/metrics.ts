@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
 import {
-  DEFERRED_METRIC_KEYS,
   IMPACT_DIMENSIONS,
   IMPLEMENTED_METRIC_KEYS,
+  KPI_SECTIONS,
   METRIC_SECTIONS,
 } from '../metrics/catalogue';
+import { PROVIDER_KINDS } from '../providers/activity';
 import { PERIOD_SPEC_PATTERN, PERIOD_TYPES } from '../periods';
 import { Id, LocalDate, PageQuery, Timestamp } from './common';
 
@@ -53,8 +54,8 @@ export function QueryList<T extends z.ZodType>(item: T, max: number) {
 
 // ── Metric values and definitions (§9) ─────────────────────────────────────────────────────
 
-export const MetricKeyWire = z.enum([...IMPLEMENTED_METRIC_KEYS, ...DEFERRED_METRIC_KEYS]);
-/** Keys the engine computes (deferred issue metrics are rejected in queries). */
+export const MetricKeyWire = z.enum(IMPLEMENTED_METRIC_KEYS);
+/** Keys the engine computes (all of them since P13; `DEFERRED_METRIC_KEYS` is empty). */
 export const ImplementedMetricKeyWire = z.enum(IMPLEMENTED_METRIC_KEYS);
 export const MetricStatus = z.enum(['ok', 'insufficient_data', 'not_applicable']);
 export type MetricStatus = z.infer<typeof MetricStatus>;
@@ -129,9 +130,11 @@ export const OverviewResponse = z.object({
 export type OverviewResponse = z.infer<typeof OverviewResponse>;
 
 export const KpiSection = z.object({
-  key: z.enum(METRIC_SECTIONS),
+  key: z.enum(KPI_SECTIONS),
   title: z.string(),
   metrics: z.array(MetricValue),
+  /** Issues section (P13): false when no Jira/Linear is connected and no issues were synced. */
+  available: z.boolean().optional(),
 });
 
 export const KpisResponse = z.object({
@@ -143,6 +146,22 @@ export const KpisResponse = z.object({
   metricsVersion: z.string(),
 });
 export type KpisResponse = z.infer<typeof KpisResponse>;
+
+/** `GET /metrics/providers?period=` (P13, §22 A-8): per-provider totals from the daily rollups. */
+export const ProviderBreakdownResponse = z.object({
+  period: ResolvedPeriodDto,
+  providers: z.array(
+    z.object({
+      provider: z.enum(PROVIDER_KINDS),
+      commits: z.number().int(),
+      prsMerged: z.number().int(),
+      prsReviewed: z.number().int(),
+      issuesCompleted: z.number().int(),
+      storyPoints: z.number(),
+    }),
+  ),
+});
+export type ProviderBreakdownResponse = z.infer<typeof ProviderBreakdownResponse>;
 
 export const TimeseriesInterval = z.enum(['day', 'week', 'month']);
 export type TimeseriesInterval = z.infer<typeof TimeseriesInterval>;
@@ -252,8 +271,14 @@ export type TrendsResponse = z.infer<typeof TrendsResponse>;
 
 // ── Evidence (§3.3, A-2) ────────────────────────────────────────────────────────────────────
 
-export const EvidenceRef = z.string().regex(/^(PR|REV|C|ACH)-[A-Za-z0-9._/@#-]{1,120}$/);
-export const EvidenceKind = z.enum(['pull_request', 'review', 'commit', 'achievement']);
+/**
+ * Stable evidence refs (KPI §7, D-030): `PR-<repo>#n` (GitHub PR), `MR-<group/project>!n` (GitLab
+ * MR), `REV-<repo>#n` / `REV-<group/project>!n`, `C-<repo>@sha7`, `ACH-<id>`, `JIRA-<KEY-123>`,
+ * `LIN-<TEAM-42>`.
+ */
+export const EVIDENCE_REF_PATTERN = /^(PR|MR|REV|C|ACH|JIRA|LIN)-[A-Za-z0-9._/@#!-]{1,160}$/;
+export const EvidenceRef = z.string().regex(EVIDENCE_REF_PATTERN);
+export const EvidenceKind = z.enum(['pull_request', 'review', 'commit', 'achievement', 'issue']);
 export const EvidenceItem = z.object({
   ref: EvidenceRef,
   kind: EvidenceKind,
@@ -374,7 +399,7 @@ export const CareerTimelineQuery = z.strictObject({
 export type CareerTimelineQuery = z.infer<typeof CareerTimelineQuery>;
 
 export const CareerItem = z.object({
-  type: z.enum(['pr_merged', 'achievement', 'review_cluster']),
+  type: z.enum(['pr_merged', 'achievement', 'review_cluster', 'issue_completed']),
   id: Id,
   ref: EvidenceRef,
   title: z.string(),
@@ -412,10 +437,14 @@ export const CareerQuarter = z.object({
   milestones: z.array(CareerMilestone),
   /** "Beyond code" group (P12, §22 A-7): the quarter's achievements, newest first. */
   achievements: z.array(CareerItem).default([]),
+  /** Issues completed in the quarter (P13, §22 A-8), newest first, ≤ 20. */
+  issues: z.array(CareerItem).default([]),
   totals: z.object({
     prsMerged: z.number().int(),
     prsReviewed: z.number().int(),
     achievements: z.number().int(),
+    issuesCompleted: z.number().int().default(0),
+    storyPoints: z.number().default(0),
   }),
 });
 

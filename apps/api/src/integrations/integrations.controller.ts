@@ -1,25 +1,50 @@
 import {
+  AddIdentityInput,
   ConnectGitHubInput,
   ConnectGitHubResult,
+  ConnectProviderInput,
+  ConnectProviderResult,
   DisconnectQuery,
   DisconnectResult,
   GitHubCallbackInput,
+  IdentityDto,
+  IdentityParams,
   IdParams,
   IntegrationDto,
+  ProviderCallbackInput,
+  ProviderCallbackResult,
+  ProviderParams,
+  UpdateIntegrationInput,
+  type OAuthProviderWire,
 } from '@devimpact/shared';
-import { Controller, Delete, Get, HttpCode, Post, Res } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Patch, Post, Res } from '@nestjs/common';
 import { z } from 'zod';
 
 import { type AuthUser, CurrentUser } from '../auth/auth.decorators';
 import { ApiDoc, ZodBody, ZodParams, ZodQuery } from '../common/zod-validation';
 import { RateLimit } from '../throttle/rate-limit';
+import { GitHubAppClient } from './github-app.client';
 import { IntegrationsService } from './integrations.service';
+import { ProviderConnectService } from './provider-connect.service';
 
 import type { Response } from 'express';
 
 @Controller('integrations')
 export class IntegrationsController {
-  constructor(private readonly integrations: IntegrationsService) {}
+  constructor(
+    private readonly integrations: IntegrationsService,
+    private readonly providers: ProviderConnectService,
+    private readonly github: GitHubAppClient,
+  ) {}
+
+  @Get('providers')
+  @ApiDoc({
+    summary: 'Data-source providers this server can connect (configured + GitLab instances)',
+    tags: ['integrations'],
+  })
+  availability() {
+    return this.providers.availability(this.github.isConfigured());
+  }
 
   @Get()
   @ApiDoc({
@@ -60,6 +85,87 @@ export class IntegrationsController {
     }
     res.status(201);
     return { integration: result.integration, syncRun: result.syncRun, returnTo: result.returnTo };
+  }
+
+  @Post(':provider/connect')
+  @HttpCode(200)
+  @ApiDoc({
+    summary: 'Start the GitLab / Jira / Linear OAuth flow (PKCE where supported)',
+    tags: ['integrations'],
+    response: ConnectProviderResult,
+  })
+  connectProvider(
+    @CurrentUser() user: AuthUser,
+    @ZodParams(ProviderParams) params: { provider: OAuthProviderWire },
+    @ZodBody(ConnectProviderInput) body: ConnectProviderInput,
+  ) {
+    return this.providers.connect(user.id, params.provider, body);
+  }
+
+  @Post(':provider/callback')
+  @HttpCode(201)
+  @ApiDoc({
+    summary: 'Complete the GitLab / Jira / Linear flow (state verified, code exchanged, backfill queued)',
+    tags: ['integrations'],
+    status: 201,
+    response: ProviderCallbackResult,
+  })
+  callbackProvider(
+    @CurrentUser() user: AuthUser,
+    @ZodParams(ProviderParams) params: { provider: OAuthProviderWire },
+    @ZodBody(ProviderCallbackInput) body: ProviderCallbackInput,
+  ) {
+    return this.providers.callback(user.id, params.provider, body);
+  }
+
+  @Get(':id/identities')
+  @ApiDoc({
+    summary: 'Identities linked through this integration (provider-verified + manual emails)',
+    tags: ['integrations'],
+    response: z.array(IdentityDto),
+  })
+  identities(@CurrentUser() user: AuthUser, @ZodParams(IdParams) params: { id: string }) {
+    return this.providers.listIdentities(user.id, params.id);
+  }
+
+  @Post(':id/identities')
+  @HttpCode(201)
+  @ApiDoc({
+    summary: 'Link an extra commit email (unverified; one owner per email)',
+    tags: ['integrations'],
+    status: 201,
+    response: IdentityDto,
+  })
+  addIdentity(
+    @CurrentUser() user: AuthUser,
+    @ZodParams(IdParams) params: { id: string },
+    @ZodBody(AddIdentityInput) body: AddIdentityInput,
+  ) {
+    return this.providers.addIdentity(user.id, params.id, body.email);
+  }
+
+  @Delete(':id/identities/:identityId')
+  @HttpCode(204)
+  @ApiDoc({ summary: 'Unlink a manually added email', tags: ['integrations'], status: 204 })
+  async removeIdentity(
+    @CurrentUser() user: AuthUser,
+    @ZodParams(IdentityParams) params: { id: string; identityId: string },
+  ) {
+    await this.providers.removeIdentity(user.id, params.id, params.identityId);
+  }
+
+  @Patch(':id')
+  @ApiDoc({
+    summary: 'Update provider settings (Jira story points field; re-reads issues)',
+    tags: ['integrations'],
+  })
+  async update(
+    @CurrentUser() user: AuthUser,
+    @ZodParams(IdParams) params: { id: string },
+    @ZodBody(UpdateIntegrationInput) body: UpdateIntegrationInput,
+  ) {
+    await this.providers.update(user.id, params.id, body);
+    return this.integrations.get(user.id, params.id);
   }
 
   @Get(':id')

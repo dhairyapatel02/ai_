@@ -21,7 +21,7 @@ import { afterCursor, decodeCursor, toPage } from '../common/pagination';
 import { MetricsQueueService } from '../metrics/metrics-queue.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-const REPO = { select: { fullName: true, htmlUrl: true } } as const;
+const REPO = { select: { fullName: true, htmlUrl: true, integration: { select: { provider: true } } } } as const;
 
 /** Prisma include that resolves every evidence link to a titled, linkable record. */
 export const ACHIEVEMENT_INCLUDE = {
@@ -79,7 +79,7 @@ export function evidenceItemsOf(row: AchievementRow): EvidenceItem[] {
       const p = e.pullRequest;
       return [
         {
-          ref: prRef(p.repository.fullName, p.number),
+          ref: prRef(p.repository.fullName, p.number, p.repository.integration.provider),
           kind: 'pull_request',
           id: p.id,
           title: p.title,
@@ -93,7 +93,11 @@ export function evidenceItemsOf(row: AchievementRow): EvidenceItem[] {
       const r = e.review;
       return [
         {
-          ref: reviewRef(r.pullRequest.repository.fullName, r.pullRequest.number),
+          ref: reviewRef(
+            r.pullRequest.repository.fullName,
+            r.pullRequest.number,
+            r.pullRequest.repository.integration.provider,
+          ),
           kind: 'review',
           id: r.id,
           title: r.pullRequest.title,

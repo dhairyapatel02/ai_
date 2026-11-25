@@ -1,6 +1,7 @@
 import type {
   CommitRecord,
   EvidenceRecords,
+  IssueRecord,
   PrRecord,
   RepoRecord,
   ReviewRecord,
@@ -52,12 +53,14 @@ interface Spec {
   currentRole: string;
   targetRole: string;
   seed: number;
-  repos: { fullName: string; isPrivate?: boolean }[];
+  repos: { fullName: string; isPrivate?: boolean; provider?: 'GITLAB' }[];
   prs: { title: string; body?: string; labels?: string[]; lines?: number; reviewers?: number }[];
   reviewTitles: string[];
   commitMessages: string[];
   redactPrivateRepos?: boolean;
   injectionMarkers?: string[];
+  /** Jira / Linear issues completed in October (P13). */
+  issues?: { provider: 'JIRA' | 'LINEAR'; key: string; title: string; points: number | null; labels?: string[] }[];
 }
 
 function build(spec: Spec): Persona {
@@ -65,7 +68,8 @@ function build(spec: Spec): Persona {
   const repos: RepoRecord[] = spec.repos.map((x) => ({
     fullName: x.fullName,
     isPrivate: x.isPrivate ?? false,
-    htmlUrl: `https://github.com/${x.fullName}`,
+    htmlUrl: `${x.provider === 'GITLAB' ? 'https://gitlab.com' : 'https://github.com'}/${x.fullName}`,
+    ...(x.provider ? { provider: x.provider } : {}),
   }));
   const repoIds = new Map(repos.map((x, i) => [x.fullName, `${spec.key}-repo-${i}`]));
   const pick = <T>(xs: T[]) => xs[Math.floor(r() * xs.length)];
@@ -136,6 +140,29 @@ function build(spec: Spec): Persona {
     };
   });
 
+  const issues: IssueRecord[] = (spec.issues ?? []).map((x, i) => {
+    const completed = at(4 + i * 3, 16);
+    return {
+      id: id(spec.key, 'is', i + 1),
+      provider: x.provider,
+      key: x.key,
+      title: x.title,
+      url:
+        x.provider === 'LINEAR'
+          ? `https://linear.app/acme/issue/${x.key}`
+          : `https://acme.atlassian.net/browse/${x.key}`,
+      status: 'DONE',
+      priority: i % 2 === 0 ? 'HIGH' : 'MEDIUM',
+      storyPoints: x.points,
+      labels: x.labels ?? [],
+      projectName: x.provider === 'LINEAR' ? 'Engineering' : 'Payments',
+      cycleName: x.provider === 'LINEAR' ? 'Cycle 12' : null,
+      completedAt: completed,
+      updatedAtRemote: completed,
+      updatedAt: completed,
+    };
+  });
+
   const facts: Facts = {
     authored: prs.map((p) => ({
       id: p.id,
@@ -163,6 +190,12 @@ function build(spec: Spec): Persona {
       repositoryId: repoIds.get(c.repo.fullName)!,
       authoredAt: c.authoredAt,
     })),
+    issues: issues.map((x) => ({
+      id: x.id,
+      completedAt: x.completedAt,
+      startedAt: x.completedAt ? new Date(x.completedAt.getTime() - 26 * 3600_000) : null,
+      storyPoints: x.storyPoints,
+    })),
   };
   return {
     key: spec.key,
@@ -171,7 +204,7 @@ function build(spec: Spec): Persona {
     currentRole: spec.currentRole,
     targetRole: spec.targetRole,
     redactPrivateRepos: spec.redactPrivateRepos ?? false,
-    records: { prs, reviews, commits, achievements: [] },
+    records: { prs, reviews, commits, achievements: [], ...(issues.length ? { issues } : {}) },
     facts,
     injectionMarkers: spec.injectionMarkers ?? [],
   };
@@ -370,5 +403,31 @@ export const PERSONAS: Persona[] = [
     commitMessages: ['fix: SDK typings'],
     redactPrivateRepos: true,
     injectionMarkers: ['secret-merger-project'],
+  }),
+  build({
+    key: 'gitlab-issue-tracker',
+    description: 'GitLab merge requests plus Jira and Linear issues (P13)',
+    role: 'fullstack',
+    currentRole: 'Software Engineer II',
+    targetRole: 'Senior Software Engineer',
+    seed: 97,
+    repos: [
+      { fullName: 'acme/platform/billing-service', provider: 'GITLAB' },
+      { fullName: 'acme/web' },
+    ],
+    prs: [
+      { title: 'Add idempotency keys to invoice generation', labels: ['reliability'], lines: 260 },
+      { title: 'Retry webhook deliveries with jitter', labels: ['reliability'] },
+      { title: 'Show proration preview in checkout', labels: ['feature'] },
+      { title: 'Fix rounding in proration', labels: ['bug'] },
+    ],
+    reviewTitles: ['Usage-based billing meter', 'Invoice email templates'],
+    commitMessages: ['chore: bump billing SDK'],
+    issues: [
+      { provider: 'JIRA', key: 'PAY-231', title: 'Support annual plans in billing', points: 5, labels: ['feature'] },
+      { provider: 'JIRA', key: 'PAY-240', title: 'Fix duplicate invoice emails', points: 2, labels: ['bug'] },
+      { provider: 'LINEAR', key: 'ENG-42', title: 'Speed up checkout page load', points: 3, labels: ['performance'] },
+      { provider: 'LINEAR', key: 'ENG-57', title: 'Document the billing runbook', points: null },
+    ],
   }),
 ];

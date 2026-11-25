@@ -9,7 +9,10 @@ import { AppException } from '../common/app-exception';
  * `{"FREE":{"aiGenerationsPerMonth":30},"PRO":{"aiQuickPerMonth":2000}}`.
  */
 export interface PlanLimits {
+  /** Connected data sources across all providers (D-030: FREE 2, PRO 4). */
   integrations: number;
+  /** Connections of the same provider (D-030: one account per provider on every plan). */
+  integrationsPerProvider: number;
   historyMonths: number;
   aiGenerationsPerMonth: number;
   aiQuickPerMonth: number;
@@ -19,14 +22,16 @@ export interface PlanLimits {
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   [Plan.FREE]: {
-    integrations: 1,
+    integrations: 2,
+    integrationsPerProvider: 1,
     historyMonths: 12,
     aiGenerationsPerMonth: 15,
     aiQuickPerMonth: 100,
     weeklyDigest: true,
   },
   [Plan.PRO]: {
-    integrations: 1,
+    integrations: 4,
+    integrationsPerProvider: 1,
     historyMonths: 36,
     aiGenerationsPerMonth: 150,
     aiQuickPerMonth: 1000,
@@ -34,14 +39,16 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   },
   // Reserved for v2.1 (D-014); behave like PRO until then.
   [Plan.TEAM]: {
-    integrations: 1,
+    integrations: 4,
+    integrationsPerProvider: 1,
     historyMonths: 36,
     aiGenerationsPerMonth: 150,
     aiQuickPerMonth: 1000,
     weeklyDigest: true,
   },
   [Plan.ENTERPRISE]: {
-    integrations: 1,
+    integrations: 4,
+    integrationsPerProvider: 1,
     historyMonths: 36,
     aiGenerationsPerMonth: 150,
     aiQuickPerMonth: 1000,
@@ -54,6 +61,7 @@ export const EntitlementsOverride = z.partialRecord(
   z.enum(Plan),
   z.strictObject({
     integrations: limit.optional(),
+    integrationsPerProvider: limit.optional(),
     historyMonths: limit.optional(),
     aiGenerationsPerMonth: limit.optional(),
     aiQuickPerMonth: limit.optional(),

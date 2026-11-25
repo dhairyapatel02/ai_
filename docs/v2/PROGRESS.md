@@ -19,7 +19,7 @@ Every phase session updates this file before opening its PR.
 | 10 | Frontend: Insights Pages | ✅ Done | (this PR) | 2026-11-18 | Dashboard, Activity (+ drawer), KPIs (+ explain), Impact, Career (+ print), Integrations; Recharts on tokens; Lighthouse mobile 96 / desktop 100, a11y 100 |
 | 11 | Frontend: AI Document Studio | ✅ Done | (this PR) | 2026-11-21 | Library, picker, 3 studios, streaming viewer/editor (structured fields), versions, citations, exports MD/TXT/PDF/DOCX (`@react-pdf/renderer` + `docx`), Documents nav spinner; axe-clean E2E |
 | 12 | Product Extensions | ✅ Done | (this PR) | 2026-11-25 | Achievements (+ evidence, `ACH-` citations), goals (engine progress), weekly digest + notification emails, unsubscribe, export, account deletion, plan & usage, entitlements; Could items → v2.1 |
-| 13 | Additional Integrations (optional) | ⏸ Deferred | | | Skipped for v2.0 → v2.1 (D-018) |
+| 13 | Additional Integrations | 🚧 In progress | | | Pulled into v2.0 before P14 (D-029 amends D-018): GitLab, Jira, Linear |
 | 14 | Hardening | ⏳ Not started | | | |
 | 15 | Release v2.0.0 | ⏳ Not started | | | |
 

@@ -1,9 +1,9 @@
 import { ACHIEVEMENT_STATEMENT_PROMPT } from './achievement-statement.v1';
-import { APPRAISAL_PROMPT } from './appraisal.v1';
+import { APPRAISAL_PROMPT } from './appraisal.v2';
 import { DIGEST_SUMMARY_PROMPT } from './digest-summary.v1';
-import { IMPACT_NARRATIVE_PROMPT } from './impact-narrative.v1';
-import { PROMOTION_PROMPT } from './promotion.v1';
-import { RESUME_PROMPT } from './resume.v1';
+import { IMPACT_NARRATIVE_PROMPT } from './impact-narrative.v2';
+import { PROMOTION_PROMPT } from './promotion.v2';
+import { RESUME_PROMPT } from './resume.v2';
 
 /**
  * Current prompt version per generator. To ship a new version: copy `<name>.vN.ts` to

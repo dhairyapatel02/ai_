@@ -30,6 +30,7 @@ function phrase(item: Item): string {
   if (item.kind === 'review')
     return `Reviewed the change "${title}"${where}, giving the author detailed feedback.`;
   if (item.kind === 'commit') return `Committed "${title}"${where}.`;
+  if (item.kind === 'issue') return `Completed the tracked work item "${title}"${where}.`;
   if (item.tags.includes('performance'))
     return `Improved performance with the change to ${lower}${where}.`;
   if (item.tags.includes('bugfix') || item.tags.includes('incident'))
@@ -44,6 +45,7 @@ export function referenceReply(req: FakeRequest): FakeReply {
   const safe = ev.items.filter((i) => !HOSTILE.test(i.title));
   const prs = safe.filter((i) => i.kind === 'pull_request');
   const reviews = safe.filter((i) => i.kind === 'review');
+  const issues = safe.filter((i) => i.kind === 'issue');
   const first = safe[0];
   const cite = (i: Item | undefined) => (i ? [i.ref] : []);
   const merged = ev.metrics?.find((m) => m.metric === 'PRs merged')?.value;
@@ -69,7 +71,7 @@ export function referenceReply(req: FakeRequest): FakeReply {
   } else if (sys.includes('Task: self-appraisal')) {
     output = {
       executiveSummary: { text: summaryText, citations: cite(prs[0] ?? first) },
-      keyContributions: prs.slice(0, 4).map(titled),
+      keyContributions: [...prs.slice(0, 4), ...issues.slice(0, 2)].map(titled),
       areasOfImpact: [...new Set(prs.map((p) => p.repository))].slice(0, 3).map((repo) => {
         const i = prs.find((p) => p.repository === repo)!;
         return { text: `Sustained improvements to ${repo}.`, citations: [i.ref] };
@@ -86,7 +88,7 @@ export function referenceReply(req: FakeRequest): FakeReply {
     output = {
       whyReady: { text: summaryText, citations: cite(prs[0] ?? first) },
       leadershipEvidence: reviews.slice(0, 2).map(claim),
-      technicalImpact: prs.slice(0, 3).map(claim),
+      technicalImpact: [...prs.slice(0, 3), ...issues.slice(0, 1)].map(claim),
       businessValue: prs
         .filter((p) => p.tags.includes('feature'))
         .slice(0, 2)
@@ -99,7 +101,7 @@ export function referenceReply(req: FakeRequest): FakeReply {
         text: `Work in ${ev.period?.label ?? 'the period'} centred on ${prs[0] ? `"${prs[0].title}"` : 'reviews'}.`,
         citations: cite(prs[0] ?? first),
       },
-      highlights: [...prs, ...reviews].slice(0, 3).map(titled),
+      highlights: [...prs.slice(0, 2), ...issues.slice(0, 1), ...reviews].slice(0, 3).map(titled),
       focusAreas: [{ text: 'Spread reviews across more repositories.' }],
     };
   } else if (sys.includes('Task: turn one pull request or commit')) {

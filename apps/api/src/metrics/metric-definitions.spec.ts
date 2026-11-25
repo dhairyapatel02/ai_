@@ -116,8 +116,13 @@ describe('daily rollups (§4)', () => {
       prsOpened: 1,
       prsMerged: 1,
       active: true,
+      byProvider: { github: { commits: 1, prsMerged: 1, prsReviewed: 0, issuesCompleted: 0, storyPoints: 0 } },
     });
-    expect(byDate.get('2026-10-01')).toEqual({ ...emptyCounters('2026-10-01'), prsMerged: 1 });
+    expect(byDate.get('2026-10-01')).toEqual({
+      ...emptyCounters('2026-10-01'),
+      prsMerged: 1,
+      byProvider: { github: { commits: 0, prsMerged: 1, prsReviewed: 0, issuesCompleted: 0, storyPoints: 0 } },
+    });
     expect(byDate.get('2026-10-22')).toEqual({
       ...emptyCounters('2026-10-22'),
       prsClosedUnmerged: 1,

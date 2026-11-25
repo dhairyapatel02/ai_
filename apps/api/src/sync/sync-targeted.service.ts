@@ -12,6 +12,7 @@ import {
 import { MetricsQueueService } from '../metrics/metrics-queue.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProviderAuthError } from '../providers/provider.errors';
+import { PROVIDER_ENUM } from '../providers/provider-registry';
 import { ACTIVITY_PROVIDER } from '../providers/providers.module';
 import { IntegrationTokensService } from './integration-tokens.service';
 import { SyncEngine } from './sync-engine.service';
@@ -171,8 +172,51 @@ export class SyncTargetedService {
           await this.tokens.markNeedsReauth(row.userId, row.id, 'GITHUB_APP_AUTHORIZATION_REVOKED');
         return;
       }
+      case 'activity_changed':
+        await this.handleActivityChanged(event);
+        return;
       case 'ignored':
         return;
+    }
+  }
+
+  /**
+   * GitLab / Jira / Linear webhooks (P13): an incremental sync of each matching integration (cursor
+   * − 1 h) instead of a per-record refetch. Reuses an active run, so bursts collapse into one.
+   */
+  private async handleActivityChanged(
+    event: Extract<ProviderWebhookEvent, { kind: 'activity_changed' }>,
+  ): Promise<void> {
+    const provider = PROVIDER_ENUM[event.provider];
+    const accounts = event.accountExternalIds.slice(0, 20);
+    const repos = event.repositoryExternalIds.slice(0, 20);
+    if (accounts.length === 0 && repos.length === 0) return;
+    // user-scope: webhook fan-in — resolves which connected users an event concerns.
+    const rows = await this.prisma.integration.findMany({
+      where: {
+        provider,
+        status: IntegrationStatus.ACTIVE,
+        OR: [
+          ...(accounts.length ? [{ externalAccountId: { in: accounts } }] : []),
+          ...(repos.length
+            ? [{ repositories: { some: { externalId: { in: repos }, included: true } } }]
+            : []),
+        ],
+      },
+      select: { id: true, userId: true, config: true },
+      take: 200,
+    });
+    for (const row of rows) {
+      if (event.siteId && !siteMatches(row.config, event.siteId)) continue;
+      try {
+        await this.sync.requestSync(row.userId, {
+          integrationId: row.id,
+          trigger: SyncTrigger.WEBHOOK,
+          reuseActive: true,
+        });
+      } catch (error) {
+        this.logger.warn({ integrationId: row.id, err: error }, 'Webhook sync not queued');
+      }
     }
   }
 
@@ -451,4 +495,23 @@ export class SyncTargetedService {
       }
     }
   }
+}
+
+/** Jira: site origin in `config.sites[].url`; Linear: `config.organization.id`. */
+function siteMatches(config: unknown, siteId: string): boolean {
+  const c = (config ?? {}) as {
+    sites?: { url?: string }[];
+    organization?: { id?: string };
+  };
+  if (c.organization?.id) return c.organization.id === siteId;
+  if (Array.isArray(c.sites)) {
+    return c.sites.some((site) => {
+      try {
+        return new URL(site.url ?? '').origin === siteId;
+      } catch {
+        return false;
+      }
+    });
+  }
+  return true;
 }

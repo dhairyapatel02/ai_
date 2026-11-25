@@ -1,17 +1,16 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { IntegrationStatus } from '@prisma/client';
 
 import { TokenCipher, TokenCipherService } from '../crypto/token-cipher';
 import { NotificationProducer } from '../email/notification-producer';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProviderAuthError } from '../providers/provider.errors';
-import { ACTIVITY_PROVIDER } from '../providers/providers.module';
+import { ProviderRegistry } from '../providers/provider-registry';
 import { TOKEN_REFRESH_MARGIN_MS } from './sync.constants';
 
-import type { ActivityProvider } from '@devimpact/shared';
-
-export type ReauthReason =
-  'GITHUB_TOKEN_REVOKED' | 'GITHUB_REFRESH_FAILED' | 'GITHUB_APP_AUTHORIZATION_REVOKED';
+/** `<PROVIDER>_TOKEN_REVOKED` / `<PROVIDER>_REFRESH_FAILED` / `GITHUB_APP_AUTHORIZATION_REVOKED`. */
+export type ReauthReason = `${'GITHUB' | 'GITLAB' | 'JIRA' | 'LINEAR'}_${'TOKEN_REVOKED' | 'REFRESH_FAILED'}`
+  | 'GITHUB_APP_AUTHORIZATION_REVOKED';
 
 /**
  * Token lifecycle for data-source integrations (ADR-0004/0005, F-16): tokens are decrypted only
@@ -26,7 +25,7 @@ export class IntegrationTokensService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cipher: TokenCipherService,
-    @Inject(ACTIVITY_PROVIDER) private readonly provider: ActivityProvider,
+    private readonly registry: ProviderRegistry,
     private readonly notifications: NotificationProducer,
   ) {}
 
@@ -72,6 +71,8 @@ export class IntegrationTokensService {
         const row = await tx.integration.findFirst({
           where: { id: integrationId, userId },
           select: {
+            provider: true,
+            baseUrl: true,
             accessTokenEnc: true,
             accessTokenExpiresAt: true,
             refreshTokenEnc: true,
@@ -93,11 +94,12 @@ export class IntegrationTokensService {
         if (!row.refreshTokenEnc) return null;
         let tokens;
         try {
-          tokens = await this.provider.refreshToken(
+          tokens = await this.registry.get(row.provider).refreshToken(
             this.cipher.decrypt(
               row.refreshTokenEnc,
               TokenCipher.aad(integrationId, 'refreshToken'),
             ),
+            row.baseUrl,
           );
         } catch (error) {
           if (error instanceof ProviderAuthError) return null;
@@ -122,26 +124,38 @@ export class IntegrationTokensService {
               : {}),
           },
         });
-        this.logger.log({ integrationId }, 'GitHub user token refreshed');
-        return tokens.accessToken;
+        this.logger.log({ integrationId, provider: row.provider }, 'User token refreshed');
+        return { token: tokens.accessToken, provider: row.provider };
       },
       { timeout: 30_000 },
     );
-    if (result === null) await this.markNeedsReauth(userId, integrationId, 'GITHUB_REFRESH_FAILED');
-    return result;
+    if (result === null) {
+      const provider = await this.providerOf(userId, integrationId);
+      await this.markNeedsReauth(userId, integrationId, `${provider}_REFRESH_FAILED`);
+      return null;
+    }
+    return typeof result === 'string' ? result : result.token;
   }
 
   /** Session hook for a 401: refresh once, else mark NEEDS_REAUTH. */
   async afterUnauthorized(userId: string, integrationId: string): Promise<string | null> {
     const row = await this.prisma.integration.findFirst({
       where: { id: integrationId, userId },
-      select: { accessTokenEnc: true, refreshTokenEnc: true },
+      select: { accessTokenEnc: true, refreshTokenEnc: true, provider: true },
     });
     if (!row?.refreshTokenEnc) {
-      await this.markNeedsReauth(userId, integrationId, 'GITHUB_TOKEN_REVOKED');
+      await this.markNeedsReauth(userId, integrationId, `${row?.provider ?? 'GITHUB'}_TOKEN_REVOKED`);
       return null;
     }
     return this.refresh(userId, integrationId, row.accessTokenEnc);
+  }
+
+  private async providerOf(userId: string, integrationId: string) {
+    const row = await this.prisma.integration.findFirst({
+      where: { id: integrationId, userId },
+      select: { provider: true },
+    });
+    return row?.provider ?? 'GITHUB';
   }
 
   /** NEEDS_REAUTH: drop the unusable tokens, keep every activity row (FLOWS F3). */

@@ -3,7 +3,7 @@ import { PeriodType, type Plan, Prisma, ScoreStatus, SyncStatus } from '@prisma/
 
 import { PrismaService } from '../prisma/prisma.service';
 
-import type { AuthoredPrFact, CommitFact, Facts, ReviewFact } from './metric-definitions';
+import type { AuthoredPrFact, CommitFact, Facts, IssueFact, ReviewFact } from './metric-definitions';
 import type { DailyCounters } from './rollup';
 
 /**
@@ -42,7 +42,7 @@ export class MetricsRepository {
   /** Facts with any metric timestamp in `[start, endExclusive)` (a superset is fine: the pure
    *  functions filter by window). */
   async loadFacts(userId: string, start: Date, endExclusive: Date): Promise<Facts> {
-    const [authored, reviews, commits] = await Promise.all([
+    const [authored, reviews, commits, issues] = await Promise.all([
       this.prisma.$queryRaw<
         {
           id: string;
@@ -56,13 +56,16 @@ export class MetricsRepository {
           changes_requested_count: number | null;
           first_review_at: Date | null;
           reverted_at: Date | null;
+          provider: string;
         }[]
       >`
         SELECT p.id, p.repository_id, p.created_at_remote, p.ready_for_review_at,
                p."mergedAt" AS merged_at, p.closed_at, p.additions, p.deletions,
-               p.changes_requested_count, p.first_review_at, p.reverted_at
+               p.changes_requested_count, p.first_review_at, p.reverted_at,
+               lower(g.provider::text) AS provider
         FROM pull_requests p
         JOIN repositories r ON r.id = p.repository_id AND r.included
+        JOIN integrations g ON g.id = r.integration_id
         WHERE p."userId" = ${userId} AND p.is_authored_by_user AND NOT p.legacy_stub
           AND (   (p.created_at_remote >= ${start} AND p.created_at_remote < ${endExclusive})
                OR (p."mergedAt" >= ${start} AND p."mergedAt" < ${endExclusive})
@@ -77,21 +80,41 @@ export class MetricsRepository {
           review_requested_at: Date | null;
           comments_count: number;
           has_body: boolean;
+          provider: string;
         }[]
       >`
         SELECT v.id, v.pull_request_id, p.repository_id, v.submitted_at, v.review_requested_at,
-               v.comments_count, v.has_body
+               v.comments_count, v.has_body, lower(g.provider::text) AS provider
         FROM pull_request_reviews v
         JOIN pull_requests p ON p.id = v.pull_request_id
           AND NOT p.is_authored_by_user AND NOT p.legacy_stub
         JOIN repositories r ON r.id = p.repository_id AND r.included
+        JOIN integrations g ON g.id = r.integration_id
         WHERE v.user_id = ${userId} AND v.submitted_at >= ${start} AND v.submitted_at < ${endExclusive}`,
-      this.prisma.$queryRaw<{ id: string; repository_id: string; authored_at: Date }[]>`
-        SELECT c.id, c.repository_id, c.authored_at
+      this.prisma.$queryRaw<
+        { id: string; repository_id: string; authored_at: Date; provider: string }[]
+      >`
+        SELECT c.id, c.repository_id, c.authored_at, lower(g.provider::text) AS provider
         FROM commits c
         JOIN repositories r ON r.id = c.repository_id AND r.included
+        JOIN integrations g ON g.id = r.integration_id
         WHERE c."userId" = ${userId} AND c.parents_count <= 1
           AND c.authored_at >= ${start} AND c.authored_at < ${endExclusive}`,
+      // Issues (§3.6): completed in the window (only DONE issues carry completed_at).
+      this.prisma.$queryRaw<
+        {
+          id: string;
+          completed_at: Date;
+          started_at: Date | null;
+          story_points: number | null;
+          provider: string;
+        }[]
+      >`
+        SELECT i.id, i.completed_at, i.started_at, i.story_points, lower(g.provider::text) AS provider
+        FROM issues i
+        JOIN integrations g ON g.id = i."integrationId"
+        WHERE i."userId" = ${userId} AND i.status = 'DONE'
+          AND i.completed_at >= ${start} AND i.completed_at < ${endExclusive}`,
     ]);
     return {
       authored: authored.map((p): AuthoredPrFact => ({
@@ -106,6 +129,7 @@ export class MetricsRepository {
         changesRequestedCount: p.changes_requested_count,
         firstReviewAt: p.first_review_at,
         revertedAt: p.reverted_at,
+        provider: p.provider,
       })),
       reviews: reviews.map((v): ReviewFact => ({
         id: v.id,
@@ -115,11 +139,20 @@ export class MetricsRepository {
         reviewRequestedAt: v.review_requested_at,
         commentsCount: v.comments_count,
         hasBody: v.has_body,
+        provider: v.provider,
       })),
       commits: commits.map((c): CommitFact => ({
         id: c.id,
         repositoryId: c.repository_id,
         authoredAt: c.authored_at,
+        provider: c.provider,
+      })),
+      issues: issues.map((i): IssueFact => ({
+        id: i.id,
+        completedAt: i.completed_at,
+        startedAt: i.started_at,
+        storyPoints: i.story_points === null ? null : Number(i.story_points),
+        provider: i.provider,
       })),
     };
   }
@@ -145,7 +178,8 @@ export class MetricsRepository {
       SELECT LEAST(
         (SELECT MIN(authored_at) FROM commits WHERE "userId" = ${userId}),
         (SELECT MIN(created_at_remote) FROM pull_requests WHERE "userId" = ${userId}),
-        (SELECT MIN(submitted_at) FROM pull_request_reviews WHERE user_id = ${userId})
+        (SELECT MIN(submitted_at) FROM pull_request_reviews WHERE user_id = ${userId}),
+        (SELECT MIN(completed_at) FROM issues WHERE "userId" = ${userId})
       ) AS t`;
     return rows[0]?.t ?? null;
   }
@@ -180,6 +214,7 @@ export class MetricsRepository {
           metricsVersion,
           computedAt,
           ...row,
+          byProvider: row.byProvider as unknown as Prisma.InputJsonValue,
           date: dateOnly(row.date),
         })),
       }),
@@ -205,6 +240,7 @@ export class MetricsRepository {
     userId: string,
     scoreVersion: string,
     timezone: string,
+    metricsVersion: string,
     keys: { periodType: PeriodType; startDate: string; endDate: string }[],
   ) {
     if (keys.length === 0) return [];
@@ -213,6 +249,8 @@ export class MetricsRepository {
         userId,
         scoreVersion,
         timezone,
+        // Rows from an earlier metrics version lack newer metrics (e.g. 2.1.0 issue metrics).
+        metricsVersion,
         OR: keys.map((k) => ({
           periodType: k.periodType,
           periodStart: dateOnly(k.startDate),

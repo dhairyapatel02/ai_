@@ -12,6 +12,7 @@ import {
   KpisResponse,
   OverviewResponse,
   PeriodQuery,
+  ProviderBreakdownResponse,
   ReposQuery,
   ReposResponse,
   TimeseriesQuery,
@@ -97,6 +98,16 @@ export class MetricsController {
   })
   repos(@CurrentUser() user: AuthUser, @ZodQuery(ReposQuery) query: ReposQuery) {
     return this.metrics.repos(user.id, query);
+  }
+
+  @Get('providers')
+  @ApiDoc({
+    summary: 'Per-provider totals in the period from the daily rollups (P13, A-8)',
+    tags: ['metrics'],
+    response: ProviderBreakdownResponse,
+  })
+  providers(@CurrentUser() user: AuthUser, @ZodQuery(PeriodQuery) query: PeriodQuery) {
+    return this.metrics.providers(user.id, query.period);
   }
 
   @Get('trends')

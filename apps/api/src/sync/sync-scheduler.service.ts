@@ -48,7 +48,7 @@ export class SyncScheduler implements OnApplicationBootstrap {
     // user-scope: the scheduler deliberately scans every user's ACTIVE integrations.
     const due = await this.prisma.integration.findMany({
       where: {
-        provider: Provider.GITHUB,
+        // Every provider (P13): GitHub, GitLab, Jira and Linear each once per 24 h at their slot.
         status: IntegrationStatus.ACTIVE,
         scheduleSlotMinute: { gte: hourStart, lt: hourStart + 60 },
       },

@@ -26,6 +26,7 @@ export const EXPORT_SECTIONS = {
   reviews: 'PullRequestReview',
   commits: 'Commit',
   issues: 'Issue',
+  providerIdentities: 'ProviderIdentity',
   syncRuns: 'SyncRun',
   metricSnapshots: 'MetricSnapshot',
   impactScores: 'ImpactScore',
@@ -44,7 +45,7 @@ export const EXPORT_SECTIONS = {
 export const EXPORT_EXCLUDED = {
   Verification: 'short-lived Better Auth verification values, not linked to a user id',
   Jwks: 'server signing keys',
-  WebhookDelivery: 'GitHub delivery log without a user id',
+  WebhookDelivery: 'provider webhook delivery log without a user id',
 } as const;
 
 /** Secret columns that never leave the database (asserted by the export test). */
@@ -134,6 +135,9 @@ export class DataExportService {
     await array('reviews', (c) => p.pullRequestReview.findMany({ where: { userId }, ...paged(c) }));
     await array('commits', (c) => p.commit.findMany({ where: { userId }, ...paged(c) }));
     await array('issues', (c) => p.issue.findMany({ where: { userId }, ...paged(c) }));
+    await array('providerIdentities', (c) =>
+      p.providerIdentity.findMany({ where: { userId }, ...paged(c) }),
+    );
     await array('syncRuns', (c) => p.syncRun.findMany({ where: { userId }, ...paged(c) }));
     await array('metricSnapshots', (c) =>
       p.metricSnapshot.findMany({ where: { userId }, ...paged(c) }),

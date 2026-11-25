@@ -2,9 +2,9 @@
   "persona": "private-redacted",
   "generator": "promotion",
   "promptId": "promotion",
-  "promptVersion": 1,
+  "promptVersion": 2,
   "model": "reference-writer",
   "source": "synthetic",
-  "recordedAt": "2026-11-17",
+  "recordedAt": "2026-11-25",
   "text": "{\"whyReady\":{\"text\":\"Engineer who merged 4 pull requests across 2 repositories in October 2026.\",\"citations\":[\"PR-private/repo-1#106\"]},\"leadershipEvidence\":[{\"text\":\"Reviewed the change \\\"SDK retries\\\" in private/repo-1, giving the author detailed feedback.\",\"citations\":[\"REV-private/repo-1#501\"]},{\"text\":\"Reviewed the change \\\"Deal-room permissions model\\\" in acme/public-sdk, giving the author detailed feedback.\",\"citations\":[\"REV-acme/public-sdk#500\"]}],\"technicalImpact\":[{\"text\":\"Strengthened security: harden file type validation in private/repo-1.\",\"citations\":[\"PR-private/repo-1#106\"]},{\"text\":\"Delivered the change to build deal-room document upload in private/repo-1.\",\"citations\":[\"PR-private/repo-1#100\"]},{\"text\":\"Delivered the change to add SDK pagination helpers in acme/public-sdk.\",\"citations\":[\"PR-acme/public-sdk#103\"]}],\"businessValue\":[{\"text\":\"Delivered the change to build deal-room document upload in private/repo-1.\",\"citations\":[\"PR-private/repo-1#100\"]},{\"text\":\"Delivered the change to add SDK pagination helpers in acme/public-sdk.\",\"citations\":[\"PR-acme/public-sdk#103\"]}],\"mentorship\":[]}"
 }

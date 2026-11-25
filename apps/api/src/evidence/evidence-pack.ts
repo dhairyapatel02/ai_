@@ -7,7 +7,7 @@ import {
 } from '@devimpact/shared';
 
 import { cleanText, TEXT_CAPS } from '../ai/template';
-import { commitRef, prRef, reviewRef } from '../common/evidence-refs';
+import { commitRef, issueRef, prRef, reviewRef } from '../common/evidence-refs';
 
 import type { ImpactInputs } from '../metrics/score-inputs';
 import type { AchievementRecord } from './achievements';
@@ -44,6 +44,26 @@ export interface RepoRecord {
   fullName: string;
   isPrivate: boolean;
   htmlUrl: string | null;
+  /** `GITLAB` → `MR-…!n` refs (P13); absent/`GITHUB` → `PR-…#n`. */
+  provider?: string;
+}
+
+/** A Jira / Linear issue assigned to the user (P13). Titles only; no descriptions are stored. */
+export interface IssueRecord {
+  id: string;
+  provider: 'JIRA' | 'LINEAR';
+  key: string;
+  title: string;
+  url: string | null;
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
+  priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE';
+  storyPoints: number | null;
+  labels: string[];
+  projectName: string | null;
+  cycleName: string | null;
+  completedAt: Date | null;
+  updatedAtRemote: Date;
+  updatedAt: Date;
 }
 
 export interface ReviewRecord {
@@ -75,9 +95,11 @@ export interface EvidenceRecords {
   reviews: ReviewRecord[];
   commits: CommitRecord[];
   achievements: AchievementRecord[];
+  /** Completed Jira / Linear issues of the period (P13); absent = none. */
+  issues?: IssueRecord[];
 }
 
-export type EvidenceKindValue = 'pull_request' | 'review' | 'commit' | 'achievement';
+export type EvidenceKindValue = 'pull_request' | 'review' | 'commit' | 'achievement' | 'issue';
 
 export interface PackItem {
   /** Real ref (stored citations, UI chips). */
@@ -123,6 +145,8 @@ export interface EvidencePack {
     commits: number;
     repos: number;
     achievements: number;
+    /** Present only when the pack holds issues (keeps older packs byte-identical). */
+    issuesCompleted?: number;
   };
   themes: { theme: string; refs: string[] }[];
   scoreStatus: 'ok' | 'insufficient_data';
@@ -140,9 +164,16 @@ export interface PackLimits {
   reviews: number;
   commits: number;
   achievements: number;
+  issues?: number;
 }
 
-export const DOCUMENT_LIMITS: PackLimits = { prs: 40, reviews: 15, commits: 10, achievements: 20 };
+export const DOCUMENT_LIMITS: PackLimits = {
+  prs: 40,
+  reviews: 15,
+  commits: 10,
+  achievements: 20,
+  issues: 25,
+};
 
 /** Metrics shown in engine-filled document sections (KPI §3, scored + key informational). */
 export const DOCUMENT_METRICS: ImplementedMetricKey[] = [
@@ -225,6 +256,23 @@ export function scoreCommit(c: CommitRecord): number {
   const tags = tagsOf(`${c.headline} ${c.body ?? ''}`);
   let score = 0.5 + (lines > 20 && lines < 800 ? 0.5 : 0);
   score += tags.reduce((sum, t) => sum + (TAG_BONUS[t] ?? 0) / 2, 0);
+  return Math.round(score * 1000) / 1000;
+}
+
+const PRIORITY_BONUS: Record<IssueRecord['priority'], number> = {
+  URGENT: 0.8,
+  HIGH: 0.5,
+  MEDIUM: 0.2,
+  LOW: 0,
+  NONE: 0,
+};
+
+/** Issue significance (P13): completed, size (points, capped), priority, tags. */
+export function scoreIssue(i: IssueRecord): number {
+  let score = i.status === 'DONE' ? 2 : 0.8;
+  score += Math.min(1.5, (i.storyPoints ?? 0) * 0.2);
+  score += PRIORITY_BONUS[i.priority];
+  score += tagsOf(i.title, i.labels).reduce((sum, t) => sum + (TAG_BONUS[t] ?? 0) / 2, 0);
   return Math.round(score * 1000) / 1000;
 }
 
@@ -321,8 +369,8 @@ export function buildEvidencePack(input: BuildPackInput): EvidencePack {
     const lines =
       pr.additions === null || pr.deletions === null ? null : pr.additions + pr.deletions;
     return {
-      ref: prRef(pr.repo.fullName, pr.number),
-      promptRef: prRef(label(pr.repo.fullName), pr.number),
+      ref: prRef(pr.repo.fullName, pr.number, pr.repo.provider),
+      promptRef: prRef(label(pr.repo.fullName), pr.number, pr.repo.provider),
       kind: 'pull_request',
       id: pr.id,
       title: cleanText(pr.title, TEXT_CAPS.title),
@@ -353,8 +401,8 @@ export function buildEvidencePack(input: BuildPackInput): EvidencePack {
   });
 
   const reviewItems: PackItem[] = records.reviews.map((r) => ({
-    ref: reviewRef(r.repo.fullName, r.pr.number),
-    promptRef: reviewRef(label(r.repo.fullName), r.pr.number),
+    ref: reviewRef(r.repo.fullName, r.pr.number, r.repo.provider),
+    promptRef: reviewRef(label(r.repo.fullName), r.pr.number, r.repo.provider),
     kind: 'review',
     id: r.id,
     title: cleanText(r.pr.title, TEXT_CAPS.title),
@@ -384,7 +432,7 @@ export function buildEvidencePack(input: BuildPackInput): EvidencePack {
     .filter(
       (c) =>
         c.associatedPrNumber === null ||
-        !selectedPrKeys.has(prRef(c.repo.fullName, c.associatedPrNumber)),
+        !selectedPrKeys.has(prRef(c.repo.fullName, c.associatedPrNumber, c.repo.provider)),
     )
     .map((c) => ({
       ref: commitRef(c.repo.fullName, c.sha),
@@ -429,7 +477,51 @@ export function buildEvidencePack(input: BuildPackInput): EvidencePack {
     .sort(byScore)
     .slice(0, limits.achievements);
 
-  const items = [...prsRanked, ...achievementItems, ...reviewsRanked, ...commitsRanked];
+  // Issues (P13): with redaction on, project keys/names are aliased like private repositories.
+  const issueAliases = new Map<string, string>();
+  const issueItems: PackItem[] = (records.issues ?? [])
+    .map((i) => {
+      const ref = issueRef(i.provider, i.key);
+      let promptRef = ref;
+      let project = i.projectName ? cleanText(i.projectName, 100) : null;
+      if (input.redactPrivateRepos) {
+        const alias = issueAliases.get(ref) ?? `${i.provider === 'LINEAR' ? 'LIN' : 'JIRA'}-ISSUE-${issueAliases.size + 1}`;
+        issueAliases.set(ref, alias);
+        promptRef = alias;
+        project = project ? 'private/project' : null;
+      }
+      return {
+        ref,
+        promptRef,
+        kind: 'issue' as const,
+        id: i.id,
+        title: cleanText(i.title, TEXT_CAPS.title),
+        repo: i.projectName,
+        repoLabel: project,
+        url: i.url,
+        occurredAt: (i.completedAt ?? i.updatedAtRemote).toISOString(),
+        version: i.updatedAt.toISOString(),
+        score: scoreIssue(i),
+        tags: tagsOf(i.title, i.labels),
+        facts: {
+          tracker: i.provider === 'LINEAR' ? 'linear' : 'jira',
+          status: i.status.toLowerCase(),
+          storyPoints: i.storyPoints,
+          priority: i.priority.toLowerCase(),
+          cycle: i.cycleName ? cleanText(i.cycleName, 60) : null,
+        },
+      };
+    })
+    .sort(byScore)
+    .slice(0, limits.issues ?? 25);
+
+  const items = [
+    ...prsRanked,
+    ...achievementItems,
+    ...issueItems,
+    ...reviewsRanked,
+    ...commitsRanked,
+  ];
 
   const themes = new Map<string, string[]>();
   for (const item of items) {
@@ -452,12 +544,15 @@ export function buildEvidencePack(input: BuildPackInput): EvidencePack {
       commits: metricValue('commits'),
       repos: repos.size,
       achievements: records.achievements.length,
+      ...(issueItems.length > 0
+        ? { issuesCompleted: (records.issues ?? []).filter((i) => i.status === 'DONE').length }
+        : {}),
     },
     themes: [...themes.entries()]
       .map(([theme, refs]) => ({ theme, refs }))
       .sort((a, b) => b.refs.length - a.refs.length || (a.theme < b.theme ? -1 : 1)),
     scoreStatus: inputs.status,
-    redacted: aliases.size > 0,
+    redacted: aliases.size > 0 || issueAliases.size > 0,
   };
 }
 

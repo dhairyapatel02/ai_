@@ -108,7 +108,7 @@ export class DigestBuilder {
           url: true,
           additions: true,
           deletions: true,
-          repository: { select: { fullName: true } },
+          repository: { select: { fullName: true, integration: { select: { provider: true } } } },
           evidence: { where: { achievement: { userId } }, select: { id: true }, take: 1 },
         },
         orderBy: [{ mergedAt: 'desc' }, { id: 'desc' }],
@@ -129,7 +129,7 @@ export class DigestBuilder {
     const toItem = (p: (typeof merged)[number], url: string | null) => ({
       title: p.title,
       repo: p.repository.fullName,
-      ref: prRef(p.repository.fullName, p.number),
+      ref: prRef(p.repository.fullName, p.number, p.repository.integration.provider),
       url,
     });
     const web = this.webUrl();

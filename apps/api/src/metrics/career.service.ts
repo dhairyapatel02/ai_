@@ -6,7 +6,7 @@ import {
 } from '@devimpact/shared';
 import { Injectable } from '@nestjs/common';
 
-import { prRef, reviewRef, safeUrl } from '../common/evidence-refs';
+import { REPO_PROVIDER, issueRef, prRef, reviewRef, safeUrl } from '../common/evidence-refs';
 import { PrismaService } from '../prisma/prisma.service';
 import { computeMetric } from './metric-definitions';
 import { MetricsRepository } from './metrics.repository';
@@ -58,7 +58,7 @@ export class CareerService {
 
     const { start, endExclusive } = localRangeToUtc(`${year}-01-01`, `${year}-12-31`, timezone);
     const included = { included: true } as const;
-    const [mergedRows, reviews, firstMerges, facts, achievementRows] = await Promise.all([
+    const [mergedRows, reviews, firstMerges, facts, achievementRows, issueRows] = await Promise.all([
       this.prisma.pullRequest.findMany({
         where: {
           userId,
@@ -77,7 +77,7 @@ export class CareerService {
           additions: true,
           deletions: true,
           repositoryId: true,
-          repository: { select: { fullName: true } },
+          repository: { select: { fullName: true, ...REPO_PROVIDER } },
         },
         orderBy: [{ mergedAt: 'desc' }, { id: 'desc' }],
       }),
@@ -95,7 +95,7 @@ export class CareerService {
             select: {
               number: true,
               repositoryId: true,
-              repository: { select: { fullName: true } },
+              repository: { select: { fullName: true, ...REPO_PROVIDER } },
             },
           },
         },
@@ -123,6 +123,21 @@ export class CareerService {
         },
         select: { id: true, title: true, category: true, occurredOn: true },
         orderBy: [{ occurredOn: 'desc' }, { id: 'desc' }],
+      }),
+      // Issues completed in the year (Jira / Linear, P13, A-8).
+      this.prisma.issue.findMany({
+        where: { userId, status: 'DONE', completedAt: { gte: start, lt: endExclusive } },
+        select: {
+          id: true,
+          key: true,
+          title: true,
+          url: true,
+          completedAt: true,
+          storyPoints: true,
+          projectName: true,
+          integration: { select: { provider: true } },
+        },
+        orderBy: [{ completedAt: 'desc' }, { id: 'desc' }],
       }),
     ]);
     const achievementsAll = achievementRows.map((a) => ({
@@ -164,28 +179,32 @@ export class CareerService {
       const qMerged = merged.filter((p) => inQ(p.mergedAt));
       const qAchievements = achievementsAll.filter((a) => a.date >= qStart && a.date <= qEnd);
       const qReviews = reviews.filter((r) => inQ(r.submittedAt));
+      const qIssues = issueRows.filter((i) => i.completedAt !== null && inQ(i.completedAt));
       const groups = new Map<
         string,
-        { fullName: string; prs: typeof qMerged; reviews: typeof qReviews }
+        { fullName: string; provider: string; prs: typeof qMerged; reviews: typeof qReviews }
       >();
-      const group = (id: string, fullName: string) => {
+      const group = (id: string, fullName: string, provider: string) => {
         let g = groups.get(id);
         if (!g) {
-          g = { fullName, prs: [], reviews: [] };
+          g = { fullName, provider, prs: [], reviews: [] };
           groups.set(id, g);
         }
         return g;
       };
-      for (const p of qMerged) group(p.repositoryId, p.repository.fullName).prs.push(p);
+      for (const p of qMerged) {
+        group(p.repositoryId, p.repository.fullName, p.repository.integration.provider).prs.push(p);
+      }
       for (const r of qReviews) {
-        group(r.pullRequest.repositoryId, r.pullRequest.repository.fullName).reviews.push(r);
+        const repo = r.pullRequest.repository;
+        group(r.pullRequest.repositoryId, repo.fullName, repo.integration.provider).reviews.push(r);
       }
 
       const repos: RepoGroup[] = [...groups.entries()].map(([repositoryId, g]) => {
         const items: RepoGroup['items'] = g.prs.slice(0, CAREER_ITEMS_PER_REPO).map((p) => ({
           type: 'pr_merged' as const,
           id: p.id,
-          ref: prRef(g.fullName, p.number),
+          ref: prRef(g.fullName, p.number, g.provider),
           title: p.title,
           date: localDateOf(p.mergedAt, timezone),
           url: safeUrl(p.url),
@@ -197,7 +216,7 @@ export class CareerService {
           items.push({
             type: 'review_cluster',
             id: latest.id,
-            ref: reviewRef(g.fullName, latest.pullRequest.number),
+            ref: reviewRef(g.fullName, latest.pullRequest.number, g.provider),
             title: `Reviewed ${reviewedPrs} pull request${reviewedPrs === 1 ? '' : 's'} by teammates`,
             date: localDateOf(latest.submittedAt, timezone),
             url: null,
@@ -222,7 +241,7 @@ export class CareerService {
             kind: 'first_merged_pr_in_repo',
             date: localDateOf(p.mergedAt, timezone),
             title: `First merged PR in ${p.repository.fullName}`,
-            refs: [prRef(p.repository.fullName, p.number)],
+            refs: [prRef(p.repository.fullName, p.number, p.repository.integration.provider)],
           });
         }
       }
@@ -237,7 +256,9 @@ export class CareerService {
           kind: 'largest_merged_pr',
           date: localDateOf(largest.mergedAt, timezone),
           title: `Largest merged PR: ${largest.title}`,
-          refs: [prRef(largest.repository.fullName, largest.number)],
+          refs: [
+            prRef(largest.repository.fullName, largest.number, largest.repository.integration.provider),
+          ],
         });
       }
       const streak = computeMetric('longest_active_week_streak', facts, {
@@ -268,10 +289,22 @@ export class CareerService {
         repos,
         milestones,
         achievements: qAchievements,
+        issues: qIssues.slice(0, 20).map((i) => ({
+          type: 'issue_completed' as const,
+          id: i.id,
+          ref: issueRef(i.integration.provider, i.key),
+          title: i.title,
+          date: localDateOf(i.completedAt ?? start, timezone),
+          url: safeUrl(i.url),
+          tags: [i.key, ...(i.projectName ? [i.projectName] : [])].slice(0, 3),
+        })),
         totals: {
           prsMerged: qMerged.length,
           prsReviewed: new Set(qReviews.map((r) => r.pullRequestId)).size,
           achievements: qAchievements.length,
+          issuesCompleted: qIssues.length,
+          storyPoints:
+            Math.round(qIssues.reduce((sum, i) => sum + (i.storyPoints ?? 0), 0) * 100) / 100,
         },
       });
     }

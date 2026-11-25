@@ -9,7 +9,7 @@ import {
 } from '@devimpact/shared';
 
 /**
- * `metrics@2.0.0` — one pure function per metric (KPI_METHODOLOGY §3, ADR-0008). Inputs are
+ * `metrics@2.1.0` (2.0.0 + the §3.6 issue metrics, P13) — one pure function per metric (KPI_METHODOLOGY §3, ADR-0008). Inputs are
  * normalised fact rows (already filtered to the user, included repositories, non-stub PRs and
  * non-merge commits by the repository layer) and a metric window; outputs are the value, sample
  * size and evidence ids. No I/O, no clock: same inputs → same output, byte for byte.
@@ -18,6 +18,8 @@ import {
 /** `AP` — a PR the user authored (`isAuthoredByUser = true`, `legacyStub = false`). */
 export interface AuthoredPrFact {
   id: string;
+  /** Source provider (`github`, `gitlab`, `jira`, `linear`) — rollup dimension only. */
+  provider?: string;
   repositoryId: string;
   createdAt: Date;
   /** `readyForReviewAt` if the PR was ever a draft, else `createdAt` (§2.3). */
@@ -34,6 +36,8 @@ export interface AuthoredPrFact {
 /** `RV` — a review the user submitted on someone else's PR (`RP`). */
 export interface ReviewFact {
   id: string;
+  /** Source provider (`github`, `gitlab`, `jira`, `linear`) — rollup dimension only. */
+  provider?: string;
   pullRequestId: string;
   repositoryId: string;
   submittedAt: Date;
@@ -45,14 +49,29 @@ export interface ReviewFact {
 /** `CM` — a default-branch commit by the user with ≤ 1 parent. */
 export interface CommitFact {
   id: string;
+  /** Source provider (`github`, `gitlab`, `jira`, `linear`) — rollup dimension only. */
+  provider?: string;
   repositoryId: string;
   authoredAt: Date;
+}
+
+/** `IS` — an issue assigned to the user (Jira / Linear, KPI §3.6, P13). */
+export interface IssueFact {
+  id: string;
+  /** Source provider (`github`, `gitlab`, `jira`, `linear`) — rollup dimension only. */
+  provider?: string;
+  /** Set only for status DONE (cancelled issues are never completed). */
+  completedAt: Date | null;
+  startedAt: Date | null;
+  storyPoints: number | null;
 }
 
 export interface Facts {
   authored: AuthoredPrFact[];
   reviews: ReviewFact[];
   commits: CommitFact[];
+  /** Issue-tracker facts (metrics@2.1.0); absent = no issues. */
+  issues?: IssueFact[];
 }
 
 /** A period as the engine sees it: local dates + their half-open UTC instants. */
@@ -166,6 +185,8 @@ export interface MetricContext {
   contributions: Contribution[];
   /** W: ISO weeks with ≥ 1 weekday inside the period, in order. */
   workingWeeks: string[];
+  /** IS_c: issues with completedAt ∈ period (§3.6). */
+  completedIssues: (IssueFact & { completedAt: Date })[];
 }
 
 const inWindow = (t: Date | null, w: MetricWindow): t is Date =>
@@ -218,8 +239,13 @@ export function prepareContext(facts: Facts, window: MetricWindow): MetricContex
     }
   }
 
+  const completedIssues = (facts.issues ?? []).filter(
+    (i): i is IssueFact & { completedAt: Date } => inWindow(i.completedAt, window),
+  );
+
   return {
     window,
+    completedIssues,
     opened,
     merged,
     closedUnmerged,
@@ -506,6 +532,37 @@ export const longestActiveWeekStreak: MetricFn = (ctx) => {
   );
 };
 
+/** §3.6 Issues (Jira / Linear) — informational, never in the impact score. */
+const issueEv = (i: IssueFact & { completedAt: Date }): Ev => ({ id: i.id, at: i.completedAt });
+
+export const issuesCompleted: MetricFn = (ctx) =>
+  result(
+    'issues_completed',
+    ctx.completedIssues.length,
+    ctx.completedIssues.length,
+    ctx.completedIssues.map(issueEv),
+  );
+
+export const storyPointsCompleted: MetricFn = (ctx) => {
+  const pointed = ctx.completedIssues.filter((i) => i.storyPoints !== null);
+  const total = pointed.reduce((sum, i) => sum + (i.storyPoints ?? 0), 0);
+  return result(
+    'story_points_completed',
+    Math.round(total * 100) / 100,
+    pointed.length,
+    pointed.map(issueEv),
+  );
+};
+
+export const issueCycleTimeMedianHours: MetricFn = (ctx) => {
+  const started = ctx.completedIssues.filter(
+    (i): i is IssueFact & { completedAt: Date; startedAt: Date } =>
+      i.startedAt !== null && i.startedAt.getTime() <= i.completedAt.getTime(),
+  );
+  const sample = started.map((i) => hours(i.startedAt, i.completedAt, ctx.window));
+  return result('issue_cycle_time_median_hours', median(sample), sample.length, started.map(issueEv));
+};
+
 export const METRIC_FUNCTIONS: Record<ImplementedMetricKey, MetricFn> = {
   prs_merged: prsMerged,
   prs_opened: prsOpened,
@@ -528,6 +585,9 @@ export const METRIC_FUNCTIONS: Record<ImplementedMetricKey, MetricFn> = {
   active_weeks_ratio: activeWeeksRatio,
   commits,
   longest_active_week_streak: longestActiveWeekStreak,
+  issues_completed: issuesCompleted,
+  story_points_completed: storyPointsCompleted,
+  issue_cycle_time_median_hours: issueCycleTimeMedianHours,
 };
 
 export type MetricResults = Record<ImplementedMetricKey, MetricResult>;

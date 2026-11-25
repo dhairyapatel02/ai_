@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 import type {
+  NormalizedIssue,
   NormalizedCommit,
   NormalizedPullRequest,
   NormalizedRepository,
@@ -355,5 +356,61 @@ export class SyncWriter {
       skipDuplicates: true,
     });
     return { created: result.count, updated: 0 };
+  }
+
+  /** Upserts issues assigned to the user by (integration, external id) — idempotent (P13). */
+  async upsertIssues(tx: Tx, scope: WriteScope, issues: NormalizedIssue[]): Promise<WriteResult> {
+    if (issues.length === 0) return { created: 0, updated: 0 };
+    const existing = await tx.issue.findMany({
+      where: {
+        userId: scope.userId,
+        integrationId: scope.integrationId,
+        externalId: { in: issues.map((i) => i.externalId) },
+      },
+    });
+    const byId = new Map(existing.map((row) => [row.externalId, row]));
+    const toCreate: Prisma.IssueCreateManyInput[] = [];
+    let updated = 0;
+    const seen = new Set<string>();
+    for (const issue of issues) {
+      if (seen.has(issue.externalId)) continue;
+      seen.add(issue.externalId);
+      const data = {
+        key: issue.key,
+        url: issue.url,
+        title: issue.title,
+        labels: issue.labels,
+        storyPoints: issue.storyPoints,
+        priority: issue.priority,
+        status: issue.status,
+        statusName: issue.statusName,
+        projectKey: issue.projectKey,
+        projectName: issue.projectName,
+        cycleName: issue.cycleName,
+        siteId: issue.siteId,
+        createdAtRemote: issue.createdAt,
+        updatedAtRemote: issue.updatedAt,
+        startedAt: issue.startedAt,
+        completedAt: issue.completedAt,
+        canceledAt: issue.canceledAt,
+      };
+      const current = byId.get(issue.externalId);
+      if (!current) {
+        toCreate.push({
+          userId: scope.userId,
+          integrationId: scope.integrationId,
+          externalId: issue.externalId,
+          ...data,
+        });
+      } else if (differs(current as unknown as Record<string, unknown>, data)) {
+        await tx.issue.updateMany({ where: { id: current.id, userId: scope.userId }, data });
+        updated++;
+      }
+    }
+    const created = toCreate.length
+      ? // user-scope: every row in `toCreate` carries scope.userId.
+        (await tx.issue.createMany({ data: toCreate, skipDuplicates: true })).count
+      : 0;
+    return { created, updated };
   }
 }

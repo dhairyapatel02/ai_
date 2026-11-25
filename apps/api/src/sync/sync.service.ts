@@ -28,7 +28,13 @@ import {
   syncJobId,
 } from './sync.constants';
 
-import type { SyncRunDto, SyncRunListQuery, SyncStatusDto } from '@devimpact/shared';
+import {
+  PROVIDER_LABELS,
+  type ProviderKind,
+  type SyncRunDto,
+  type SyncRunListQuery,
+  type SyncStatusDto,
+} from '@devimpact/shared';
 
 export const ACTIVE_RUN_STATUSES: SyncStatus[] = [
   SyncStatus.QUEUED,
@@ -67,10 +73,11 @@ export class SyncService {
     const row = await this.prisma.integration.findFirst({
       where: integrationId
         ? { id: integrationId, userId }
-        : { userId, provider: Provider.GITHUB, status: { not: IntegrationStatus.DISCONNECTED } },
+        : { userId, status: { not: IntegrationStatus.DISCONNECTED } },
       select: {
         id: true,
         userId: true,
+        provider: true,
         status: true,
         backfillFrom: true,
         syncCursor: true,
@@ -78,9 +85,10 @@ export class SyncService {
         lastSuccessfulSyncAt: true,
         user: { select: { plan: true } },
       },
-      orderBy: { updatedAt: 'desc' },
+      // Without an id: GitHub first (the shell's sync status, P06), then the newest other source.
+      orderBy: [{ provider: 'asc' }, { updatedAt: 'desc' }],
     });
-    if (!row) throw AppException.notFound('GitHub integration');
+    if (!row) throw AppException.notFound('Integration');
     return row;
   }
 
@@ -107,13 +115,14 @@ export class SyncService {
   async requestSync(userId: string, options: RequestSyncOptions): Promise<SyncRunDto> {
     const integration = await this.integrationFor(userId, options.integrationId);
     if (integration.status === IntegrationStatus.NEEDS_REAUTH) {
-      throw new AppException('INTEGRATION_NEEDS_REAUTH', 'Reconnect GitHub to sync again', {
+      const label = PROVIDER_LABELS[integration.provider.toLowerCase() as ProviderKind];
+      throw new AppException('INTEGRATION_NEEDS_REAUTH', `Reconnect ${label} to sync again`, {
         integrationId: integration.id,
         reconnectUrl: `/api/integrations/${integration.id}/reconnect`,
       });
     }
     if (integration.status === IntegrationStatus.DISCONNECTED) {
-      throw new AppException('CONFLICT', 'This GitHub connection is disconnected');
+      throw new AppException('CONFLICT', 'This connection is disconnected');
     }
     if (options.trigger === SyncTrigger.MANUAL) await this.consumeManualQuota(integration.id);
 
@@ -204,7 +213,7 @@ export class SyncService {
       return from;
     }
     const cursor = (integration.syncCursor ?? {}) as Record<string, string | undefined>;
-    const times = [cursor.authoredPrsUpdatedAt, cursor.reviewedPrsUpdatedAt]
+    const times = [cursor.authoredPrsUpdatedAt, cursor.reviewedPrsUpdatedAt, cursor.issuesUpdatedAt]
       .filter((v): v is string => typeof v === 'string')
       .map((v) => Date.parse(v));
     const base = times.length

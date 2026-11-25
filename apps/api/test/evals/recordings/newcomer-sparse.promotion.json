@@ -2,9 +2,9 @@
   "persona": "newcomer-sparse",
   "generator": "promotion",
   "promptId": "promotion",
-  "promptVersion": 1,
+  "promptVersion": 2,
   "model": "reference-writer",
   "source": "synthetic",
-  "recordedAt": "2026-11-17",
+  "recordedAt": "2026-11-25",
   "text": "{\"whyReady\":{\"text\":\"Engineer who merged 2 pull requests across 1 repository in October 2026.\",\"citations\":[\"PR-acme/api#103\"]},\"leadershipEvidence\":[{\"text\":\"Reviewed the change \\\"Profile avatar upload\\\" in acme/api, giving the author detailed feedback.\",\"citations\":[\"REV-acme/api#500\"]}],\"technicalImpact\":[{\"text\":\"Delivered the change to add loading state to profile page in acme/api.\",\"citations\":[\"PR-acme/api#103\"]},{\"text\":\"Resolved a defect: fix typo in signup email copy in acme/api.\",\"citations\":[\"PR-acme/api#100\"]}],\"businessValue\":[{\"text\":\"Delivered the change to add loading state to profile page in acme/api.\",\"citations\":[\"PR-acme/api#103\"]}],\"mentorship\":[]}"
 }

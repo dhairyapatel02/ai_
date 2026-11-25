@@ -5,6 +5,6 @@
   "promptVersion": 1,
   "model": "reference-writer",
   "source": "synthetic",
-  "recordedAt": "2026-11-17",
+  "recordedAt": "2026-11-25",
   "text": "{\"summary\":{\"text\":\"A focused week in Oct 19 – Oct 25, 2026.\",\"citations\":[\"PR-private/repo-1#106\"]},\"highlights\":[{\"text\":\"Strengthened security: harden file type validation in private/repo-1.\",\"citations\":[\"PR-private/repo-1#106\"]},{\"text\":\"Delivered the change to build deal-room document upload in private/repo-1.\",\"citations\":[\"PR-private/repo-1#100\"]},{\"text\":\"Delivered the change to add SDK pagination helpers in acme/public-sdk.\",\"citations\":[\"PR-acme/public-sdk#103\"]}]}"
 }
