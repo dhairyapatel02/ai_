@@ -2,6 +2,7 @@
 
 import {
   Award,
+  CircleCheckBig,
   GitCommitHorizontal,
   GitMerge,
   GitPullRequest,
@@ -24,6 +25,7 @@ export const FEED_ICON: Record<ActivityType, LucideIcon> = {
   review: MessageSquareText,
   commit: GitCommitHorizontal,
   achievement: Award,
+  issue: CircleCheckBig,
 };
 
 export const FEED_VERB: Record<ActivityType, string> = {
@@ -33,6 +35,7 @@ export const FEED_VERB: Record<ActivityType, string> = {
   review: 'Reviewed',
   commit: 'Committed',
   achievement: 'Achievement',
+  issue: 'Completed',
 };
 
 const REVIEW_STATE: Record<string, string> = {
@@ -71,7 +74,11 @@ export function parseItemParam(value: string | null): ParsedItem | null {
   if (!value) return null;
   const [type, id, pr] = value.split(':');
   if (!type || !id || !ID.test(id) || (pr !== undefined && !ID.test(pr))) return null;
-  if (!['pr_merged', 'pr_opened', 'pr_closed', 'review', 'commit', 'achievement'].includes(type)) {
+  if (
+    !['pr_merged', 'pr_opened', 'pr_closed', 'review', 'commit', 'achievement', 'issue'].includes(
+      type,
+    )
+  ) {
     return null;
   }
   return { type: type as ActivityType, id, pullRequestId: pr };
@@ -88,6 +95,19 @@ export function feedMeta(item: FeedItem): string {
     const category = parseCategory(str(item.meta.category));
     return category ? CATEGORY_LABEL[category] : 'Achievement';
   }
+  if (item.type === 'issue') {
+    // `PAY-123 · Payments · Jira · 5 pts` (P13): issues have a project, not a repository.
+    const points = typeof item.meta.storyPoints === 'number' ? item.meta.storyPoints : null;
+    return [
+      str(item.meta.key),
+      str(item.meta.project),
+      item.provider === 'linear' ? 'Linear' : 'Jira',
+      points !== null ? `${points} ${points === 1 ? 'pt' : 'pts'}` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  }
+  if (item.provider === 'gitlab') return repo ? `${repo} · GitLab` : 'GitLab';
   return repo;
 }
 

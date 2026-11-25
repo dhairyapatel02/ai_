@@ -1,0 +1,111 @@
+{
+  "data": [
+    {
+      "id": "cmwvkpe9a0002t47d11sg4n5r",
+      "provider": "github",
+      "category": "code",
+      "baseUrl": null,
+      "settings": {},
+      "status": "active",
+      "statusReason": null,
+      "externalLogin": "dana-demo",
+      "displayName": "Dana Demo",
+      "avatarUrl": null,
+      "installations": [
+        {
+          "installationId": "70000001",
+          "accountLogin": "dana-demo",
+          "accountType": "User",
+          "repositorySelection": "selected",
+          "suspended": false
+        },
+        {
+          "installationId": "70000002",
+          "accountLogin": "acme",
+          "accountType": "Organization",
+          "repositorySelection": "all",
+          "suspended": false
+        }
+      ],
+      "manageUrl": "https://github.com/settings/installations",
+      "lastSyncedAt": "2026-11-25T00:00:00.000Z",
+      "lastSuccessfulSyncAt": "2026-11-25T00:00:00.000Z",
+      "nextScheduledSyncAt": "2026-11-25T09:29:00.000Z",
+      "backfillFrom": "2026-02-28T00:00:00.000Z",
+      "createdAt": "2026-11-25T03:37:53.518Z"
+    },
+    {
+      "id": "cmwvkpe9e0003t47d45ibe6ge",
+      "provider": "gitlab",
+      "category": "code",
+      "baseUrl": null,
+      "settings": {},
+      "status": "active",
+      "statusReason": null,
+      "externalLogin": "dana-demo",
+      "displayName": "Dana Demo",
+      "avatarUrl": null,
+      "installations": [],
+      "manageUrl": "https://gitlab.com/-/user_settings/applications",
+      "lastSyncedAt": "2026-11-25T00:00:00.000Z",
+      "lastSuccessfulSyncAt": "2026-11-25T00:00:00.000Z",
+      "nextScheduledSyncAt": "2026-11-25T06:20:00.000Z",
+      "backfillFrom": "2025-11-25T00:00:00.000Z",
+      "createdAt": "2026-11-25T03:37:53.522Z"
+    },
+    {
+      "id": "cmwvkpe9l0004t47dejxcusq2",
+      "provider": "jira",
+      "category": "issues",
+      "baseUrl": null,
+      "settings": {
+        "sites": [
+          {
+            "id": "seed-cloud-acme",
+            "name": "Acme",
+            "url": "https://acme.atlassian.net/"
+          }
+        ],
+        "storyPointsField": null,
+        "storyPointsFieldDetected": "customfield_10016"
+      },
+      "status": "active",
+      "statusReason": null,
+      "externalLogin": "Dana Demo",
+      "displayName": "Dana Demo",
+      "avatarUrl": null,
+      "installations": [],
+      "manageUrl": "https://id.atlassian.com/manage-profile/apps",
+      "lastSyncedAt": "2026-11-25T00:00:00.000Z",
+      "lastSuccessfulSyncAt": "2026-11-25T00:00:00.000Z",
+      "nextScheduledSyncAt": "2026-11-25T11:54:00.000Z",
+      "backfillFrom": "2025-11-25T00:00:00.000Z",
+      "createdAt": "2026-11-25T03:37:53.529Z"
+    },
+    {
+      "id": "cmwvkpe9q0005t47dro6b4yqa",
+      "provider": "linear",
+      "category": "issues",
+      "baseUrl": null,
+      "settings": {
+        "workspace": {
+          "id": "seed-linear-org",
+          "name": "Acme",
+          "urlKey": "acme"
+        }
+      },
+      "status": "needs_reauth",
+      "statusReason": "LINEAR_TOKEN_REVOKED",
+      "externalLogin": "dana",
+      "displayName": "Dana Demo",
+      "avatarUrl": null,
+      "installations": [],
+      "manageUrl": "https://linear.app/settings/account/security",
+      "lastSyncedAt": "2026-11-25T00:00:00.000Z",
+      "lastSuccessfulSyncAt": "2026-11-25T00:00:00.000Z",
+      "nextScheduledSyncAt": null,
+      "backfillFrom": "2025-11-25T00:00:00.000Z",
+      "createdAt": "2026-11-25T03:37:53.534Z"
+    }
+  ]
+}

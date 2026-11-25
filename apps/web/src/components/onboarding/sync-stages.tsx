@@ -46,6 +46,7 @@ export function stageIndex(stage: SyncStage): number {
     case 'reviewed_prs':
       return 2;
     case 'commits':
+    case 'issues': // issue trackers (P13) never appear in onboarding; mapped for completeness
     case 'persist':
       return 3;
     case 'rollups':

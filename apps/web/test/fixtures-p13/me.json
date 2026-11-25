@@ -1,0 +1,81 @@
+{
+  "data": {
+    "user": {
+      "id": "cmwvkpe8q0000t47dw70z8fan",
+      "email": "demo@devimpact.dev",
+      "name": "Dana Demo",
+      "image": null,
+      "plan": "pro",
+      "createdAt": "2026-11-25T03:37:53.498Z"
+    },
+    "settings": {
+      "timezone": "Europe/London",
+      "currentRole": null,
+      "careerLevel": null,
+      "targetRole": null,
+      "defaultPeriodType": "month",
+      "digestEnabled": true,
+      "digestDayOfWeek": 1,
+      "digestHourLocal": 9,
+      "notifySyncFailures": true,
+      "notifyDocumentReady": false,
+      "aiRedactPrivateRepos": false,
+      "onboardingStep": null,
+      "onboardingCompletedAt": "2026-11-25T00:00:00.000Z"
+    },
+    "entitlements": {
+      "plan": "pro",
+      "limits": {
+        "integrations": 4,
+        "integrationsPerProvider": 1,
+        "historyMonths": 36,
+        "aiGenerationsPerMonth": 150,
+        "aiQuickPerMonth": 1000,
+        "weeklyDigest": true
+      },
+      "usage": {
+        "integrations": 4,
+        "byProvider": {
+          "github": 1,
+          "gitlab": 1,
+          "jira": 1,
+          "linear": 1
+        }
+      }
+    },
+    "integrations": [
+      {
+        "id": "cmwvkpe9a0002t47d11sg4n5r",
+        "provider": "github",
+        "status": "active",
+        "externalLogin": "dana-demo",
+        "lastSuccessfulSyncAt": "2026-11-25T00:00:00.000Z"
+      },
+      {
+        "id": "cmwvkpe9e0003t47d45ibe6ge",
+        "provider": "gitlab",
+        "status": "active",
+        "externalLogin": "dana-demo",
+        "lastSuccessfulSyncAt": "2026-11-25T00:00:00.000Z"
+      },
+      {
+        "id": "cmwvkpe9l0004t47dejxcusq2",
+        "provider": "jira",
+        "status": "active",
+        "externalLogin": "Dana Demo",
+        "lastSuccessfulSyncAt": "2026-11-25T00:00:00.000Z"
+      },
+      {
+        "id": "cmwvkpe9q0005t47dro6b4yqa",
+        "provider": "linear",
+        "status": "needs_reauth",
+        "externalLogin": "dana",
+        "lastSuccessfulSyncAt": "2026-11-25T00:00:00.000Z"
+      }
+    ],
+    "onboarding": {
+      "step": null,
+      "completed": true
+    }
+  }
+}

@@ -1,6 +1,13 @@
+import {
+  PROVIDER_LABELS,
+  type IntegrationDto,
+  type SyncRunDto,
+  type SyncStage,
+  type SyncStatusDto,
+} from '@devimpact/shared';
+
 import { formatDate, formatRelative, formatTime } from '@/lib/format';
 
-import type { IntegrationDto, SyncRunDto, SyncStage, SyncStatusDto } from '@devimpact/shared';
 
 /**
  * GitHub card state on Settings → Integrations (SCREENS S19 table): badge, explanation line,
@@ -30,6 +37,7 @@ const STAGE_LABEL: Record<SyncStage, string> = {
   authored_prs: 'Importing your pull requests',
   reviewed_prs: 'Importing pull requests you reviewed',
   commits: 'Importing commits',
+  issues: 'Importing issues',
   persist: 'Saving',
   rollups: 'Calculating KPIs',
   done: 'Finishing',
@@ -67,13 +75,13 @@ export function describeIntegration(
   const { timezone, now } = options;
   const run = sync?.currentRun ?? null;
   const suspended = integration.installations.find((i) => i.suspended);
+  const label = PROVIDER_LABELS[integration.provider];
 
   if (integration.status === 'needs_reauth' || sync?.state === 'needs_reauth') {
     return {
       key: 'needs_reauth',
       badge: { variant: 'warning', text: 'Needs reconnection' },
-      explanation:
-        'GitHub access was revoked. Reconnect to resume syncing — nothing has been deleted.',
+      explanation: `${label} access was revoked. Reconnect to resume syncing — nothing has been deleted.`,
       primary: 'reconnect',
       syncDisabledReason: null,
     };
@@ -83,9 +91,9 @@ export function describeIntegration(
     return {
       key: 'waiting_rate_limit',
       badge: { variant: 'warning', text: until ? `Paused until ${until}` : 'Paused' },
-      explanation: "GitHub's rate limit was reached. The sync resumes automatically.",
+      explanation: `${label}'s rate limit was reached. The sync resumes automatically.`,
       primary: 'sync',
-      syncDisabledReason: 'The sync resumes automatically when GitHub allows it',
+      syncDisabledReason: `The sync resumes automatically when ${label} allows it`,
     };
   }
   if (sync?.state === 'queued' || sync?.state === 'running') {
@@ -112,7 +120,7 @@ export function describeIntegration(
         sync.lastRun?.errorMessage ??
         (first
           ? `${first.repo ? `${first.repo}: ` : ''}${first.message}`
-          : 'GitHub returned an error during the last sync.'),
+          : `${label} returned an error during the last sync.`),
       primary: 'retry',
       syncDisabledReason: null,
     };
@@ -132,7 +140,10 @@ export function describeIntegration(
     return {
       key: 'not_synced',
       badge: { variant: 'neutral', text: 'Not synced yet' },
-      explanation: 'The first sync imports your last 30 days first, then the rest of the year.',
+      explanation:
+        integration.category === 'issues'
+          ? 'The first sync imports issues assigned to you, newest 30 days first.'
+          : 'The first sync imports your last 30 days first, then the rest of the year.',
       primary: 'sync',
       syncDisabledReason: null,
     };
@@ -152,7 +163,7 @@ export function describeIntegration(
 export function newItems(run: Pick<SyncRunDto, 'counts'>): number {
   const c = run.counts;
   if (typeof c.created === 'number') return c.created;
-  return (c.prsAuthored ?? 0) + (c.reviews ?? 0) + (c.commits ?? 0);
+  return (c.prsAuthored ?? 0) + (c.reviews ?? 0) + (c.commits ?? 0) + (c.issues ?? 0);
 }
 
 /** Run duration in seconds, or null while it has not finished. */

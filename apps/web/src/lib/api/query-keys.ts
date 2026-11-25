@@ -15,6 +15,8 @@ export const qk = {
     all: ['integrations'] as const,
     list: () => ['integrations', 'list'] as const,
     detail: (id: string) => ['integrations', 'detail', id] as const,
+    providers: () => ['integrations', 'providers'] as const,
+    identities: (id: string) => ['integrations', 'identities', id] as const,
   },
   repos: {
     all: ['repos'] as const,
@@ -39,6 +41,7 @@ export const qk = {
     trends: (period: Period, count: number) => ['metrics', 'trends', p(period), count] as const,
     evidence: (metric: string, period: Period, limit: number) =>
       ['metrics', 'evidence', metric, p(period), limit] as const,
+    providers: (period: Period) => ['metrics', 'providers', p(period)] as const,
   },
   impact: {
     all: ['impact'] as const,
@@ -56,6 +59,7 @@ export const qk = {
       ['activity', 'feed', params] as const,
     pr: (id: string) => ['activity', 'pr', id] as const,
     commit: (id: string) => ['activity', 'commit', id] as const,
+    issue: (id: string) => ['activity', 'issue', id] as const,
   },
   documents: {
     all: ['documents'] as const,

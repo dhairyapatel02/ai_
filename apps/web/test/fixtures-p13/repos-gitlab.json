@@ -1,0 +1,39 @@
+{
+  "data": [
+    {
+      "id": "cmwvkpelm00lyt47dfkht5or3",
+      "integrationId": "cmwvkpe9e0003t47d45ibe6ge",
+      "fullName": "acme/platform/billing-service",
+      "isPrivate": true,
+      "isFork": false,
+      "isArchived": false,
+      "accessible": true,
+      "included": true,
+      "inclusionSource": "default",
+      "viaInstallation": false,
+      "lastActivityAt": null,
+      "lastSyncedAt": "2026-11-25T06:00:00.000Z",
+      "htmlUrl": "https://gitlab.com/acme/platform/billing-service"
+    },
+    {
+      "id": "cmwvkpelo00lzt47djrvhzcjn",
+      "integrationId": "cmwvkpe9e0003t47d45ibe6ge",
+      "fullName": "acme/platform/infra-modules",
+      "isPrivate": true,
+      "isFork": false,
+      "isArchived": false,
+      "accessible": true,
+      "included": true,
+      "inclusionSource": "default",
+      "viaInstallation": false,
+      "lastActivityAt": null,
+      "lastSyncedAt": "2026-11-25T06:00:00.000Z",
+      "htmlUrl": "https://gitlab.com/acme/platform/infra-modules"
+    }
+  ],
+  "meta": {
+    "nextCursor": null,
+    "hasMore": false,
+    "total": 2
+  }
+}

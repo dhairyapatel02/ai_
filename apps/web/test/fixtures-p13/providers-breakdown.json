@@ -1,0 +1,32 @@
+{
+  "data": {
+    "period": {
+      "spec": "month:2026-11",
+      "type": "month",
+      "startDate": "2026-11-01",
+      "endDate": "2026-11-25",
+      "timezone": "Europe/London",
+      "periodDays": 30,
+      "inProgress": true,
+      "label": "November 2026"
+    },
+    "providers": [
+      {
+        "provider": "github",
+        "commits": 56,
+        "prsMerged": 7,
+        "prsReviewed": 7,
+        "issuesCompleted": 0,
+        "storyPoints": 0
+      },
+      {
+        "provider": "gitlab",
+        "commits": 3,
+        "prsMerged": 1,
+        "prsReviewed": 0,
+        "issuesCompleted": 0,
+        "storyPoints": 0
+      }
+    ]
+  }
+}

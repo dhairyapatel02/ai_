@@ -63,7 +63,10 @@ export interface LinkedEvidence {
 
 export function linkedFromEvidence(items: EvidenceItem[]): LinkedEvidence[] {
   return items.flatMap((e) =>
-    e.kind === 'achievement' ? [] : [{ kind: e.kind, id: e.id, ref: e.ref, title: e.title }],
+    // Achievements can link PRs, commits and reviews only (P12 CHECK); issues are cited directly.
+    e.kind === 'achievement' || e.kind === 'issue'
+      ? []
+      : [{ kind: e.kind, id: e.id, ref: e.ref, title: e.title }],
   );
 }
 
