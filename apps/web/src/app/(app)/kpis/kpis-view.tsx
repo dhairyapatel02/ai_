@@ -20,7 +20,6 @@ import { startsBeforeRecentWindow, usePeriod } from '@/lib/period';
 import { useSearchParamsState } from '@/lib/url-state';
 import { cn } from '@/lib/utils';
 
-
 /** Section intros (prototype `SECTIONS`, S8). Titles come from the API. */
 export const SECTION_INTRO: Record<string, string> = {
   delivery: 'How steadily your own work reaches production.',

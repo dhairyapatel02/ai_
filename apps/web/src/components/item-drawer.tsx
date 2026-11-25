@@ -33,7 +33,6 @@ import { useAchievementStatement, useCommit, usePullRequest } from '@/lib/api/me
 import { useIssue } from '@/lib/api/provider-hooks';
 import { formatDate, formatLocalDate, formatTime, localDateKey, plural } from '@/lib/format';
 
-
 const REVIEW_STATE: Record<string, string> = {
   approved: 'Approved',
   changes_requested: 'Changes requested',

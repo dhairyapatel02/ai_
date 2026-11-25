@@ -70,7 +70,6 @@ import {
 import { CONNECT_ERRORS, connectErrorsFor } from '@/lib/onboarding';
 import { cn } from '@/lib/utils';
 
-
 /** GitLab / Jira / Linear cards (P13): what each source brings. */
 const SOURCES: { provider: OAuthProviderWire; text: string }[] = [
   { provider: 'gitlab', text: 'Merge requests, reviews and commits' },

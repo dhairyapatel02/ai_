@@ -8,7 +8,6 @@ import {
 
 import { formatDate, formatRelative, formatTime } from '@/lib/format';
 
-
 /**
  * GitHub card state on Settings → Integrations (SCREENS S19 table): badge, explanation line,
  * primary action and the reason Sync now is disabled. Pure, unit-tested.

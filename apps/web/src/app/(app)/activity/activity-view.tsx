@@ -45,7 +45,6 @@ import { usePeriod } from '@/lib/period';
 import { useSearchParamsState } from '@/lib/url-state';
 import { cn } from '@/lib/utils';
 
-
 export const TYPE_FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'prs', label: 'Pull requests' },
