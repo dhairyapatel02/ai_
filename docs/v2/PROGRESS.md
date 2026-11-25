@@ -18,7 +18,7 @@ Every phase session updates this file before opening its PR.
 | 09 | Frontend Foundation & App Shell | ✅ Done | (this PR) | 2026-11-18 | Next 16 + React 19 + Tailwind 4, tokens/themes, AppShell + ⌘K + period picker, typed apiClient + TanStack Query + fetch-SSE, sign-in + onboarding, axe-clean E2E |
 | 10 | Frontend: Insights Pages | ✅ Done | (this PR) | 2026-11-18 | Dashboard, Activity (+ drawer), KPIs (+ explain), Impact, Career (+ print), Integrations; Recharts on tokens; Lighthouse mobile 96 / desktop 100, a11y 100 |
 | 11 | Frontend: AI Document Studio | ✅ Done | (this PR) | 2026-11-21 | Library, picker, 3 studios, streaming viewer/editor (structured fields), versions, citations, exports MD/TXT/PDF/DOCX (`@react-pdf/renderer` + `docx`), Documents nav spinner; axe-clean E2E |
-| 12 | Product Extensions | ⏳ Not started | | | |
+| 12 | Product Extensions | ✅ Done | (this PR) | 2026-11-25 | Achievements (+ evidence, `ACH-` citations), goals (engine progress), weekly digest + notification emails, unsubscribe, export, account deletion, plan & usage, entitlements; Could items → v2.1 |
 | 13 | Additional Integrations (optional) | ⏸ Deferred | | | Skipped for v2.0 → v2.1 (D-018) |
 | 14 | Hardening | ⏳ Not started | | | |
 | 15 | Release v2.0.0 | ⏳ Not started | | | |
@@ -1472,3 +1472,161 @@ dialog, plan & usage page → P12; shareable links → v2.1.
 - *Remaining UX polish ideas:* drag-and-drop reordering for bullet cards (buttons today); a
   diff view between versions; inline title editing; per-claim "Link an achievement" once P12 lands;
   keyboard shortcut for Export; reserve space for engine sections during streaming.
+
+### Phase 12 — Product Extensions (2026-11-24)
+**Branch / PR:** `claude/vigilant-gates-vja8gu` → `main` / PR "Phase 12: Product Extensions"
+(branched from `main@bf42478` = P11 merged).
+
+**Summary:**
+- **Schema (P12-1 `career_os`):** `achievements`, `achievement_evidence` (CHECK: exactly one of
+  PR / commit / review, matching `kind`), `goals` (CHECK: metric target all-or-nothing),
+  `goal_achievements`, `digest_deliveries` (unique user + local week). `migrate diff` shows no drift.
+- **Achievements (§15, F-60/F-61):** CRUD with ownership-checked evidence (own authored PRs, own
+  commits, own reviews; else 404), `?period=&category=&q=` + cursor + total, `metrics.recompute`
+  on save; achievements in the activity feed, PR detail `achievementIds`, the career timeline
+  ("Beyond code" + milestones, A-7), the `achievements` snapshot counter, evidence packs
+  (`ACH-<id>`, ranked 2.5, `counts.achievements` — `ACHIEVEMENT_SOURCE` bound to Prisma) and
+  `RefResolver` (citation popovers).
+- **Goals (§16, F-62):** CRUD, linked achievements, progress from the metrics engine for the most
+  recent complete month (current month when the goal started this month): met / not met / no data
+  / no metric.
+- **Email + digests (F-63/F-64/F-65):** `EmailTransport` (console / memory / SMTP / Resend), `email`
+  queue in the worker: hourly `email-digest-fanout` scheduler → idempotent `email.digest` jobs
+  (`digest-<userId>-<weekStart>` + `digest_deliveries`), HTML + text template (snapshot-tested,
+  escaped), optional AI summary via `DigestSummaryService`; `email.send` for "Sync problems" and
+  "Document ready"; signed unsubscribe tokens + public `POST /notifications/unsubscribe`;
+  `POST /notifications/digest/preview`.
+- **Me & settings (§5, F-03/F-04/F-06/F-07):** `GET /me/export` (streamed JSON attachment, every
+  user-data model, no secrets, 3/day), `DELETE /me` now also clears Redis state, `GET
+  /me/entitlements` includes `weeklyDigest`, history-window enforcement (`403
+  ENTITLEMENT_REQUIRED`), `npm run plan:set --workspace=apps/api -- <email> PRO`.
+- **Web (S17, S18, S20–S24):** Achievements journal (month groups, category chips, period select,
+  add / edit dialog with links + evidence picker, delete with Undo, drawer), Goals (status badges
+  with icon + text, unit-aware dialog, card menu, detail sheet), Profile (roles, level, target role,
+  default period, sign-in methods, sessions), Notifications (immediate-save toggles, digest day/hour,
+  sandboxed preview), Privacy & data (repositories counted, redaction, export, typed-confirmation
+  delete → signed out), Plan & usage (QuotaMeter, plans table, upgrade email), public `/unsubscribe`.
+  Shell-level "Add achievement" / "Add goal" dialogs (⌘K, `A`, New menu, dashboard, Next step);
+  "Turn into achievement" opens the pre-filled S17 dialog (402 → add it manually); Next step rules
+  4 and 6; `ACH-` evidence chips link to their drawer; ENTITLEMENT_REQUIRED copy. `ComingSoon` and
+  every placeholder page are gone.
+- **Seed:** six achievements (one per recent quarter, three with linked PR / commit / review), three
+  goals (target met, target not met, tracked by achievements — targets derived from the engine so the
+  states hold on any run date), digest on (Mon 09:00) with a delivered digest row, and the disposable
+  `delete-me@devimpact.dev` user (recreate: `npx tsx apps/api/prisma/scripts/create-throwaway-user.ts`).
+- **Tests:** API unit **223** (unsubscribe tokens incl. forged/tampered/odd claims; digest
+  schedule with a fake clock — Auckland vs Los Angeles, Europe/London DST both ways, a DST-skipped
+  hour, ISO weeks; digest HTML/text snapshot + escaping; goal progress), web Vitest **237** (35 files;
+  new: achievements, goals, settings (notifications / privacy / plan / profile), unsubscribe
+  valid/expired/invalid, career "Beyond code", `ACH-` chip link, "Turn into achievement" dialog,
+  Next step rules 4/6), shared **83**, API integration **192** (+28: `career-os.int-spec.ts` —
+  CRUD, validation, ownership incl. other users' PRs/commits/reviews, filters/cursor, feed, PR
+  detail, career, snapshots, evidence pack + RefResolver, goals with engine progress;
+  `notifications.int-spec.ts` — fan-out across time zones, idempotent delivery, opt-out, empty
+  week, failure + retry, escaped AI summary, unsubscribe without login (expired/forged/tampered/
+  unknown user), notification emails, preview; `account-data.int-spec.ts` — export completeness vs
+  the Prisma DMMF without secrets + 3/day, zero rows in every table after `DELETE /me` + Redis keys,
+  entitlements + history window 403), Playwright **43** (+9: `e2e/career-os.spec.ts` journeys and
+  axe 0 serious/critical + 0 px overflow on every P12 page and dialog × light/dark × 1440/390).
+  Screenshots (46, quantized, 3.3 MB) in `docs/v2/screenshots/p12/`.
+- **Security review** (`security-review` skill, focus on ownership, unsubscribe tokens, export,
+  deletion, email injection, entitlements): no HIGH/MEDIUM findings. Verified: achievements, goals,
+  evidence links, `RefResolver`, feed/career and export queries are scoped by `userId` (or an owning
+  relation; static user-scope test extended); evidence ids of other users → 404; unsubscribe tokens
+  are domain-separated HMAC-SHA256 with a dedicated secret, constant-time compare, expiry, replay
+  only repeats the opt-out, failures never reveal whether a user exists; the export omits every
+  token/password column and its filename is fixed ASCII + a date; deletion cascades every table
+  (Better Auth sessions included) and clears Redis; email text is escaped and links are http(s)
+  only; the digest preview renders in a `sandbox=""` iframe; `plan` is not user-settable.
+
+**Acceptance criteria:**
+- [x] Every PRD "Must" feature assigned to P12 is implemented and E2E-tested (achievements →
+  feed → career → `ACH-` citation; goal with metric target; notification toggles; export; delete
+  account; unsubscribe signed out). Could items F-66/F-67 deferred to v2.1 (no approval needed,
+  P03 amendment 1; D-028).
+- [x] Achievements appear in feed, timeline and as citable evidence in generated documents
+  (integration + E2E with a working citation popover).
+- [x] Digest email renders (snapshot test) and respects time zone + opt-out (fake clock: Auckland vs
+  Los Angeles, Europe/London DST both ways, a DST-skipped local hour, opt-out at send time,
+  already-sent idempotency); unsubscribe works without login (integration + E2E).
+- [x] Data export contains all user-owned records (DMMF completeness test, every section filled, no
+  secrets); account deletion leaves zero rows for the user in every table + Redis keys removed.
+- [x] Plan limits enforced server-side (history window 403, integrations, AI quotas 402, digest
+  entitlement) and reflected in UI (Plan & usage, "Outside your plan", quota copy).
+- [x] No non-functional settings controls remain (S20–S23 every control persists or acts; the two
+  notification toggles drive real emails).
+- [x] `npm run check`, `test:int` and `test:e2e` green locally (CI runs on the PR).
+
+**Deviations from the phase file / design:**
+- **Goals don't feed the appraisal prompt** (would change the prompt contract and stale the
+  recorded evals) → GAP-19 (P14, with the live eval). The appraisal's "Next goals" stays
+  model-written from evidence.
+- **"Evidence removed" chip (S17 Partial)** can't be shown: purging activity cascades
+  `achievement_evidence` rows (DATA_MODEL_V2) → GAP-20.
+- **Achievements period filter** is a page-level select (All time default) instead of the global
+  period picker (the journal is all-time by design; IA §6 `?period=` kept).
+- **Goal detail** is a sheet on `?goal=` (no `/goals/:id` route in IA §2).
+- Career timeline adds `quarters[].achievements` (additive, API_CONTRACT §22 A-7); `Entitlements.limits`
+  adds `weeklyDigest`; `DigestPreviewResponse` adds `weekStart`; the export rate class is named
+  `data-export` (contract: "export 3/day").
+- BullMQ job ids use `-` instead of `:` (`digest-<userId>-<weekStart>`).
+- Docker images were not rebuilt locally (as in P05–P11). The worker image needs no Dockerfile change
+  (nodemailer is a regular API dependency; the `email` queue is consumed by the existing worker).
+
+**Deferred items:** monthly digest (F-67), in-app notification centre (F-66) → v2.1; goals in the
+appraisal prompt (GAP-19), `DigestDelivery` retention (OPS-18), email bounce/complaint handling and
+a one-click `List-Unsubscribe-Post` endpoint (GAP-21) → P14; shareable links, manager views → v2.1.
+
+**New issues found:** GAP-19, GAP-20, GAP-21. Fixed: GAP-07, UX-03 (settings part), GAP-16,
+GAP-18; DEBT-07 stays closed (nodemailer is used).
+
+**Handoff notes for next phases (P14 / P15):**
+- *Email provider config:* `EMAIL_TRANSPORT=console|smtp|resend` (`memory` is tests-only and refused
+  in production), `EMAIL_FROM`, `SMTP_URL` (`smtp://` / `smtps://`, nodemailer 10.4.1),
+  `RESEND_API_KEY` (+ `RESEND_API_URL`), `UNSUBSCRIBE_TOKEN_SECRET` (required in production: the
+  example value is refused), `UNSUBSCRIBE_TOKEN_TTL_DAYS` (60), `DIGEST_ENABLED` (true). Locally the
+  worker (or the API with `RUN_WORKER_IN_API=true`) prints emails to its log (`console`). P15 picks a
+  provider, sets SPF/DKIM for `EMAIL_FROM`, and lists the provider as a sub-processor (PRD §7).
+- *Digest scheduling:* scheduler id `email-digest-fanout`, pattern `0 * * * *` UTC, job
+  `email.digest-fanout` → per user `email.digest { userId, weekStart }` with job id
+  `digest-<userId>-<weekStart>` (attempts 3). Due = local weekday == `digestDayOfWeek` and local hour
+  ≥ `digestHourLocal`; week = last complete ISO week in the user's zone. `digest_deliveries` rows:
+  SENT / SKIPPED (`no_activity`) / FAILED (retryable). Run one manually: `app.get(DigestService)
+  .deliver({ userId, weekStart })` or `DigestScheduler.fanout(now)`.
+- *Notification emails:* `email.send { kind: 'document_ready' | 'sync_problem' }` produced by
+  `NotificationProducer` (document generation done; sync FAILED; integration → NEEDS_REAUTH),
+  deduped by job id; `NotificationEmailService` re-checks the preference.
+- *Export / delete:* `GET /me/export` = `DataExportService` (`EXPORT_SECTIONS`,
+  `EXPORT_OMITTED_COLUMNS`, `EXPORT_EXCLUDED`; add a new model to one of them or
+  `account-data.int-spec.ts` fails). Class `data-export` 3/day (`RATE_LIMIT_DATA_EXPORT_PER_DAY`;
+  E2E 1000). `DELETE /me` = typed email → GitHub revoke (best effort) → user cascade → Redis cleanup.
+- *Entitlements:* `apps/api/src/entitlements/entitlements.ts` — `PLAN_LIMITS` (integrations 1/1,
+  historyMonths 12/36, aiGenerationsPerMonth 15/150, aiQuickPerMonth 100/1,000, weeklyDigest ✓/✓),
+  `ENTITLEMENTS_JSON` overrides, `historyWindowStart`, `assertWithinHistory`,
+  `entitlementRequired`. Enforced in: `IntegrationsService` (connect), `SyncService` (backfill
+  window), `MetricsService.resolve` + `EvidenceBuilder.context` (history window 403), `UsageService`
+  (AI quotas 402), `DigestScheduler.fanout` (digest). Admin: `npm run plan:set --workspace=apps/api
+  -- <email> <FREE|PRO>` (older history arrives with the next backfill).
+- *New web pieces:* `components/career/{achievement-dialog,goal-dialog,setting-row}.tsx`,
+  `components/shell/career-dialogs.tsx` (+ `ShellState.openAchievement / closeAchievement /
+  setGoalDialogOpen`), `lib/achievements.ts` (labels, grouping, prefill type, goal helpers),
+  `lib/api/career-hooks.ts` (`useAchievements`, `useAchievement`, `useSaveAchievement`,
+  `useDeleteAchievement`, `useGoals`, `useGoal`, `useSaveGoal`, `useDeleteGoal`,
+  `useEntitlements`, `useDigestPreview`, `useExportData`, `useDeleteAccount`, `useUnsubscribe`),
+  `publicApiClient` (no token, no redirect). Query keys `qk.achievements`, `qk.goals`,
+  `qk.entitlements`, `qk.sessions`. `entitlementDetails()` in `lib/api/errors.ts`.
+- *View tests:* `test/fixtures-p12` captured from the seeded API on 2026-11-24 with a locally signed
+  token (start `node apps/api/dist/main.js` with `AUTH_JWKS_URL` pointing at a tiny JWKS server, sign
+  an EdDSA JWT for the demo user, `curl` the endpoints); `renderWithQuery` now wraps the
+  `ShellProvider`; render `<CareerDialogs />` next to a view that opens the shell dialogs; mock
+  `sonner` to assert toasts.
+- *E2E:* `e2e/career-os.spec.ts` (+ axe/overflow matrix); the deletion journey recreates and deletes
+  `delete-me@devimpact.dev` only. The fake Anthropic reply cites an `ACH-` ref in appraisals when one
+  is in the evidence. Screenshots: `SCREENSHOTS=1 npm run test:e2e -- e2e/screenshots-p12.spec.ts`.
+- *P14 should load/security-test:* the public unsubscribe endpoint (IP rate class only — brute force
+  is HMAC-bounded, but measure the 60/min cost and consider a per-token cache), `/me/export` on the
+  heavy seed (memory/time; it streams in 500-row batches but `goalAchievements` is one query),
+  `DELETE /me` on the heavy user (cascade time, transaction size; Redis SCAN on large keyspaces), the
+  digest fan-out at scale (it scans every opted-in `user_settings` row hourly; consider an index on
+  `(digest_enabled, digest_day_of_week)` and batching), email header injection (subjects are built
+  from fixed strings + cleaned titles), and token replay/expiry policy.
