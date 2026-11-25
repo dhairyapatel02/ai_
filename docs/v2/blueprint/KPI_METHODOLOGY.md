@@ -268,11 +268,12 @@ identifiers. Units: `count`, `hours` (business hours, 1 decimal), `ratio` (0–1
 - **Formula:** longest run of consecutive active weeks (as in `active_weeks_ratio`) within the period.
 - **Caveats:** Shown as a milestone only; never scored.
 
-### 3.6 Issue metrics — deferred to v2.1 (requires Jira/Linear, P13 skipped)
-Kept here so the catalogue is complete; not implemented in v2.0.
+### 3.6 Issue metrics — implemented in P13 (`metrics@2.1.0`, D-029/D-030)
+Jira and Linear issues assigned to the user. Informational: never part of the impact score.
 - `issues_completed`: issues assigned to the user whose `completedAt ∈ period` and status category = done.
 - `story_points_completed`: Σ `storyPoints` over the same set (null points ignored; `n` = issues with points).
-- `issue_cycle_time_median_hours`: median `businessHours(startedAt, completedAt)` for the same set.
+- `issue_cycle_time_median_hours`: median `businessHours(startedAt, completedAt)` for the same set
+  (issues never started are skipped; min n = 3).
 
 ### 3.7 Dashboard stat cards (F-20)
 | Card | Metric key | Delta |

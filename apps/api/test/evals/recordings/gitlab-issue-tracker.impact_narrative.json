@@ -1,0 +1,10 @@
+{
+  "persona": "gitlab-issue-tracker",
+  "generator": "impact_narrative",
+  "promptId": "impact-narrative",
+  "promptVersion": 2,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-25",
+  "text": "{\"summary\":{\"text\":\"Work in October 2026 centred on \\\"Retry webhook deliveries with jitter\\\".\",\"citations\":[\"PR-acme/web#103\"]},\"highlights\":[{\"text\":\"Delivered the change to retry webhook deliveries with jitter in acme/web.\",\"citations\":[\"PR-acme/web#103\"],\"title\":\"Retry webhook deliveries with jitter\"},{\"text\":\"Resolved a defect: fix rounding in proration in acme/web.\",\"citations\":[\"PR-acme/web#109\"],\"title\":\"Fix rounding in proration\"},{\"text\":\"Completed the tracked work item \\\"Support annual plans in billing\\\" in Payments.\",\"citations\":[\"JIRA-PAY-231\"],\"title\":\"Support annual plans in billing\"}],\"focusAreas\":[{\"text\":\"Spread reviews across more repositories.\"}]}"
+}

@@ -1,0 +1,824 @@
+{
+  "data": [
+    {
+      "id": "pr_merged:cmwvkpelx00m8t47dxtkoy0yz",
+      "type": "pr_merged",
+      "occurredAt": "2026-11-16T15:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Cut CI pipeline time with cached images",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/merge_requests/9",
+      "ref": "MR-acme/platform/infra-modules!9",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelx00m8t47dxtkoy0yz",
+        "number": 9,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mtt47d6c125oej",
+      "type": "commit",
+      "occurredAt": "2026-11-15T13:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Cut CI pipeline time with cached images (part 3)",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/commit/6213a4ad9ddd5ef591bfe0e6da41a7c56d10c963",
+      "ref": "C-acme/platform/infra-modules@6213a4a",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mtt47d6c125oej",
+        "sha": "6213a4ad9ddd5ef591bfe0e6da41a7c56d10c963",
+        "additions": 105,
+        "deletions": 36
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mst47dirmxckhs",
+      "type": "commit",
+      "occurredAt": "2026-11-15T12:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Cut CI pipeline time with cached images (part 2)",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/commit/b57b8dd953d024979bad0f6efcdef6faae0733ec",
+      "ref": "C-acme/platform/infra-modules@b57b8dd",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mst47dirmxckhs",
+        "sha": "b57b8dd953d024979bad0f6efcdef6faae0733ec",
+        "additions": 108,
+        "deletions": 32
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mrt47d2eizfoe6",
+      "type": "commit",
+      "occurredAt": "2026-11-15T11:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Cut CI pipeline time with cached images (part 1)",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/commit/c98f78d01518b434f962a2cf75e8b6e363c4cddf",
+      "ref": "C-acme/platform/infra-modules@c98f78d",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mrt47d2eizfoe6",
+        "sha": "c98f78d01518b434f962a2cf75e8b6e363c4cddf",
+        "additions": 66,
+        "deletions": 12
+      }
+    },
+    {
+      "id": "pr_opened:cmwvkpelx00m8t47dxtkoy0yz",
+      "type": "pr_opened",
+      "occurredAt": "2026-11-14T10:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Cut CI pipeline time with cached images",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/merge_requests/9",
+      "ref": "MR-acme/platform/infra-modules!9",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelx00m8t47dxtkoy0yz",
+        "number": 9,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "pr_merged:cmwvkpelx00m7t47df1x1jwkq",
+      "type": "pr_merged",
+      "occurredAt": "2026-10-31T15:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Retry webhook deliveries with jitter",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/merge_requests/8",
+      "ref": "MR-acme/platform/billing-service!8",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelx00m7t47df1x1jwkq",
+        "number": 8,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mqt47dlt2gt7mf",
+      "type": "commit",
+      "occurredAt": "2026-10-30T12:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Retry webhook deliveries with jitter (part 2)",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/commit/1d67eb8d5614d256822a55da1059565d6ad55430",
+      "ref": "C-acme/platform/billing-service@1d67eb8",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mqt47dlt2gt7mf",
+        "sha": "1d67eb8d5614d256822a55da1059565d6ad55430",
+        "additions": 29,
+        "deletions": 19
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mpt47dwm33dnl9",
+      "type": "commit",
+      "occurredAt": "2026-10-30T11:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Retry webhook deliveries with jitter (part 1)",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/commit/38959ae488e2aa7371f733934032a2735f7c977e",
+      "ref": "C-acme/platform/billing-service@38959ae",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mpt47dwm33dnl9",
+        "sha": "38959ae488e2aa7371f733934032a2735f7c977e",
+        "additions": 119,
+        "deletions": 20
+      }
+    },
+    {
+      "id": "pr_opened:cmwvkpelx00m7t47df1x1jwkq",
+      "type": "pr_opened",
+      "occurredAt": "2026-10-29T10:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Retry webhook deliveries with jitter",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/merge_requests/8",
+      "ref": "MR-acme/platform/billing-service!8",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelx00m7t47df1x1jwkq",
+        "number": 8,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "pr_merged:cmwvkpelx00m6t47dh0eb6rsw",
+      "type": "pr_merged",
+      "occurredAt": "2026-10-16T15:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Terraform module for regional Redis",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/merge_requests/7",
+      "ref": "MR-acme/platform/infra-modules!7",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelx00m6t47dh0eb6rsw",
+        "number": 7,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mot47d01beg586",
+      "type": "commit",
+      "occurredAt": "2026-10-15T11:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Terraform module for regional Redis (part 1)",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/commit/4d422e2632b323416c44bb4aaa88602461dbbe35",
+      "ref": "C-acme/platform/infra-modules@4d422e2",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mot47d01beg586",
+        "sha": "4d422e2632b323416c44bb4aaa88602461dbbe35",
+        "additions": 13,
+        "deletions": 27
+      }
+    },
+    {
+      "id": "pr_opened:cmwvkpelx00m6t47dh0eb6rsw",
+      "type": "pr_opened",
+      "occurredAt": "2026-10-14T10:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Terraform module for regional Redis",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/merge_requests/7",
+      "ref": "MR-acme/platform/infra-modules!7",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelx00m6t47dh0eb6rsw",
+        "number": 7,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "pr_merged:cmwvkpelx00m5t47debt76uuu",
+      "type": "pr_merged",
+      "occurredAt": "2026-10-01T15:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Add idempotency keys to invoice generation",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/merge_requests/6",
+      "ref": "MR-acme/platform/billing-service!6",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelx00m5t47debt76uuu",
+        "number": 6,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mnt47d1u73kp11",
+      "type": "commit",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Add idempotency keys to invoice generation (part 1)",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/commit/e12597e00be59fadd210aed16b3de38f0e046038",
+      "ref": "C-acme/platform/billing-service@e12597e",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mnt47d1u73kp11",
+        "sha": "e12597e00be59fadd210aed16b3de38f0e046038",
+        "additions": 71,
+        "deletions": 32
+      }
+    },
+    {
+      "id": "pr_opened:cmwvkpelx00m5t47debt76uuu",
+      "type": "pr_opened",
+      "occurredAt": "2026-09-29T10:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Add idempotency keys to invoice generation",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/merge_requests/6",
+      "ref": "MR-acme/platform/billing-service!6",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelx00m5t47debt76uuu",
+        "number": 6,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "pr_merged:cmwvkpelx00m4t47d9779lqf0",
+      "type": "pr_merged",
+      "occurredAt": "2026-09-20T15:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Document the billing runbook",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/merge_requests/5",
+      "ref": "MR-acme/platform/infra-modules!5",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelx00m4t47d9779lqf0",
+        "number": 5,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mmt47dltmdynjt",
+      "type": "commit",
+      "occurredAt": "2026-09-19T13:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Document the billing runbook (part 3)",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/commit/3ebafd8b1ccce55183011df55428a1c118a06317",
+      "ref": "C-acme/platform/infra-modules@3ebafd8",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mmt47dltmdynjt",
+        "sha": "3ebafd8b1ccce55183011df55428a1c118a06317",
+        "additions": 11,
+        "deletions": 2
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mlt47d52a5vxjy",
+      "type": "commit",
+      "occurredAt": "2026-09-19T12:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Document the billing runbook (part 2)",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/commit/715abfa8b693f4d2a4fc810168d485893908ba98",
+      "ref": "C-acme/platform/infra-modules@715abfa",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mlt47d52a5vxjy",
+        "sha": "715abfa8b693f4d2a4fc810168d485893908ba98",
+        "additions": 60,
+        "deletions": 33
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mkt47d9bslljmf",
+      "type": "commit",
+      "occurredAt": "2026-09-19T11:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Document the billing runbook (part 1)",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/commit/39ce5edecc658a0ef2c8ef24b528b50c2e19ed63",
+      "ref": "C-acme/platform/infra-modules@39ce5ed",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mkt47d9bslljmf",
+        "sha": "39ce5edecc658a0ef2c8ef24b528b50c2e19ed63",
+        "additions": 71,
+        "deletions": 34
+      }
+    },
+    {
+      "id": "pr_opened:cmwvkpelx00m4t47d9779lqf0",
+      "type": "pr_opened",
+      "occurredAt": "2026-09-18T10:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Document the billing runbook",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/merge_requests/5",
+      "ref": "MR-acme/platform/infra-modules!5",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelx00m4t47d9779lqf0",
+        "number": 5,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "pr_merged:cmwvkpelw00m3t47d44h74xoc",
+      "type": "pr_merged",
+      "occurredAt": "2026-09-06T15:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Fix rounding in proration",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/merge_requests/4",
+      "ref": "MR-acme/platform/billing-service!4",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelw00m3t47d44h74xoc",
+        "number": 4,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mjt47dejjgewnx",
+      "type": "commit",
+      "occurredAt": "2026-09-05T13:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Fix rounding in proration (part 3)",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/commit/b972cb0cb330bd18dd70be0ea5eabb12960953a4",
+      "ref": "C-acme/platform/billing-service@b972cb0",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mjt47dejjgewnx",
+        "sha": "b972cb0cb330bd18dd70be0ea5eabb12960953a4",
+        "additions": 110,
+        "deletions": 24
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mit47dmy6gj4bu",
+      "type": "commit",
+      "occurredAt": "2026-09-05T12:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Fix rounding in proration (part 2)",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/commit/0a08d9337446304102854042ec3739ddcf191d9f",
+      "ref": "C-acme/platform/billing-service@0a08d93",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mit47dmy6gj4bu",
+        "sha": "0a08d9337446304102854042ec3739ddcf191d9f",
+        "additions": 43,
+        "deletions": 38
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mht47db9jlyixr",
+      "type": "commit",
+      "occurredAt": "2026-09-05T11:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Fix rounding in proration (part 1)",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/commit/5a6e3c9fd930b0189222ae68c365345c571e19e5",
+      "ref": "C-acme/platform/billing-service@5a6e3c9",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mht47db9jlyixr",
+        "sha": "5a6e3c9fd930b0189222ae68c365345c571e19e5",
+        "additions": 57,
+        "deletions": 28
+      }
+    },
+    {
+      "id": "pr_opened:cmwvkpelw00m3t47d44h74xoc",
+      "type": "pr_opened",
+      "occurredAt": "2026-09-04T10:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Fix rounding in proration",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/merge_requests/4",
+      "ref": "MR-acme/platform/billing-service!4",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelw00m3t47d44h74xoc",
+        "number": 4,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "pr_merged:cmwvkpelw00m2t47d30uyx2i6",
+      "type": "pr_merged",
+      "occurredAt": "2026-08-21T15:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Cut CI pipeline time with cached images",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/merge_requests/3",
+      "ref": "MR-acme/platform/infra-modules!3",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelw00m2t47d30uyx2i6",
+        "number": 3,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mgt47d6ittp2xz",
+      "type": "commit",
+      "occurredAt": "2026-08-20T13:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Cut CI pipeline time with cached images (part 3)",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/commit/12e9c6d48e6fd07fce452293245df5d293e786fe",
+      "ref": "C-acme/platform/infra-modules@12e9c6d",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mgt47d6ittp2xz",
+        "sha": "12e9c6d48e6fd07fce452293245df5d293e786fe",
+        "additions": 55,
+        "deletions": 31
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mft47d7nt1eni4",
+      "type": "commit",
+      "occurredAt": "2026-08-20T12:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Cut CI pipeline time with cached images (part 2)",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/commit/19e73d04d817a08b4546bed535c140d974465028",
+      "ref": "C-acme/platform/infra-modules@19e73d0",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mft47d7nt1eni4",
+        "sha": "19e73d04d817a08b4546bed535c140d974465028",
+        "additions": 58,
+        "deletions": 0
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400met47dg65ghnq4",
+      "type": "commit",
+      "occurredAt": "2026-08-20T11:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Cut CI pipeline time with cached images (part 1)",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/commit/618adc97da97d221bdab87a84fd3e5312b2a7f3e",
+      "ref": "C-acme/platform/infra-modules@618adc9",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400met47dg65ghnq4",
+        "sha": "618adc97da97d221bdab87a84fd3e5312b2a7f3e",
+        "additions": 77,
+        "deletions": 28
+      }
+    },
+    {
+      "id": "pr_opened:cmwvkpelw00m2t47d30uyx2i6",
+      "type": "pr_opened",
+      "occurredAt": "2026-08-19T10:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Cut CI pipeline time with cached images",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/merge_requests/3",
+      "ref": "MR-acme/platform/infra-modules!3",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelw00m2t47d30uyx2i6",
+        "number": 3,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "pr_merged:cmwvkpelw00m1t47dex132o6b",
+      "type": "pr_merged",
+      "occurredAt": "2026-08-06T15:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Retry webhook deliveries with jitter",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/merge_requests/2",
+      "ref": "MR-acme/platform/billing-service!2",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelw00m1t47dex132o6b",
+        "number": 2,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mdt47dbku421xv",
+      "type": "commit",
+      "occurredAt": "2026-08-05T13:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Retry webhook deliveries with jitter (part 3)",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/commit/b987981a2e75896782eceed0ae0e51632d6dc49b",
+      "ref": "C-acme/platform/billing-service@b987981",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mdt47dbku421xv",
+        "sha": "b987981a2e75896782eceed0ae0e51632d6dc49b",
+        "additions": 53,
+        "deletions": 36
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mct47dsnsul0z2",
+      "type": "commit",
+      "occurredAt": "2026-08-05T12:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Retry webhook deliveries with jitter (part 2)",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/commit/89c80fd539487af835e9ea07b37069203869a47e",
+      "ref": "C-acme/platform/billing-service@89c80fd",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mct47dsnsul0z2",
+        "sha": "89c80fd539487af835e9ea07b37069203869a47e",
+        "additions": 60,
+        "deletions": 17
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mbt47dgpwwotr9",
+      "type": "commit",
+      "occurredAt": "2026-08-05T11:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Retry webhook deliveries with jitter (part 1)",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/commit/8a1d80792c122bf33a45c3672e79f45e4d88c635",
+      "ref": "C-acme/platform/billing-service@8a1d807",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mbt47dgpwwotr9",
+        "sha": "8a1d80792c122bf33a45c3672e79f45e4d88c635",
+        "additions": 18,
+        "deletions": 4
+      }
+    },
+    {
+      "id": "pr_opened:cmwvkpelw00m1t47dex132o6b",
+      "type": "pr_opened",
+      "occurredAt": "2026-08-04T10:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelm00lyt47dfkht5or3",
+        "fullName": "acme/platform/billing-service",
+        "provider": "gitlab"
+      },
+      "title": "Retry webhook deliveries with jitter",
+      "url": "https://gitlab.com/acme/platform/billing-service/-/merge_requests/2",
+      "ref": "MR-acme/platform/billing-service!2",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelw00m1t47dex132o6b",
+        "number": 2,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "pr_merged:cmwvkpelw00m0t47dultcupbe",
+      "type": "pr_merged",
+      "occurredAt": "2026-07-28T15:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Terraform module for regional Redis",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/merge_requests/1",
+      "ref": "MR-acme/platform/infra-modules!1",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelw00m0t47dultcupbe",
+        "number": 1,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400mat47dnagkbyrz",
+      "type": "commit",
+      "occurredAt": "2026-07-27T12:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Terraform module for regional Redis (part 2)",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/commit/486e670f1ef555cbe3538b46cda08702e2349bb5",
+      "ref": "C-acme/platform/infra-modules@486e670",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400mat47dnagkbyrz",
+        "sha": "486e670f1ef555cbe3538b46cda08702e2349bb5",
+        "additions": 101,
+        "deletions": 7
+      }
+    },
+    {
+      "id": "commit:cmwvkpem400m9t47de4ko5i93",
+      "type": "commit",
+      "occurredAt": "2026-07-27T11:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Terraform module for regional Redis (part 1)",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/commit/7fd296ede8ad6abcb142bf6a2c6b1f31bbcdedae",
+      "ref": "C-acme/platform/infra-modules@7fd296e",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpem400m9t47de4ko5i93",
+        "sha": "7fd296ede8ad6abcb142bf6a2c6b1f31bbcdedae",
+        "additions": 58,
+        "deletions": 40
+      }
+    },
+    {
+      "id": "pr_opened:cmwvkpelw00m0t47dultcupbe",
+      "type": "pr_opened",
+      "occurredAt": "2026-07-26T10:00:00.000Z",
+      "repo": {
+        "id": "cmwvkpelo00lzt47djrvhzcjn",
+        "fullName": "acme/platform/infra-modules",
+        "provider": "gitlab"
+      },
+      "title": "Terraform module for regional Redis",
+      "url": "https://gitlab.com/acme/platform/infra-modules/-/merge_requests/1",
+      "ref": "MR-acme/platform/infra-modules!1",
+      "provider": "gitlab",
+      "meta": {
+        "recordId": "cmwvkpelw00m0t47dultcupbe",
+        "number": 1,
+        "state": "merged",
+        "isDraft": false,
+        "additions": null,
+        "deletions": null
+      }
+    }
+  ],
+  "meta": {
+    "nextCursor": null,
+    "hasMore": false
+  }
+}

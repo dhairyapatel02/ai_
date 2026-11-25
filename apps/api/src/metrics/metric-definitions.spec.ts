@@ -116,8 +116,17 @@ describe('daily rollups (§4)', () => {
       prsOpened: 1,
       prsMerged: 1,
       active: true,
+      byProvider: {
+        github: { commits: 1, prsMerged: 1, prsReviewed: 0, issuesCompleted: 0, storyPoints: 0 },
+      },
     });
-    expect(byDate.get('2026-10-01')).toEqual({ ...emptyCounters('2026-10-01'), prsMerged: 1 });
+    expect(byDate.get('2026-10-01')).toEqual({
+      ...emptyCounters('2026-10-01'),
+      prsMerged: 1,
+      byProvider: {
+        github: { commits: 0, prsMerged: 1, prsReviewed: 0, issuesCompleted: 0, storyPoints: 0 },
+      },
+    });
     expect(byDate.get('2026-10-22')).toEqual({
       ...emptyCounters('2026-10-22'),
       prsClosedUnmerged: 1,
@@ -130,5 +139,148 @@ describe('daily rollups (§4)', () => {
     expect(rows.filter((row) => row.active)).toHaveLength(13); // = active_days
     expect(rows.reduce((s, row) => s + row.prsMerged, 0)).toBe(4); // = prs_merged
     expect(rows.reduce((s, row) => s + row.commits, 0)).toBe(4); // = commits
+  });
+});
+
+describe('issue metrics (§3.6, metrics@2.1.0)', () => {
+  const at = (iso: string) => new Date(iso);
+  const facts: Facts = {
+    authored: [],
+    reviews: [],
+    commits: [],
+    issues: [
+      // Mon 09:00 → Tue 09:00 UTC = 24 business hours (weekends excluded, §2.4)
+      {
+        id: 'I1',
+        completedAt: at('2026-10-06T09:00:00Z'),
+        startedAt: at('2026-10-05T09:00:00Z'),
+        storyPoints: 5,
+        provider: 'jira',
+      },
+      {
+        id: 'I2',
+        completedAt: at('2026-10-14T10:00:00Z'),
+        startedAt: at('2026-10-13T10:00:00Z'),
+        storyPoints: null,
+        provider: 'linear',
+      },
+      {
+        id: 'I3',
+        completedAt: at('2026-10-20T12:00:00Z'),
+        startedAt: null,
+        storyPoints: 2.5,
+        provider: 'linear',
+      },
+      // completed outside the period / never completed (cancelled): not counted
+      { id: 'I4', completedAt: at('2026-09-30T12:00:00Z'), startedAt: null, storyPoints: 8 },
+      { id: 'I5', completedAt: null, startedAt: at('2026-10-02T12:00:00Z'), storyPoints: 3 },
+    ],
+  };
+  const results = computeMetrics(facts, OCTOBER);
+
+  it('issues_completed counts completedAt ∈ period with evidence newest first', () => {
+    expect(results.issues_completed).toMatchObject({ value: 3, n: 3, status: 'ok' });
+    expect(results.issues_completed.evidence).toEqual(['I3', 'I2', 'I1']);
+  });
+
+  it('story_points_completed sums points, n = issues with points', () => {
+    expect(results.story_points_completed).toMatchObject({ value: 7.5, n: 2, status: 'ok' });
+    expect(results.story_points_completed.evidence).toEqual(['I3', 'I1']);
+  });
+
+  it('issue cycle time needs n ≥ 3 started issues (insufficient here)', () => {
+    expect(results.issue_cycle_time_median_hours).toMatchObject({
+      value: null,
+      n: 2,
+      status: 'insufficient_data',
+    });
+    const more = computeMetrics(
+      {
+        ...facts,
+        issues: [
+          ...(facts.issues ?? []),
+          {
+            id: 'I6',
+            completedAt: at('2026-10-22T13:00:00Z'),
+            startedAt: at('2026-10-22T09:00:00Z'),
+            storyPoints: 1,
+          },
+        ],
+      },
+      OCTOBER,
+    );
+    expect(more.issue_cycle_time_median_hours).toMatchObject({ value: 24, n: 3, status: 'ok' });
+  });
+
+  it('no issues → zero counts, never affects code metrics', () => {
+    const none = computeMetrics(GOLDEN_FACTS, OCTOBER);
+    expect(none.issues_completed).toMatchObject({ value: 0, n: 0, status: 'ok' });
+    expect(none.prs_merged.value).toBe(
+      computeMetrics({ ...GOLDEN_FACTS, issues: facts.issues }, OCTOBER).prs_merged.value,
+    );
+  });
+
+  it('rollups carry issue counters and the provider dimension', () => {
+    const rows = rollupDays(facts, '2026-10-01', '2026-10-31', 'UTC');
+    expect(rows.find((r) => r.date === '2026-10-06')).toMatchObject({
+      issuesCompleted: 1,
+      storyPoints: 5,
+      active: false,
+      byProvider: { jira: { issuesCompleted: 1, storyPoints: 5 } },
+    });
+    expect(rows.reduce((s, r) => s + r.issuesCompleted, 0)).toBe(3);
+  });
+});
+
+describe('provider dimension (P13)', () => {
+  it('splits code counters by provider; reviewed PRs counted per provider per day', () => {
+    const rows = rollupDays(
+      {
+        authored: [],
+        commits: [
+          {
+            id: 'C1',
+            repositoryId: 'r1',
+            authoredAt: new Date('2026-10-05T10:00:00Z'),
+            provider: 'github',
+          },
+          {
+            id: 'C2',
+            repositoryId: 'r2',
+            authoredAt: new Date('2026-10-05T11:00:00Z'),
+            provider: 'gitlab',
+          },
+        ],
+        reviews: [
+          {
+            id: 'V1',
+            pullRequestId: 'P1',
+            repositoryId: 'r2',
+            submittedAt: new Date('2026-10-05T12:00:00Z'),
+            reviewRequestedAt: null,
+            commentsCount: 0,
+            hasBody: false,
+            provider: 'gitlab',
+          },
+          {
+            id: 'V2',
+            pullRequestId: 'P1',
+            repositoryId: 'r2',
+            submittedAt: new Date('2026-10-05T13:00:00Z'),
+            reviewRequestedAt: null,
+            commentsCount: 0,
+            hasBody: false,
+            provider: 'gitlab',
+          },
+        ],
+      },
+      '2026-10-01',
+      '2026-10-31',
+      'UTC',
+    );
+    expect(rows[0]?.byProvider).toEqual({
+      github: { commits: 1, prsMerged: 0, prsReviewed: 0, issuesCompleted: 0, storyPoints: 0 },
+      gitlab: { commits: 1, prsMerged: 0, prsReviewed: 1, issuesCompleted: 0, storyPoints: 0 },
+    });
   });
 });

@@ -496,6 +496,7 @@ function restRepository(r: RestRepository, installationId: string | null): Norma
 @Injectable()
 export class GitHubProvider implements ActivityProvider {
   readonly kind = 'github' as const;
+  readonly category = 'code' as const;
   private readonly logger = new Logger(GitHubProvider.name);
 
   constructor(

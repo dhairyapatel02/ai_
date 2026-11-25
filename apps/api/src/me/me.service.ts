@@ -100,7 +100,13 @@ export class MeService {
       this.settingsRow(userId),
       this.prisma.integration.findMany({
         where: { userId },
-        select: { id: true, status: true, externalLogin: true, lastSuccessfulSyncAt: true },
+        select: {
+          id: true,
+          provider: true,
+          status: true,
+          externalLogin: true,
+          lastSuccessfulSyncAt: true,
+        },
         orderBy: { createdAt: 'asc' },
       }),
     ]);
@@ -172,22 +178,25 @@ export class MeService {
     const user = await this.user(userId);
     const integrations = await this.prisma.integration.findMany({
       where: { userId },
-      select: { status: true },
+      select: { status: true, provider: true },
     });
     return this.entitlementsFor(user, integrations);
   }
 
   private entitlementsFor(
     user: UserRow,
-    integrations: { status: IntegrationStatus }[],
+    integrations: { status: IntegrationStatus; provider: string }[],
   ): Entitlements {
+    const connected = integrations.filter((i) => i.status !== IntegrationStatus.DISCONNECTED);
+    const byProvider: Record<string, number> = {};
+    for (const i of connected) {
+      const key = i.provider.toLowerCase();
+      byProvider[key] = (byProvider[key] ?? 0) + 1;
+    }
     return {
       plan: user.plan.toLowerCase() as PlanWire,
       limits: limitsFor(user.plan),
-      usage: {
-        integrations: integrations.filter((i) => i.status !== IntegrationStatus.DISCONNECTED)
-          .length,
-      },
+      usage: { integrations: connected.length, byProvider },
     };
   }
 

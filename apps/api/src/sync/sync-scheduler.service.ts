@@ -1,6 +1,6 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger, type OnApplicationBootstrap } from '@nestjs/common';
-import { IntegrationStatus, Provider, SyncTrigger } from '@prisma/client';
+import { IntegrationStatus, SyncTrigger } from '@prisma/client';
 import { Queue } from 'bullmq';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -48,7 +48,7 @@ export class SyncScheduler implements OnApplicationBootstrap {
     // user-scope: the scheduler deliberately scans every user's ACTIVE integrations.
     const due = await this.prisma.integration.findMany({
       where: {
-        provider: Provider.GITHUB,
+        // Every provider (P13): GitHub, GitLab, Jira and Linear each once per 24 h at their slot.
         status: IntegrationStatus.ACTIVE,
         scheduleSlotMinute: { gte: hourStart, lt: hourStart + 60 },
       },

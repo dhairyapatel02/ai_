@@ -91,7 +91,7 @@ describe('CareerView (S10)', () => {
       ...q,
       repos: [],
       milestones: [],
-      totals: { prsMerged: 0, prsReviewed: 0, achievements: 0 },
+      totals: { prsMerged: 0, prsReviewed: 0, achievements: 0, issuesCompleted: 0, storyPoints: 0 },
     }));
     routes({ 'GET /career/timeline': career });
     renderWithQuery(<CareerView />);
@@ -134,9 +134,15 @@ describe('CareerView (S10)', () => {
     expect(nav.push).toHaveBeenCalledWith(`/career?item=achievement%3A${first.id}`, {
       scroll: false,
     });
-    expect(quarterTotals({ prsMerged: 0, prsReviewed: 0, achievements: 2 })).toBe(
-      '0 merged · 0 reviewed · 2 achievements',
-    );
+    expect(
+      quarterTotals({
+        prsMerged: 0,
+        prsReviewed: 0,
+        achievements: 2,
+        issuesCompleted: 0,
+        storyPoints: 0,
+      }),
+    ).toBe('0 merged · 0 reviewed · 2 achievements');
   });
 
   it('P12: an achievement ref in an evidence chip links to its drawer (GAP-18)', async () => {
@@ -166,9 +172,15 @@ describe('CareerView (S10)', () => {
   it('UX-10 / BUG-13: plurals and year parsing', () => {
     expect(reviewClusterLabel(1)).toBe('Reviewed 1 pull request by teammates');
     expect(reviewClusterLabel(14)).toBe('Reviewed 14 pull requests by teammates');
-    expect(quarterTotals({ prsMerged: 1, prsReviewed: 2, achievements: 1 })).toBe(
-      '1 merged · 2 reviewed · 1 achievement',
-    );
+    expect(
+      quarterTotals({
+        prsMerged: 1,
+        prsReviewed: 2,
+        achievements: 1,
+        issuesCompleted: 0,
+        storyPoints: 0,
+      }),
+    ).toBe('1 merged · 2 reviewed · 1 achievement');
     expect(parseYear('2025')).toBe(2025);
     expect(parseYear('20x5')).toBeUndefined();
     expect(parseYear('1999')).toBeUndefined();

@@ -5,6 +5,6 @@
   "promptVersion": 1,
   "model": "reference-writer",
   "source": "synthetic",
-  "recordedAt": "2026-11-17",
+  "recordedAt": "2026-11-25",
   "text": "{\"title\":\"Speed up job scheduling with a priority queue\",\"statement\":\"Improved performance with the change to speed up job scheduling with a priority queue in acme/api.\",\"category\":\"delivery\",\"citations\":[\"PR-acme/api#106\"]}"
 }

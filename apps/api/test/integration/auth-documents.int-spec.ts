@@ -36,8 +36,8 @@ describe('Me + Documents API (integration)', () => {
       settings: { timezone: 'UTC', defaultPeriodType: 'month', digestEnabled: false },
       entitlements: {
         plan: 'pro',
-        limits: { integrations: 1, historyMonths: 36 },
-        usage: { integrations: 1 },
+        limits: { integrations: 4, integrationsPerProvider: 1, historyMonths: 36 },
+        usage: { integrations: 1, byProvider: { github: 1 } },
       },
       integrations: [{ provider: 'github', status: 'active', externalLogin: 'octocat' }],
       onboarding: { step: null, completed: false },

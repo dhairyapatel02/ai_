@@ -20,6 +20,7 @@ export const SyncStage = z.enum([
   'authored_prs',
   'reviewed_prs',
   'commits',
+  'issues',
   'persist',
   'rollups',
   'done',
@@ -39,6 +40,7 @@ export const SyncCounts = z
     prsReviewed: z.number(),
     reviews: z.number(),
     commits: z.number(),
+    issues: z.number(),
     created: z.number(),
     updated: z.number(),
   })

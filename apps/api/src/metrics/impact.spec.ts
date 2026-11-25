@@ -245,7 +245,7 @@ describe('stored inputs reproduce the score (§6.6) and determinism (§10.4)', (
     expect(impact.overall).toBeCloseTo(63.809653, 5);
     expect(roundScore(inputs.overall!)).toBe(64);
     expect(inputs.scoreVersion).toBe('impact@2.0.0');
-    expect(inputs.metricsVersion).toBe('metrics@2.0.0');
+    expect(inputs.metricsVersion).toBe('metrics@2.1.0');
     expect(inputs.evidence.prs_merged).toEqual(['P3', 'P2', 'P1', 'P4']);
   });
 

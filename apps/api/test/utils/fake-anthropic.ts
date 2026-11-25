@@ -202,6 +202,8 @@ export function autoReply(req: FakeRequest): FakeReply {
   const claim = (text: string, i: number) => ({ text, citations: ref(i) });
   // Achievements rank after PRs; cite one (when present) so ACH- citations are exercised (P12).
   const achievement = refs.find((r) => r.startsWith('ACH-'));
+  // Jira / Linear issues (P13): cite one when present so JIRA- / LIN- citations are exercised.
+  const issue = refs.find((r) => /^(JIRA|LIN)-/.test(r));
   let output: unknown;
   if (sys.includes('Task: resume bullets')) {
     output = {
@@ -214,10 +216,15 @@ export function autoReply(req: FakeRequest): FakeReply {
   } else if (sys.includes('Task: self-appraisal')) {
     output = {
       executiveSummary: claim('A period of steady delivery across services.', 0),
-      keyContributions: [0, 1].map((i) => ({
-        ...claim(`Shipped item ${i + 1}.`, i),
-        title: `Contribution ${i + 1}`,
-      })),
+      keyContributions: [
+        ...[0, 1].map((i) => ({
+          ...claim(`Shipped item ${i + 1}.`, i),
+          title: `Contribution ${i + 1}`,
+        })),
+        ...(issue
+          ? [{ text: 'Completed a tracked work item.', citations: [issue], title: 'Tracked work' }]
+          : []),
+      ],
       areasOfImpact: [
         achievement
           ? { text: 'Mentored teammates beyond code.', citations: [achievement] }

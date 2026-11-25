@@ -63,7 +63,7 @@ describe('IntegrationsView (S19)', () => {
     vi.useRealTimers();
   });
 
-  it('success: connected card with installations, repositories, sync history and planned providers', async () => {
+  it('success: connected card with installations, repositories, sync history and source tiles', async () => {
     routes();
     renderWithQuery(<IntegrationsView />);
     const card = await screen.findByTestId('github-card');
@@ -75,9 +75,12 @@ describe('IntegrationsView (S19)', () => {
       screen.getByText('Excluded — data kept, never counted', { exact: false }),
     ).toBeInTheDocument();
     expect(await screen.findByTestId('sync-history')).toHaveTextContent('Partial');
-    const planned = screen.getAllByTestId('planned-provider');
-    expect(planned).toHaveLength(3);
-    for (const p of planned) expect(within(p).queryByRole('button')).not.toBeInTheDocument();
+    // P13: GitLab / Jira / Linear are live connect tiles (not configured in this fixture set).
+    for (const provider of ['gitlab', 'jira', 'linear']) {
+      const tile = await screen.findByTestId(`${provider}-connect`);
+      expect(within(tile).getByRole('button', { name: /^Connect / })).toBeDisabled();
+      expect(tile).toHaveTextContent("isn't set up on this server yet");
+    }
   });
 
   it('Sync now starts a sync and toasts; 409 already running is not an error', async () => {

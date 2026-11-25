@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  type ProviderWire,
   AchievementStatementResponse,
   CareerTimelineResponse,
   CommitDetail,
@@ -187,6 +188,8 @@ export interface FeedParams {
   period?: string;
   types?: ActivityType[];
   repoIds?: string[];
+  /** P13: restrict to these providers (`github`, `gitlab`, `jira`, `linear`). */
+  providers?: ProviderWire[];
   q?: string;
   limit?: number;
   [key: string]: string | number | string[] | undefined;
@@ -198,6 +201,7 @@ export function useActivityFeed(params: FeedParams, options: { enabled?: boolean
     period: params.period,
     types: params.types?.join(','),
     repoIds: params.repoIds?.join(','),
+    providers: params.providers?.join(','),
     q: params.q,
     limit: params.limit ?? 30,
   };
@@ -210,6 +214,7 @@ export function useActivityFeed(params: FeedParams, options: { enabled?: boolean
           period: params.period,
           types: params.types,
           repoIds: params.repoIds,
+          providers: params.providers,
           q: params.q,
           limit: params.limit ?? 30,
           cursor: pageParam,

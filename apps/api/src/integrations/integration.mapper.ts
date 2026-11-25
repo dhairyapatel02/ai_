@@ -1,6 +1,13 @@
+import {
+  PROVIDER_CATEGORY,
+  type IntegrationDto,
+  type IntegrationStatus,
+  type IntegrationSummary,
+  type ProviderKind,
+} from '@devimpact/shared';
+
 import { nextSlotAfter } from '../sync/sync-run.mapper';
 
-import type { IntegrationDto, IntegrationStatus, IntegrationSummary } from '@devimpact/shared';
 import type { GitHubInstallation, Integration, Prisma } from '@prisma/client';
 
 /**
@@ -23,6 +30,8 @@ export const SAFE_INTEGRATION_SELECT = {
   lastSuccessfulSyncAt: true,
   scheduleSlotMinute: true,
   createdAt: true,
+  baseUrl: true,
+  config: true,
   installations: true,
 } satisfies Prisma.IntegrationSelect;
 
@@ -43,7 +52,44 @@ export type SafeIntegration = Pick<
   | 'lastSuccessfulSyncAt'
   | 'scheduleSlotMinute'
   | 'createdAt'
+  | 'baseUrl'
+  | 'config'
 > & { installations: GitHubInstallation[] };
+
+const kind = (provider: Integration['provider']) => provider.toLowerCase() as ProviderKind;
+
+/** Provider settings shown on S19 (Jira sites + story points field, Linear workspace). */
+function settingsOf(row: Pick<Integration, 'provider' | 'config'>): IntegrationDto['settings'] {
+  const c = (row.config ?? {}) as Record<string, unknown>;
+  if (row.provider === 'JIRA') {
+    const sites = Array.isArray(c.sites)
+      ? (c.sites as { id?: unknown; name?: unknown; url?: unknown }[]).flatMap((s) => {
+          const url = safeUrl(String(s.url));
+          return typeof s.id === 'string' && typeof s.name === 'string' && url
+            ? [{ id: s.id, name: s.name, url }]
+            : [];
+        })
+      : [];
+    return {
+      sites,
+      storyPointsField: typeof c.storyPointsField === 'string' ? c.storyPointsField : null,
+      storyPointsFieldDetected:
+        typeof c.storyPointsFieldDetected === 'string' ? c.storyPointsFieldDetected : null,
+    };
+  }
+  if (row.provider === 'LINEAR') {
+    const org = c.organization as { id?: unknown; name?: unknown; urlKey?: unknown } | undefined;
+    if (
+      org &&
+      typeof org.id === 'string' &&
+      typeof org.name === 'string' &&
+      typeof org.urlKey === 'string'
+    ) {
+      return { workspace: { id: org.id, name: org.name, urlKey: org.urlKey } };
+    }
+  }
+  return {};
+}
 
 export const toWireStatus = (status: Integration['status']) =>
   status.toLowerCase() as IntegrationStatus;
@@ -67,7 +113,10 @@ export function toIntegrationDto(
 ): IntegrationDto {
   return {
     id: row.id,
-    provider: 'github',
+    provider: kind(row.provider),
+    category: PROVIDER_CATEGORY[kind(row.provider)],
+    baseUrl: row.baseUrl ? (safeUrl(row.baseUrl)?.replace(/\/$/, '') ?? null) : null,
+    settings: settingsOf(row),
     status: toWireStatus(row.status),
     statusReason: row.statusReason,
     externalLogin: row.externalLogin,
@@ -92,11 +141,11 @@ export function toIntegrationDto(
 }
 
 export function toIntegrationSummary(
-  row: Pick<Integration, 'id' | 'status' | 'externalLogin' | 'lastSuccessfulSyncAt'>,
+  row: Pick<Integration, 'id' | 'provider' | 'status' | 'externalLogin' | 'lastSuccessfulSyncAt'>,
 ): IntegrationSummary {
   return {
     id: row.id,
-    provider: 'github',
+    provider: kind(row.provider),
     status: toWireStatus(row.status),
     externalLogin: row.externalLogin,
     lastSuccessfulSyncAt: iso(row.lastSuccessfulSyncAt),

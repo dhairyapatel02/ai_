@@ -15,7 +15,12 @@ import type { INestApplication } from '@nestjs/common';
 export const JSON_BODY_LIMIT = '256kb';
 /** GitHub caps webhook payloads at 25 MB (API_CONTRACT_V2 §18). */
 export const WEBHOOK_BODY_LIMIT = '25mb';
-export const WEBHOOK_PATHS = ['/api/webhooks/github'];
+export const WEBHOOK_PATHS = [
+  '/api/webhooks/github',
+  '/api/webhooks/gitlab',
+  '/api/webhooks/jira',
+  '/api/webhooks/linear',
+];
 
 /**
  * HTTP configuration shared by `main.ts` and the integration-test app (`test/utils/app.ts`).

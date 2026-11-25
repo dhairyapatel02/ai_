@@ -1,16 +1,27 @@
 import { Injectable } from '@nestjs/common';
 
-import { commitRef, commitUrl, prRef, reviewRef, safeUrl } from '../common/evidence-refs';
+import {
+  REPO_PROVIDER,
+  commitRef,
+  commitUrl,
+  issueRef,
+  prRef,
+  reviewRef,
+  safeUrl,
+} from '../common/evidence-refs';
 import { PrismaService } from '../prisma/prisma.service';
 
 import type { EvidenceItem } from '@devimpact/shared';
 
 const MAX_REFS = 300;
-const REF = /^(PR|REV|C)-(.+?)(?:#(\d+)|@([0-9a-f]{7,40}))$/;
+const REF = /^(PR|MR|REV|C)-(.+?)(?:[#!](\d+)|@([0-9a-f]{7,40}))$/;
+/** `JIRA-ABC-123` / `LIN-ENG-42` (P13). */
+const ISSUE_REF = /^(JIRA|LIN)-([A-Z][A-Z0-9_]{0,29}-\d{1,9})$/;
 const ACH_REF = /^ACH-(c[0-9a-z]{20,31})$/;
 
 /**
- * Resolves evidence refs (`PR-<repo>#n`, `REV-<repo>#n`, `C-<repo>@sha7`, `ACH-<id>`) to titled,
+ * Resolves evidence refs (`PR-<repo>#n`, `MR-<project>!n`, `REV-<repo>#n|!n`, `C-<repo>@sha7`,
+ * `ACH-<id>`, `JIRA-<KEY>`, `LIN-<KEY>`) to titled,
  * linkable items for the user (A-3). Unknown refs (purged data, other users' records) are skipped.
  * Achievements carry no URL (the web links them to the Activity drawer, GAP-18).
  */
@@ -24,7 +35,13 @@ export class RefResolver {
     const revKeys: { repo: string; number: number }[] = [];
     const commitKeys: { repo: string; sha: string }[] = [];
     const achievementIds: string[] = [];
+    const issueKeys: { provider: 'JIRA' | 'LINEAR'; key: string }[] = [];
     for (const ref of wanted) {
+      const issue = ISSUE_REF.exec(ref);
+      if (issue?.[2]) {
+        issueKeys.push({ provider: issue[1] === 'LIN' ? 'LINEAR' : 'JIRA', key: issue[2] });
+        continue;
+      }
       const ach = ACH_REF.exec(ref);
       if (ach?.[1]) {
         achievementIds.push(ach[1]);
@@ -33,12 +50,12 @@ export class RefResolver {
       const m = REF.exec(ref);
       if (!m) continue;
       const [, kind, repo, number, sha] = m;
-      if (kind === 'PR' && number) prKeys.push({ repo, number: Number(number) });
+      if ((kind === 'PR' || kind === 'MR') && number) prKeys.push({ repo, number: Number(number) });
       else if (kind === 'REV' && number) revKeys.push({ repo, number: Number(number) });
       else if (kind === 'C' && sha) commitKeys.push({ repo, sha });
     }
-    const repo = { select: { fullName: true, htmlUrl: true } } as const;
-    const [prs, reviews, commits, achievements] = await Promise.all([
+    const repo = { select: { fullName: true, htmlUrl: true, ...REPO_PROVIDER } } as const;
+    const [prs, reviews, commits, achievements, issues] = await Promise.all([
       prKeys.length === 0
         ? []
         : this.prisma.pullRequest.findMany({
@@ -96,10 +113,30 @@ export class RefResolver {
             where: { userId, id: { in: achievementIds } },
             select: { id: true, title: true, occurredOn: true },
           }),
+      issueKeys.length === 0
+        ? []
+        : this.prisma.issue.findMany({
+            where: {
+              userId,
+              OR: issueKeys.map((k) => ({ key: k.key, integration: { provider: k.provider } })),
+            },
+            select: {
+              id: true,
+              key: true,
+              title: true,
+              url: true,
+              projectName: true,
+              completedAt: true,
+              updatedAtRemote: true,
+              integration: { select: { provider: true } },
+            },
+            // Same key on two Jira sites: the most recently updated one wins (documented).
+            orderBy: { updatedAtRemote: 'asc' },
+          }),
     ]);
     const byRef = new Map<string, EvidenceItem>();
     for (const p of prs) {
-      const ref = prRef(p.repository.fullName, p.number);
+      const ref = prRef(p.repository.fullName, p.number, p.repository.integration.provider);
       byRef.set(ref, {
         ref,
         kind: 'pull_request',
@@ -111,7 +148,11 @@ export class RefResolver {
       });
     }
     for (const r of reviews) {
-      const ref = reviewRef(r.pullRequest.repository.fullName, r.pullRequest.number);
+      const ref = reviewRef(
+        r.pullRequest.repository.fullName,
+        r.pullRequest.number,
+        r.pullRequest.repository.integration.provider,
+      );
       if (byRef.has(ref)) continue; // newest review per PR
       byRef.set(ref, {
         ref,
@@ -131,7 +172,7 @@ export class RefResolver {
         id: c.id,
         title: c.messageHeadline,
         repo: c.repository.fullName,
-        url: commitUrl(c.repository.htmlUrl, c.sha),
+        url: commitUrl(c.repository.htmlUrl, c.sha, c.repository.integration.provider),
         occurredAt: c.authoredAt.toISOString(),
       });
     }
@@ -145,6 +186,18 @@ export class RefResolver {
         repo: null,
         url: null,
         occurredAt: `${a.occurredOn.toISOString().slice(0, 10)}T12:00:00.000Z`,
+      });
+    }
+    for (const i of issues) {
+      const ref = issueRef(i.integration.provider, i.key);
+      byRef.set(ref, {
+        ref,
+        kind: 'issue',
+        id: i.id,
+        title: i.title,
+        repo: i.projectName,
+        url: safeUrl(i.url),
+        occurredAt: (i.completedAt ?? i.updatedAtRemote).toISOString(),
       });
     }
     return wanted.map((ref) => byRef.get(ref)).filter((x): x is EvidenceItem => x !== undefined);

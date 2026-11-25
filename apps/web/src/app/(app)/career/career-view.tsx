@@ -1,6 +1,13 @@
 'use client';
 
-import { Award, FolderGit2, GitMerge, MessageSquareText, Printer } from 'lucide-react';
+import {
+  Award,
+  CircleCheckBig,
+  FolderGit2,
+  GitMerge,
+  MessageSquareText,
+  Printer,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -176,7 +183,7 @@ function Quarter({
   quarter: CareerQuarter;
   year: number;
   importing: boolean;
-  onOpen: (id: string, type?: 'pr_merged' | 'achievement') => void;
+  onOpen: (id: string, type?: 'pr_merged' | 'achievement' | 'issue') => void;
 }) {
   const label = `Q${quarter.quarter} ${year}`;
   const empty = isEmptyQuarter(quarter);
@@ -243,6 +250,45 @@ function Quarter({
                           <span className="text-caption text-subtle-foreground">
                             {formatLocalDate(item.date, { currentYear: year })}
                           </span>
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {quarter.issues.length ? (
+              <div className="flex flex-col gap-1" data-testid="issues-completed">
+                <h3 className="flex items-center gap-1.5 text-sm font-medium">
+                  <CircleCheckBig className="size-4 text-subtle-foreground" aria-hidden="true" />
+                  Issues completed
+                  <span className="font-normal text-subtle-foreground">
+                    · {quarter.totals.issuesCompleted}
+                    {quarter.totals.storyPoints > 0
+                      ? ` · ${quarter.totals.storyPoints.toLocaleString('en-US')} points`
+                      : ''}
+                  </span>
+                </h3>
+                <ul className="flex flex-col">
+                  {quarter.issues.map((item) => (
+                    <li key={item.id} className="flex items-start gap-2.5 py-1.5 pl-1">
+                      <CircleCheckBig
+                        className="mt-0.5 size-4 shrink-0 text-subtle-foreground"
+                        aria-hidden="true"
+                      />
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <button
+                          type="button"
+                          className="cursor-pointer text-left hover:underline"
+                          onClick={() => {
+                            onOpen(item.id, 'issue');
+                          }}
+                        >
+                          {item.title}
+                        </button>
+                        <span className="flex flex-wrap items-center gap-1.5 text-caption text-subtle-foreground">
+                          <span className="font-mono">{item.tags[0]}</span>
+                          <span>{formatLocalDate(item.date, { currentYear: year })}</span>
                         </span>
                       </span>
                     </li>

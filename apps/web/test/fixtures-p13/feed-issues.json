@@ -1,0 +1,399 @@
+{
+  "data": [
+    {
+      "id": "issue:cmwvkpeit00j2t47dqa9vrxr1",
+      "type": "issue",
+      "occurredAt": "2026-10-30T11:00:00.000Z",
+      "repo": null,
+      "title": "Implement add dark mode tokens",
+      "url": "https://linear.app/acme/issue/ENG-125",
+      "ref": "LIN-ENG-125",
+      "provider": "linear",
+      "meta": {
+        "recordId": "cmwvkpeit00j2t47dqa9vrxr1",
+        "key": "ENG-125",
+        "status": "done",
+        "storyPoints": 2,
+        "project": "Engineering"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00j1t47dffpiprzl",
+      "type": "issue",
+      "occurredAt": "2026-10-27T11:00:00.000Z",
+      "repo": null,
+      "title": "Fix introduce feature flag for new checkout",
+      "url": "https://acme.atlassian.net/browse/PAY-224",
+      "ref": "JIRA-PAY-224",
+      "provider": "jira",
+      "meta": {
+        "recordId": "cmwvkpeit00j1t47dffpiprzl",
+        "key": "PAY-224",
+        "status": "done",
+        "storyPoints": 1,
+        "project": "Payments Platform"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00j0t47d3nccrw90",
+      "type": "issue",
+      "occurredAt": "2026-10-21T11:00:00.000Z",
+      "repo": null,
+      "title": "Implement introduce feature flag for new checkout",
+      "url": "https://linear.app/acme/issue/ENG-123",
+      "ref": "LIN-ENG-123",
+      "provider": "linear",
+      "meta": {
+        "recordId": "cmwvkpeit00j0t47d3nccrw90",
+        "key": "ENG-123",
+        "status": "done",
+        "storyPoints": null,
+        "project": "Engineering"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00iyt47d8es941l5",
+      "type": "issue",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "repo": null,
+      "title": "Fix support partial refunds",
+      "url": "https://linear.app/acme/issue/ENG-121",
+      "ref": "LIN-ENG-121",
+      "provider": "linear",
+      "meta": {
+        "recordId": "cmwvkpeit00iyt47d8es941l5",
+        "key": "ENG-121",
+        "status": "done",
+        "storyPoints": 8,
+        "project": "Engineering"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00ixt47d8hfihxdd",
+      "type": "issue",
+      "occurredAt": "2026-09-25T11:00:00.000Z",
+      "repo": null,
+      "title": "Investigate expose subscription status endpoint",
+      "url": "https://acme.atlassian.net/browse/PAY-220",
+      "ref": "JIRA-PAY-220",
+      "provider": "jira",
+      "meta": {
+        "recordId": "cmwvkpeit00ixt47d8hfihxdd",
+        "key": "PAY-220",
+        "status": "done",
+        "storyPoints": 2,
+        "project": "Payments Platform"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00iwt47d6xgtt1m2",
+      "type": "issue",
+      "occurredAt": "2026-09-24T11:00:00.000Z",
+      "repo": null,
+      "title": "Fix add usage-based billing meter",
+      "url": "https://linear.app/acme/issue/ENG-119",
+      "ref": "LIN-ENG-119",
+      "provider": "linear",
+      "meta": {
+        "recordId": "cmwvkpeit00iwt47d6xgtt1m2",
+        "key": "ENG-119",
+        "status": "done",
+        "storyPoints": 2,
+        "project": "Engineering"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00ivt47d3jffkvjo",
+      "type": "issue",
+      "occurredAt": "2026-08-24T11:00:00.000Z",
+      "repo": null,
+      "title": "Investigate add dark mode tokens",
+      "url": "https://acme.atlassian.net/browse/PAY-218",
+      "ref": "JIRA-PAY-218",
+      "provider": "jira",
+      "meta": {
+        "recordId": "cmwvkpeit00ivt47d3jffkvjo",
+        "key": "PAY-218",
+        "status": "done",
+        "storyPoints": null,
+        "project": "Payments Platform"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00iut47d0m0aryok",
+      "type": "issue",
+      "occurredAt": "2026-08-22T11:00:00.000Z",
+      "repo": null,
+      "title": "Investigate add idempotency keys to payment intents",
+      "url": "https://linear.app/acme/issue/ENG-117",
+      "ref": "LIN-ENG-117",
+      "provider": "linear",
+      "meta": {
+        "recordId": "cmwvkpeit00iut47d0m0aryok",
+        "key": "ENG-117",
+        "status": "done",
+        "storyPoints": 3,
+        "project": "Engineering"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00itt47dirybveb6",
+      "type": "issue",
+      "occurredAt": "2026-08-15T11:00:00.000Z",
+      "repo": null,
+      "title": "Implement expose subscription status endpoint",
+      "url": "https://acme.atlassian.net/browse/PAY-216",
+      "ref": "JIRA-PAY-216",
+      "provider": "jira",
+      "meta": {
+        "recordId": "cmwvkpeit00itt47dirybveb6",
+        "key": "PAY-216",
+        "status": "done",
+        "storyPoints": 1,
+        "project": "Payments Platform"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00ist47ddqu3dunw",
+      "type": "issue",
+      "occurredAt": "2026-08-07T11:00:00.000Z",
+      "repo": null,
+      "title": "Investigate add idempotency keys to payment intents",
+      "url": "https://linear.app/acme/issue/ENG-115",
+      "ref": "LIN-ENG-115",
+      "provider": "linear",
+      "meta": {
+        "recordId": "cmwvkpeit00ist47ddqu3dunw",
+        "key": "ENG-115",
+        "status": "done",
+        "storyPoints": 8,
+        "project": "Engineering"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00irt47dtz7zqfhc",
+      "type": "issue",
+      "occurredAt": "2026-07-08T11:00:00.000Z",
+      "repo": null,
+      "title": "Document introduce feature flag for new checkout",
+      "url": "https://acme.atlassian.net/browse/PAY-214",
+      "ref": "JIRA-PAY-214",
+      "provider": "jira",
+      "meta": {
+        "recordId": "cmwvkpeit00irt47dtz7zqfhc",
+        "key": "PAY-214",
+        "status": "done",
+        "storyPoints": 1,
+        "project": "Payments Platform"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00ipt47dnw1x25cd",
+      "type": "issue",
+      "occurredAt": "2026-06-21T11:00:00.000Z",
+      "repo": null,
+      "title": "Fix add idempotency keys to payment intents",
+      "url": "https://acme.atlassian.net/browse/PAY-212",
+      "ref": "JIRA-PAY-212",
+      "provider": "jira",
+      "meta": {
+        "recordId": "cmwvkpeit00ipt47dnw1x25cd",
+        "key": "PAY-212",
+        "status": "done",
+        "storyPoints": 1,
+        "project": "Payments Platform"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00iot47d81u1dmf1",
+      "type": "issue",
+      "occurredAt": "2026-06-15T11:00:00.000Z",
+      "repo": null,
+      "title": "Fix introduce feature flag for new checkout",
+      "url": "https://linear.app/acme/issue/ENG-111",
+      "ref": "LIN-ENG-111",
+      "provider": "linear",
+      "meta": {
+        "recordId": "cmwvkpeit00iot47d81u1dmf1",
+        "key": "ENG-111",
+        "status": "done",
+        "storyPoints": 8,
+        "project": "Engineering"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00int47dgn1uyqkj",
+      "type": "issue",
+      "occurredAt": "2026-06-10T11:00:00.000Z",
+      "repo": null,
+      "title": "Implement introduce feature flag for new checkout",
+      "url": "https://acme.atlassian.net/browse/PAY-210",
+      "ref": "JIRA-PAY-210",
+      "provider": "jira",
+      "meta": {
+        "recordId": "cmwvkpeit00int47dgn1uyqkj",
+        "key": "PAY-210",
+        "status": "done",
+        "storyPoints": 2,
+        "project": "Payments Platform"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00imt47d8xgt3f3t",
+      "type": "issue",
+      "occurredAt": "2026-05-29T11:00:00.000Z",
+      "repo": null,
+      "title": "Fix add idempotency keys to payment intents",
+      "url": "https://linear.app/acme/issue/ENG-109",
+      "ref": "LIN-ENG-109",
+      "provider": "linear",
+      "meta": {
+        "recordId": "cmwvkpeit00imt47d8xgt3f3t",
+        "key": "ENG-109",
+        "status": "done",
+        "storyPoints": 8,
+        "project": "Engineering"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00ilt47d3rc2kgyd",
+      "type": "issue",
+      "occurredAt": "2026-04-28T11:00:00.000Z",
+      "repo": null,
+      "title": "Investigate add invoice PDF download",
+      "url": "https://acme.atlassian.net/browse/PAY-208",
+      "ref": "JIRA-PAY-208",
+      "provider": "jira",
+      "meta": {
+        "recordId": "cmwvkpeit00ilt47d3rc2kgyd",
+        "key": "PAY-208",
+        "status": "done",
+        "storyPoints": null,
+        "project": "Payments Platform"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00ikt47devxblha1",
+      "type": "issue",
+      "occurredAt": "2026-04-27T11:00:00.000Z",
+      "repo": null,
+      "title": "Investigate add webhook retry with exponential backoff",
+      "url": "https://linear.app/acme/issue/ENG-107",
+      "ref": "LIN-ENG-107",
+      "provider": "linear",
+      "meta": {
+        "recordId": "cmwvkpeit00ikt47devxblha1",
+        "key": "ENG-107",
+        "status": "done",
+        "storyPoints": 8,
+        "project": "Engineering"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00ijt47d2a232bje",
+      "type": "issue",
+      "occurredAt": "2026-04-21T11:00:00.000Z",
+      "repo": null,
+      "title": "Fix add idempotency keys to payment intents",
+      "url": "https://acme.atlassian.net/browse/PAY-206",
+      "ref": "JIRA-PAY-206",
+      "provider": "jira",
+      "meta": {
+        "recordId": "cmwvkpeit00ijt47d2a232bje",
+        "key": "PAY-206",
+        "status": "done",
+        "storyPoints": 8,
+        "project": "Payments Platform"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00iit47d5148enpa",
+      "type": "issue",
+      "occurredAt": "2026-04-17T11:00:00.000Z",
+      "repo": null,
+      "title": "Investigate add idempotency keys to payment intents",
+      "url": "https://linear.app/acme/issue/ENG-105",
+      "ref": "LIN-ENG-105",
+      "provider": "linear",
+      "meta": {
+        "recordId": "cmwvkpeit00iit47d5148enpa",
+        "key": "ENG-105",
+        "status": "done",
+        "storyPoints": 3,
+        "project": "Engineering"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00igt47dibu8m33x",
+      "type": "issue",
+      "occurredAt": "2026-03-20T11:00:00.000Z",
+      "repo": null,
+      "title": "Document add idempotency keys to payment intents",
+      "url": "https://linear.app/acme/issue/ENG-103",
+      "ref": "LIN-ENG-103",
+      "provider": "linear",
+      "meta": {
+        "recordId": "cmwvkpeit00igt47dibu8m33x",
+        "key": "ENG-103",
+        "status": "done",
+        "storyPoints": null,
+        "project": "Engineering"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00ift47dvlm8jlf8",
+      "type": "issue",
+      "occurredAt": "2026-03-11T11:00:00.000Z",
+      "repo": null,
+      "title": "Document expose subscription status endpoint",
+      "url": "https://acme.atlassian.net/browse/PAY-202",
+      "ref": "JIRA-PAY-202",
+      "provider": "jira",
+      "meta": {
+        "recordId": "cmwvkpeit00ift47dvlm8jlf8",
+        "key": "PAY-202",
+        "status": "done",
+        "storyPoints": 2,
+        "project": "Payments Platform"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00iet47ddx7vsyz2",
+      "type": "issue",
+      "occurredAt": "2026-03-04T11:00:00.000Z",
+      "repo": null,
+      "title": "Document add idempotency keys to payment intents",
+      "url": "https://linear.app/acme/issue/ENG-101",
+      "ref": "LIN-ENG-101",
+      "provider": "linear",
+      "meta": {
+        "recordId": "cmwvkpeit00iet47ddx7vsyz2",
+        "key": "ENG-101",
+        "status": "done",
+        "storyPoints": 8,
+        "project": "Engineering"
+      }
+    },
+    {
+      "id": "issue:cmwvkpeit00idt47dghvpukyw",
+      "type": "issue",
+      "occurredAt": "2026-03-01T11:00:00.000Z",
+      "repo": null,
+      "title": "Implement add dark mode tokens",
+      "url": "https://acme.atlassian.net/browse/PAY-200",
+      "ref": "JIRA-PAY-200",
+      "provider": "jira",
+      "meta": {
+        "recordId": "cmwvkpeit00idt47dghvpukyw",
+        "key": "PAY-200",
+        "status": "done",
+        "storyPoints": 5,
+        "project": "Payments Platform"
+      }
+    }
+  ],
+  "meta": {
+    "nextCursor": null,
+    "hasMore": false
+  }
+}

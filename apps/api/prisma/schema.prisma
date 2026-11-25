@@ -22,9 +22,23 @@ enum Provider {
 }
 
 // OAUTH_APP = legacy v0.1 rows only (migrated to NEEDS_REAUTH, ADR-0004).
+// OAUTH2 = GitLab / Jira Cloud (3LO) / Linear user authorization (P13, D-030).
 enum IntegrationMechanism {
   GITHUB_APP
   OAUTH_APP
+  OAUTH2
+}
+
+/// Provider identity linked to a user (P13, D-030): matches commits / issues to the user.
+enum IdentityKind {
+  ACCOUNT
+  USERNAME
+  EMAIL
+}
+
+enum IdentitySource {
+  PROVIDER // reported (and verified) by the provider at connect / sync
+  MANUAL // added by the user (emails only); never overrides a provider-verified identity
 }
 
 enum IntegrationStatus {
@@ -124,6 +138,7 @@ enum SyncStage {
   AUTHORED_PRS
   REVIEWED_PRS
   COMMITS
+  ISSUES
   PERSIST
   ROLLUPS
   DONE
@@ -173,6 +188,7 @@ model User {
   pullRequests PullRequest[]
   reviews      PullRequestReview[]
   issues       Issue[]
+  identities   ProviderIdentity[]
   syncRuns     SyncRun[]
   documents    GeneratedDocument[]
   aiUsage      AiUsage[]
@@ -290,6 +306,10 @@ model Integration {
   permissions           Json                 @default("{}")
   syncCursor            Json                 @default("{}") @map("sync_cursor")
   backfillFrom          DateTime?            @map("backfill_from")
+  /// Self-managed GitLab instance (origin, e.g. https://gitlab.example.com); null = provider default.
+  baseUrl               String?              @map("base_url")
+  /// Provider settings (P13): Jira `sites[]` + `storyPointsField`, Linear `organization`, GitLab `host`.
+  config                Json                 @default("{}")
   lastSyncedAt          DateTime?            @map("last_synced_at")
   lastSuccessfulSyncAt  DateTime?            @map("last_successful_sync_at")
   scheduleSlotMinute    Int                  @default(0) @map("schedule_slot_minute")
@@ -305,6 +325,7 @@ model Integration {
   reviews       PullRequestReview[]
   issues        Issue[]
   syncRuns      SyncRun[]
+  identities    ProviderIdentity[]
 
   @@unique([provider, externalAccountId]) // one GitHub account -> one DevImpact user
   @@index([userId, provider])
@@ -389,7 +410,7 @@ model Commit {
   integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   repository  Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
 
-  evidence    AchievementEvidence[]
+  evidence AchievementEvidence[]
 
   @@unique([userId, sha]) // de-duplicates forks/mirrors
   @@index([userId, authoredAt])
@@ -437,9 +458,9 @@ model PullRequest {
   legacyStub            Boolean   @default(false) @map("legacy_stub") // v0.1 "PR #n" stub awaiting refresh
   syncedAt              DateTime  @default(now()) @map("synced_at")
 
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  integration Integration         @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-  repository  Repository          @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration           @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  repository  Repository            @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
   reviews     PullRequestReview[]
   evidence    AchievementEvidence[]
 
@@ -470,7 +491,7 @@ model PullRequestReview {
   integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   pullRequest PullRequest @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
 
-  evidence    AchievementEvidence[]
+  evidence AchievementEvidence[]
 
   @@unique([userId, externalId])
   @@index([userId, submittedAt])
@@ -478,23 +499,62 @@ model PullRequestReview {
   @@map("pull_request_reviews")
 }
 
+/// Issue-tracker work item (Jira / Linear, P13-1). Assigned to the connected user; titles only
+/// (no descriptions or comments are stored — ARCHITECTURE_V2 §12).
 model Issue {
-  id            String        @id @default(cuid())
-  userId        String
-  integrationId String
-  title         String
-  labels        String[]
-  storyPoints   Int?
-  priority      IssuePriority @default(NONE)
-  status        IssueStatus   @default(TODO)
-  projectName   String?
-  timestamp     DateTime
+  id              String        @id @default(cuid())
+  userId          String
+  integrationId   String
+  externalId      String        @map("external_id") // Jira issue id ("<cloudId>:<id>") / Linear issue id
+  key             String // "ABC-123" (Jira) / "ENG-42" (Linear)
+  url             String?
+  title           String
+  labels          String[]
+  storyPoints     Float?        @map("story_points") // Jira story points field / Linear estimate
+  priority        IssuePriority @default(NONE)
+  status          IssueStatus   @default(TODO)
+  statusName      String?       @map("status_name") // provider's own status label
+  projectKey      String?       @map("project_key") // Jira project key / Linear team key
+  projectName     String?       @map("project_name")
+  cycleName       String?       @map("cycle_name") // Linear cycle / Jira sprint
+  siteId          String?       @map("site_id") // Jira cloudId / Linear organization id
+  createdAtRemote DateTime      @map("created_at_remote")
+  updatedAtRemote DateTime      @map("updated_at_remote")
+  startedAt       DateTime?     @map("started_at") // first move to an in-progress status
+  completedAt     DateTime?     @map("completed_at") // DONE only (KPI §3.6)
+  canceledAt      DateTime?     @map("canceled_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
 
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 
-  @@index([userId, timestamp])
+  @@unique([integrationId, externalId])
+  @@index([userId, completedAt])
+  @@index([userId, updatedAtRemote])
   @@map("issues")
+}
+
+/// Identities that belong to the user on a provider (P13, D-030). `value` is normalised
+/// (lower-case email; `host/username` for self-managed GitLab). One identity → one DevImpact user.
+model ProviderIdentity {
+  id            String         @id @default(cuid())
+  userId        String         @map("user_id")
+  integrationId String         @map("integration_id")
+  provider      Provider
+  kind          IdentityKind
+  value         String
+  source        IdentitySource
+  verified      Boolean        @default(false)
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, kind, value])
+  @@index([userId])
+  @@index([integrationId])
+  @@map("provider_identities")
 }
 
 // ───────────── Sync (ADR-0007) ─────────────
@@ -663,6 +723,10 @@ model MetricSnapshot {
   prsReviewed       Int      @default(0) @map("prs_reviewed") // distinct PRs reviewed that day
   reviewComments    Int      @default(0) @map("review_comments")
   achievements      Int      @default(0)
+  issuesCompleted   Int      @default(0) @map("issues_completed")
+  storyPoints       Float    @default(0) @map("story_points") // Σ points of issues completed that day
+  /// Per-provider daily counters (P13): { github: { commits, prsMerged, reviews }, jira: { issuesCompleted, storyPoints }, … }
+  byProvider        Json     @default("{}") @map("by_provider")
   active            Boolean  @default(false)
   metricsVersion    String   @map("metrics_version")
   computedAt        DateTime @default(now()) @map("computed_at")
@@ -749,18 +813,18 @@ enum DigestStatus {
 
 /// Manual wins (F-60). Private to the user (no visibility column in v2.0; share links are v2.1).
 model Achievement {
-  id          String              @id @default(cuid())
-  userId      String              @map("user_id")
-  title       String              @db.VarChar(200)
+  id          String                @id @default(cuid())
+  userId      String                @map("user_id")
+  title       String                @db.VarChar(200)
   description String? // ≤ 5000 chars
   impact      String? // ≤ 1000 chars
   category    AchievementCategory
-  occurredOn  DateTime            @map("occurred_on") @db.Date
-  links       Json                @default("[]") // [{ url, label }] ≤ 10
-  source      AchievementSource   @default(MANUAL)
-  createdAt   DateTime            @default(now()) @map("created_at")
-  updatedAt   DateTime            @updatedAt @map("updated_at")
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occurredOn  DateTime              @map("occurred_on") @db.Date
+  links       Json                  @default("[]") // [{ url, label }] ≤ 10
+  source      AchievementSource     @default(MANUAL)
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   evidence    AchievementEvidence[]
   goals       GoalAchievement[]
 

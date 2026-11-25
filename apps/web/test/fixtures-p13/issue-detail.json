@@ -1,0 +1,27 @@
+{
+  "data": {
+    "id": "cmwvkpeit00j2t47dqa9vrxr1",
+    "ref": "LIN-ENG-125",
+    "provider": "linear",
+    "key": "ENG-125",
+    "title": "Implement add dark mode tokens",
+    "url": "https://linear.app/acme/issue/ENG-125",
+    "status": "done",
+    "statusName": "Done",
+    "priority": "low",
+    "storyPoints": 2,
+    "project": {
+      "key": "ENG",
+      "name": "Engineering"
+    },
+    "cycleName": "Cycle 18",
+    "labels": ["backend", "p3"],
+    "createdAt": "2026-10-25T09:00:00.000Z",
+    "updatedAt": "2026-10-30T11:00:00.000Z",
+    "startedAt": "2026-10-28T10:00:00.000Z",
+    "completedAt": "2026-10-30T11:00:00.000Z",
+    "cycleTimeHours": 49,
+    "canceledAt": null,
+    "achievementIds": []
+  }
+}

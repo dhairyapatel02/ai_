@@ -1,6 +1,14 @@
 import { type EvidenceItem, type ImplementedMetricKey } from '@devimpact/shared';
 
-import { commitRef, commitUrl, prRef, reviewRef, safeUrl } from '../common/evidence-refs';
+import {
+  REPO_PROVIDER,
+  commitRef,
+  commitUrl,
+  issueRef,
+  prRef,
+  reviewRef,
+  safeUrl,
+} from '../common/evidence-refs';
 
 import type { PrismaService } from '../prisma/prisma.service';
 
@@ -33,8 +41,8 @@ export async function evidenceRefs(
   ids: string[],
 ): Promise<EvidenceItem[]> {
   if (ids.length === 0) return [];
-  const repo = { select: { fullName: true, htmlUrl: true } } as const;
-  const [prs, reviews, commits] = await Promise.all([
+  const repo = { select: { fullName: true, htmlUrl: true, ...REPO_PROVIDER } } as const;
+  const [prs, reviews, commits, issues] = await Promise.all([
     prisma.pullRequest.findMany({
       where: { userId, id: { in: ids } },
       select: {
@@ -60,11 +68,24 @@ export async function evidenceRefs(
       where: { userId, id: { in: ids } },
       select: { id: true, sha: true, messageHeadline: true, authoredAt: true, repository: repo },
     }),
+    prisma.issue.findMany({
+      where: { userId, id: { in: ids } },
+      select: {
+        id: true,
+        key: true,
+        title: true,
+        url: true,
+        completedAt: true,
+        updatedAtRemote: true,
+        projectName: true,
+        integration: { select: { provider: true } },
+      },
+    }),
   ]);
   const byId = new Map<string, EvidenceItem>();
   for (const p of prs) {
     byId.set(p.id, {
-      ref: prRef(p.repository.fullName, p.number),
+      ref: prRef(p.repository.fullName, p.number, p.repository.integration.provider),
       kind: 'pull_request',
       id: p.id,
       title: p.title,
@@ -75,7 +96,11 @@ export async function evidenceRefs(
   }
   for (const r of reviews) {
     byId.set(r.id, {
-      ref: reviewRef(r.pullRequest.repository.fullName, r.pullRequest.number),
+      ref: reviewRef(
+        r.pullRequest.repository.fullName,
+        r.pullRequest.number,
+        r.pullRequest.repository.integration.provider,
+      ),
       kind: 'review',
       id: r.id,
       title: r.pullRequest.title,
@@ -91,8 +116,19 @@ export async function evidenceRefs(
       id: c.id,
       title: c.messageHeadline,
       repo: c.repository.fullName,
-      url: commitUrl(c.repository.htmlUrl, c.sha),
+      url: commitUrl(c.repository.htmlUrl, c.sha, c.repository.integration.provider),
       occurredAt: c.authoredAt.toISOString(),
+    });
+  }
+  for (const i of issues) {
+    byId.set(i.id, {
+      ref: issueRef(i.integration.provider, i.key),
+      kind: 'issue',
+      id: i.id,
+      title: i.title,
+      repo: i.projectName,
+      url: safeUrl(i.url),
+      occurredAt: (i.completedAt ?? i.updatedAtRemote).toISOString(),
     });
   }
   return ids.map((id) => byId.get(id)).filter((item): item is EvidenceItem => item !== undefined);

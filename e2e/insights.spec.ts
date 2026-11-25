@@ -21,7 +21,7 @@ const P10_PAGES = [
   { path: '/kpis', ready: (p: Page) => p.getByTestId('metric-prs_merged') },
   { path: '/kpis/impact', ready: (p: Page) => p.getByTestId('impact-overall') },
   { path: '/career', ready: (p: Page) => p.getByTestId('career-timeline') },
-  { path: '/settings/integrations', ready: (p: Page) => p.getByTestId('sync-history') },
+  { path: '/settings/integrations', ready: (p: Page) => p.getByTestId('sync-history').first() },
 ];
 
 test.describe('insight pages (P10)', () => {
@@ -85,16 +85,18 @@ test.describe('insight pages (P10)', () => {
     await interceptSync(page);
     await page.goto('/settings/integrations');
     await hideDevOverlay(page);
-    await expect(page.getByTestId('sync-status-badge')).toHaveText('Connected');
-    await page.getByRole('button', { name: 'Sync now' }).click();
+    // P13: S19 shows a card per connected source; this journey is about the GitHub card.
+    const github = page.getByTestId('github-card');
+    await expect(github.getByTestId('sync-status-badge')).toHaveText('Connected');
+    await github.getByRole('button', { name: 'Sync now' }).click();
     await expect(
       page.getByText('Sync started. New activity appears in a minute or two.'),
     ).toBeVisible();
-    await expect(page.getByTestId('sync-status-badge')).toHaveText(/Syncing · \d+%/);
-    await expect(page.getByTestId('sync-progress')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Sync now' })).toBeDisabled();
+    await expect(github.getByTestId('sync-status-badge')).toHaveText(/Syncing · \d+%/);
+    await expect(github.getByTestId('sync-progress')).toBeVisible();
+    await expect(github.getByRole('button', { name: 'Sync now' })).toBeDisabled();
     await expect(page.getByText('Sync finished — 3 new items.')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByTestId('sync-status-badge')).toHaveText('Connected');
+    await expect(github.getByTestId('sync-status-badge')).toHaveText('Connected');
   });
 
   for (const viewport of [
@@ -151,6 +153,8 @@ test.describe('insight pages (P10)', () => {
  */
 async function interceptSync(page: Page) {
   let phase = 0;
+  // P13: S19 polls one status per connected source; only the synced integration advances the fake.
+  let syncedId: string | null = null;
   const now = () => new Date().toISOString();
   const run = (status: string, progress: number) => ({
     id: 'cme2esyncrun0000000000001',
@@ -181,14 +185,19 @@ async function interceptSync(page: Page) {
     });
   await page.route(`${API_URL}/sync`, async (route) => {
     if (route.request().method() !== 'POST') return route.fallback();
+    const posted = route.request().postDataJSON() as { integrationId?: string } | null;
+    syncedId = posted?.integrationId ?? null;
     phase = 1;
     return json(route, { syncRun: run('queued', 0) }, 202);
   });
   await page.route(new RegExp(`${API_URL.replace(/[/.]/g, '\\$&')}/sync/status`), async (route) => {
     if (phase === 0) return route.fallback();
+    const id = new URL(route.request().url()).searchParams.get('integrationId');
+    if (syncedId && id && id !== syncedId) return route.fallback();
     const real = await route.fetch();
     const body = (await real.json()) as { data: Record<string, unknown> };
-    phase += 1;
+    // Unscoped requests (shell status) share the state but don't advance it.
+    if (!syncedId || id === syncedId) phase += 1;
     if (phase <= 3) {
       return json(route, {
         ...body.data,

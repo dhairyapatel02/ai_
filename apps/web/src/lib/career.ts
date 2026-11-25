@@ -21,6 +21,8 @@ export function quarterTotals(totals: CareerQuarter['totals']): string {
     `${totals.prsReviewed.toLocaleString('en-US')} reviewed`,
   ];
   if (totals.achievements > 0) parts.push(plural(totals.achievements, 'achievement'));
+  if (totals.issuesCompleted > 0)
+    parts.push(`${plural(totals.issuesCompleted, 'issue')} completed`);
   return parts.join(' · ');
 }
 
@@ -34,6 +36,7 @@ export function isEmptyQuarter(q: CareerQuarter): boolean {
     q.repos.length === 0 &&
     q.milestones.length === 0 &&
     q.achievements.length === 0 &&
+    q.issues.length === 0 &&
     q.totals.prsMerged === 0 &&
     q.totals.prsReviewed === 0
   );

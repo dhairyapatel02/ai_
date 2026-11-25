@@ -226,6 +226,8 @@ subtle motion; credible in front of a manager. Binding input for P04's design sy
 P06 still builds the `ActivityProvider` abstraction. Issue metrics (`issues_completed`,
 `story_points_completed`) are specified but deferred. ISSUES GAP-10 → won't fix in v2.0.
 **ADR:** [ADR-0014](blueprint/adr/ADR-0014-product-scope-v2.md)
+**Amended by [D-029](#d-029--phase-13-pulled-into-v20-amends-d-018--confirmed--p13--user-decision)
+(2026-11-25): P13 now runs in v2.0, before P14.**
 
 ### D-019 · Time zones and period semantics · CONFIRMED · P03
 **Summary:** every user has an IANA timezone (default UTC, prefilled at onboarding); periods are
@@ -761,3 +763,78 @@ Within D-007/D-009/D-014/D-019/D-020, PRD §5.5/§6 and API_CONTRACT §5/§15–
 *Consequences:* P14 load/security-tests the public unsubscribe endpoint, `/me/export`, `DELETE /me`
 and the digest fan-out (see PROGRESS P12 handoff), adds DigestDelivery retention (OPS-18) and
 decides GAP-19 with the live eval.
+
+### D-029 · Phase 13 pulled into v2.0 (amends D-018) · CONFIRMED · P13 · **USER DECISION**
+**Question (asked at the start of P13, 2026-11-25):** D-018 moved Phase 13 to v2.1 and the P13
+blueprint amendment said not to start it before v2.0 is released. Should we (a) reverse D-018 and
+pull P13 into v2.0 before P14, or (b) run it as the first v2.1 phase after `v2.0.0` is tagged?
+**User answer:** "(a) Pull into v2.0".
+**Summary:** GitLab, Jira and Linear ship in v2.0. Order becomes P12 → **P13** → P14 → P15; P14's
+prerequisite is "P13 merged" (README phase overview + dependency graph updated). P14 hardens,
+load-tests and security-tests the new providers too (webhook endpoints, token refresh, per-provider
+sync budgets); P15 documents and releases them. P14/P15 scope is otherwise unchanged. ISSUES GAP-10
+is reopened for v2.0 and fixed by P13; KPI_METHODOLOGY §3.6 issue metrics are implemented in P13.
+P15 no longer carries P13 into `ROADMAP_V2_1.md` (manager views, shareable links and the other
+v2.1 items stay there).
+**Supersedes:** D-018's "Out — v2.1" (the ADR-0014 scope table is read with this amendment).
+
+### D-030 · P13 implementation choices (GitLab, Jira, Linear) · APPLIED (P13)
+- **Provider abstraction:** `ProviderBase` (refresh, revoke, webhook verify/parse) with two
+  categories — `ActivityProvider` (code hosts: GitHub, GitLab; unchanged session interface) and
+  `IssueTrackerProvider` (Jira, Linear: `getAccount`, `prepare`, `issues(window)`). A
+  `ProviderRegistry` resolves the provider of an integration. **Orchestrator change (justified):**
+  `SyncEngine.run` dispatches on the category — issue trackers run prepare + one `ISSUES` stage
+  per slice through the same lifecycle (SyncRun persistence, checkpoints, newest-30-days-first
+  slices, cursor − 1 h, rate-limit pause/resume, NEEDS_REAUTH, rollups, hourly fan-out). The PR /
+  review / commit stages could not express issues; everything else is shared.
+- **No new SDKs.** GitLab REST v4, Jira Cloud REST v3 (`/rest/api/3/search/jql`, enhanced search
+  with `nextPageToken`) and Linear GraphQL are called with `fetch` through `ProviderHttp` (bearer
+  token, one refresh on 401, 429/`Retry-After` and rate-limit headers → `ProviderRateLimitError`,
+  bounded 5xx retries, timeouts). `npm audit` unchanged.
+- **OAuth:** authorization code flow per provider, code exchange on the server, signed single-use
+  state bound to user **and provider** (`k`) and, for GitLab, the chosen instance (`b`). PKCE S256
+  for GitLab and Linear; Jira 3LO has no PKCE (signed state + client secret). Redirect URIs
+  `${WEB_URL}/integrations/<provider>/callback`. Tokens AES-256-GCM with AAD
+  (`integration`, field) as D-005. Revoke on disconnect: GitLab `/oauth/revoke`, Linear
+  `/oauth/revoke`; Atlassian has no revocation endpoint (tokens dropped, user removes the app at
+  id.atlassian.com — the dialog says so). A token that cannot be stored is revoked again.
+- **Self-managed GitLab:** only allow-listed origins (`GITLAB_URL` + `GITLAB_INSTANCES_JSON`, each
+  with its own OAuth app); external ids are `<host>/<id>` so instances never collide.
+- **Webhooks:** `/webhooks/gitlab` (`X-Gitlab-Token` constant-time compare), `/webhooks/jira`
+  (`X-Hub-Signature: sha256=` HMAC), `/webhooks/linear` (`Linear-Signature` HMAC + `webhookTimestamp`
+  within 60 s). Delivery ids namespaced (`gl-`, `jira-`, `lin-`; body hash when absent) in
+  `webhook_deliveries` for idempotency; events normalise to `activity_changed` → an incremental
+  sync of each matching integration (reusing an active run). Without webhooks the daily schedule
+  polls.
+- **Mappings:** GitLab MR → PR (`opened/locked` OPEN, `merged`, `closed`), notes → reviews (system
+  "approved" / "requested changes" notes with their times; your comments = one aggregated
+  COMMENTED review per MR; "marked as ready" → `readyForReviewAt`); MR line counts are unknown
+  (null). Jira status *category* → TODO / IN_PROGRESS / DONE, done + won't-do resolutions →
+  CANCELLED; priority Highest/Blocker/Critical → URGENT, High/Major → HIGH, Medium, Low/Lowest/
+  Minor/Trivial → LOW; story points from the detected or chosen field; start = first move to an
+  in-progress status (changelog). JQL windows use relative minutes (zone-independent). Linear state
+  type triage/backlog/unstarted → TODO, started, completed, canceled/duplicate → CANCELLED;
+  priority 1–4 → URGENT…LOW, 0 → NONE; estimate → story points; team key + cycle kept.
+- **Identity linking + dedup:** `provider_identities` (account, username, email; `PROVIDER`
+  verified or `MANUAL`), globally unique per (provider, kind, value); a verified identity replaces
+  another user's unverified claim, never another user's verified one. Manual linking = extra
+  commit emails (GitLab commit matching), max 10 per connection, removed on disconnect. Commits are
+  unique per (user, SHA): a commit mirrored between GitHub and GitLab is stored once (first
+  provider wins). PRs/MRs are not merged across providers (different review processes; documented).
+- **Entitlements:** `integrations` = connected sources across providers (FREE 2, PRO/TEAM/ENT 4);
+  new `integrationsPerProvider` = 1 on every plan. Reconnecting an existing connection needs no
+  slot. `403 ENTITLEMENT_REQUIRED { entitlement: 'integrations' | 'integrations_per_provider' }`;
+  S19 shows "N of M sources connected" and disables Connect with the reason.
+- **Metrics:** `metrics@2.1.0` (MINOR, KPI §9) implements §3.6 `issues_completed`,
+  `story_points_completed`, `issue_cycle_time_median_hours` (min n 3, business hours); never in the
+  score (`impact@2.0.0` unchanged); cached scores of an older metrics version are recomputed.
+  `metric_snapshots` gain `issues_completed`, `story_points` and a per-provider `by_provider` JSON
+  (rollup provider dimension, `GET /metrics/providers`). KPIs return a sixth `issues` section
+  (`available: false` without a tracker).
+- **Evidence refs:** `MR-<group/project>!n`, `REV-<group/project>!n` (GitLab), `JIRA-<KEY-123>`,
+  `LIN-<TEAM-42>` next to `PR-`/`REV-`/`C-`/`ACH-`; `EVIDENCE_REF_PATTERN` in shared,
+  `RefResolver`, chips. Packs add completed issues (≤ 25, ranked by done + points + priority +
+  tags) and `counts.issuesCompleted` only when issues exist (older packs byte-identical); with
+  redaction on, issue keys/projects are aliased. Prompts **v2** for resume / appraisal / promotion
+  / impact narrative (`CORE_RULES_V2` explains GitLab and issue evidence); evals re-recorded plus a
+  `gitlab-issue-tracker` persona (48 cases).

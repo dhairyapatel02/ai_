@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { parseEntitlementsOverride } from '../entitlements/entitlements';
+import { parseGitLabInstances } from '../providers/gitlab/instances';
 import { loadModelPrices } from './ai-pricing';
 
 const booleanString = z
@@ -157,6 +158,35 @@ export const envSchema = z
     GITHUB_WEB_URL: z.url().default('https://github.com'),
     GITHUB_API_URL: z.url().default('https://api.github.com'),
 
+    // ── GitLab / Jira / Linear (P13, D-030). All optional: a provider is offered on S19 only when
+    // its client id + secret are set. Base URLs are overridable for tests and self-managed GitLab.
+    // GitLab OAuth application (scopes `read_api read_user`): gitlab.com or one self-managed origin.
+    GITLAB_URL: z.url({ protocol: /^https?$/ }).default('https://gitlab.com'),
+    GITLAB_CLIENT_ID: optionalString,
+    GITLAB_CLIENT_SECRET: optionalString,
+    // Extra self-managed instances: JSON [{ "url": "https://gitlab.example.com", "clientId": "…",
+    // "clientSecret": "…", "label": "Example GitLab" }]. The connect `baseUrl` must be one of them.
+    GITLAB_INSTANCES_JSON: optionalString,
+    // `X-Gitlab-Token` secret of project/group webhooks (`POST /api/webhooks/gitlab`).
+    GITLAB_WEBHOOK_SECRET: optionalString,
+    // Atlassian OAuth 2.0 (3LO) app for Jira Cloud (scopes `read:jira-work read:jira-user offline_access`).
+    JIRA_CLIENT_ID: optionalString,
+    JIRA_CLIENT_SECRET: optionalString,
+    JIRA_AUTH_URL: z.url().default('https://auth.atlassian.com'),
+    JIRA_API_URL: z.url().default('https://api.atlassian.com'),
+    // Secret of Jira Cloud admin webhooks (`X-Hub-Signature: sha256=…`); optional — polling otherwise.
+    JIRA_WEBHOOK_SECRET: optionalString,
+    // Linear OAuth application (scope `read`, PKCE).
+    LINEAR_CLIENT_ID: optionalString,
+    LINEAR_CLIENT_SECRET: optionalString,
+    LINEAR_WEB_URL: z.url().default('https://linear.app'),
+    LINEAR_API_URL: z.url().default('https://api.linear.app'),
+    // Signing secret of the Linear OAuth app webhook (`Linear-Signature`, HMAC-SHA256 hex).
+    LINEAR_WEBHOOK_SECRET: optionalString,
+    // Per-request timeout + transient retries for GitLab / Jira / Linear calls.
+    PROVIDER_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(30_000),
+    PROVIDER_REQUEST_RETRIES: z.coerce.number().int().min(0).max(10).default(2),
+
     // ── Email (P12, ARCHITECTURE_V2 §2/§10). `console` logs messages (dev default), `memory` keeps
     // them in-process (tests only), `smtp` uses SMTP_URL (nodemailer), `resend` the Resend HTTP API.
     EMAIL_TRANSPORT: z.enum(['console', 'memory', 'smtp', 'resend']).default('console'),
@@ -192,6 +222,10 @@ export const envSchema = z
       loadModelPrices(env.AI_PRICES_JSON);
     } catch (error) {
       ctx.addIssue({ code: 'custom', path: ['AI_PRICES_JSON'], message: (error as Error).message });
+    }
+    const gitlab = parseGitLabInstances(env.GITLAB_INSTANCES_JSON);
+    if (!gitlab.ok) {
+      ctx.addIssue({ code: 'custom', path: ['GITLAB_INSTANCES_JSON'], message: gitlab.error });
     }
     if (env.EMAIL_TRANSPORT === 'smtp' && !env.SMTP_URL) {
       ctx.addIssue({

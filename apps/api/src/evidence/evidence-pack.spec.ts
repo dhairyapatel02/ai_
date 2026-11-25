@@ -74,3 +74,38 @@ describe('EvidenceBuilder core (deterministic ranking, ADR-0009)', () => {
     expect(untracedNumbers('Saved 1234 hours.', allowed)).toEqual(['1234']);
   });
 });
+
+describe('issues in evidence packs (P13)', () => {
+  const persona = PERSONAS.find((p) => p.key === 'gitlab-issue-tracker');
+  if (!persona) throw new Error('persona missing');
+
+  it('includes issues with JIRA- / LIN- refs and GitLab MRs with MR- refs', () => {
+    const c = buildCase(persona, 'appraisal');
+    const refs = c.pack.items.map((i) => i.ref);
+    expect(refs).toEqual(
+      expect.arrayContaining([
+        'JIRA-PAY-231',
+        'LIN-ENG-42',
+        'MR-acme/platform/billing-service!100',
+      ]),
+    );
+    expect(c.pack.counts.issuesCompleted).toBe(4);
+    const issue = promptEvidence(c.pack).items.find((i) => i.ref === 'JIRA-PAY-231');
+    expect(issue).toMatchObject({ kind: 'issue', tracker: 'jira', storyPoints: 5, status: 'done' });
+  });
+
+  it('packs without issues keep their exact shape (no issuesCompleted key)', () => {
+    const other = PERSONAS.find((p) => p.key === 'backend-payments');
+    if (!other) throw new Error('persona missing');
+    expect('issuesCompleted' in buildCase(other, 'appraisal').pack.counts).toBe(false);
+  });
+
+  it('aliases issue keys and project names when redaction is on', () => {
+    const c = buildCase({ ...persona, redactPrivateRepos: true }, 'appraisal');
+    const issues = c.pack.items.filter((i) => i.kind === 'issue');
+    expect(issues.every((i) => /^(JIRA|LIN)-ISSUE-\d+$/.test(i.promptRef))).toBe(true);
+    expect(issues.every((i) => i.repoLabel === 'private/project')).toBe(true);
+    expect(JSON.stringify(promptEvidence(c.pack))).not.toContain('PAY-231');
+    expect(c.pack.redacted).toBe(true);
+  });
+});

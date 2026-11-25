@@ -42,3 +42,24 @@ export const CONNECT_ERRORS: Record<string, { title: string; body: string }> = {
   upstream: { title: "GitHub didn't respond", body: 'Try again in a minute.' },
   failed: { title: "GitHub couldn't be connected", body: 'Try again in a minute.' },
 };
+
+/** Connect errors for GitLab / Jira / Linear (P13, `?connectError=&provider=`). */
+export function connectErrorsFor(label: string): Record<string, { title: string; body: string }> {
+  return {
+    denied: {
+      title: `${label} authorization was cancelled`,
+      body: "Nothing was connected. Connect again when you're ready.",
+    },
+    expired: { title: 'That link expired', body: `Start the ${label} connection again.` },
+    in_use: {
+      title: `This ${label} account is already connected to another DevImpact account`,
+      body: `Sign in with that account, or use a different ${label} account.`,
+    },
+    entitlement: {
+      title: 'Your plan’s connection limit is reached',
+      body: 'Disconnect a source or see Plan & usage to connect another.',
+    },
+    upstream: { title: `${label} didn't respond`, body: 'Try again in a minute.' },
+    failed: { title: `${label} couldn't be connected`, body: 'Try again in a minute.' },
+  };
+}

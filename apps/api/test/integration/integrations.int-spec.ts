@@ -303,7 +303,7 @@ describe('GitHub App connect / callback / disconnect (integration)', () => {
     expect(gh.exchanges.at(-1)?.code_verifier).toMatch(/^[A-Za-z0-9_-]{43}$/);
   });
 
-  it('enforces the plan’s single-integration limit on connect (403 ENTITLEMENT_REQUIRED)', async () => {
+  it('enforces one connection per provider on connect (403 ENTITLEMENT_REQUIRED, D-030)', async () => {
     const user = await f.user();
     await f.integration(user.id, { externalAccountId: 'node-a' });
     const res = await request(server())
@@ -313,7 +313,7 @@ describe('GitHub App connect / callback / disconnect (integration)', () => {
       .expect(403);
     expect(res.body.error).toMatchObject({
       code: 'ENTITLEMENT_REQUIRED',
-      details: { entitlement: 'integrations', limit: 1 },
+      details: { entitlement: 'integrations_per_provider', limit: 1, provider: 'github' },
     });
   });
 

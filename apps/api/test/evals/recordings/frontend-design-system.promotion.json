@@ -2,9 +2,9 @@
   "persona": "frontend-design-system",
   "generator": "promotion",
   "promptId": "promotion",
-  "promptVersion": 1,
+  "promptVersion": 2,
   "model": "reference-writer",
   "source": "synthetic",
-  "recordedAt": "2026-11-17",
+  "recordedAt": "2026-11-25",
   "text": "{\"whyReady\":{\"text\":\"Engineer who merged 8 pull requests across 2 repositories in October 2026.\",\"citations\":[\"PR-acme/web#106\"]},\"leadershipEvidence\":[{\"text\":\"Reviewed the change \\\"Add date picker\\\" in acme/web, giving the author detailed feedback.\",\"citations\":[\"REV-acme/web#501\"]},{\"text\":\"Reviewed the change \\\"Onboarding wizard\\\" in acme/ui-kit, giving the author detailed feedback.\",\"citations\":[\"REV-acme/ui-kit#502\"]}],\"technicalImpact\":[{\"text\":\"Improved performance with the change to lazy-load dashboard charts to speed up first paint in acme/web.\",\"citations\":[\"PR-acme/web#106\"]},{\"text\":\"Resolved a defect: add visual regression tests for buttons in acme/ui-kit.\",\"citations\":[\"PR-acme/ui-kit#115\"]},{\"text\":\"Improved performance with the change to reduce bundle size by removing moment.js in acme/ui-kit.\",\"citations\":[\"PR-acme/ui-kit#121\"]}],\"businessValue\":[{\"text\":\"Resolved a defect: add visual regression tests for buttons in acme/ui-kit.\",\"citations\":[\"PR-acme/ui-kit#115\"]},{\"text\":\"Delivered the change to ship accessible combobox component in acme/web.\",\"citations\":[\"PR-acme/web#100\"]}],\"mentorship\":[{\"text\":\"Reviewed the change \\\"Table virtualization\\\" in acme/web, giving the author detailed feedback.\",\"citations\":[\"REV-acme/web#503\"]},{\"text\":\"Reviewed the change \\\"Checkout page redesign\\\" in acme/ui-kit, giving the author detailed feedback.\",\"citations\":[\"REV-acme/ui-kit#500\"]}]}"
 }

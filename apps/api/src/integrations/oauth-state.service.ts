@@ -24,6 +24,10 @@ export interface OAuthStatePayload {
   i?: string;
   /** 1 when the authorize URL carried a PKCE challenge (send the verifier on exchange). */
   p?: 1;
+  /** Provider the flow belongs to (P13): a state minted for one provider is invalid for another. */
+  k?: 'gitlab' | 'jira' | 'linear';
+  /** Self-managed GitLab origin chosen at connect (allow-listed). */
+  b?: string;
 }
 
 export interface IssuedState {
@@ -60,7 +64,13 @@ export class OAuthStateService {
 
   async issue(
     userId: string,
-    extra: { returnTo?: string; integrationId?: string; pkce?: boolean } = {},
+    extra: {
+      returnTo?: string;
+      integrationId?: string;
+      pkce?: boolean;
+      provider?: OAuthStatePayload['k'];
+      baseUrl?: string;
+    } = {},
     now = Date.now(),
   ): Promise<IssuedState> {
     const nonce = randomBytes(18).toString('base64url');
@@ -73,6 +83,8 @@ export class OAuthStateService {
       ...(extra.returnTo ? { r: extra.returnTo } : {}),
       ...(extra.integrationId ? { i: extra.integrationId } : {}),
       ...(extra.pkce ? { p: 1 as const } : {}),
+      ...(extra.provider ? { k: extra.provider } : {}),
+      ...(extra.baseUrl ? { b: extra.baseUrl } : {}),
     };
     const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
     await this.redis.set(`oauth-state:${nonce}`, codeVerifier, 'EX', STATE_TTL_SECONDS);

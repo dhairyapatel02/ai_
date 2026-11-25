@@ -5,6 +5,9 @@ import {
   FeedItem,
   FeedQuery,
   IdParams,
+  IssueDetail,
+  IssueItem,
+  IssueListQuery,
   PullRequestDetail,
   PullRequestListItem,
   PullRequestListQuery,
@@ -87,5 +90,22 @@ export class ActivityController {
   @ApiDoc({ summary: 'Commit detail', tags: ['activity'], response: CommitDetail })
   getCommit(@CurrentUser() user: AuthUser, @ZodParams(IdParams) params: { id: string }) {
     return this.activityService.commit(user.id, params.id);
+  }
+
+  @Get('issues')
+  @ApiDoc({
+    summary: 'Issues assigned to you in Jira / Linear (P13), newest update first',
+    tags: ['activity'],
+    response: z.array(IssueItem),
+  })
+  async getIssues(@CurrentUser() user: AuthUser, @ZodQuery(IssueListQuery) query: IssueListQuery) {
+    const page = await this.activityService.issues(user.id, query);
+    return withMeta(page.items, page.meta);
+  }
+
+  @Get('issues/:id')
+  @ApiDoc({ summary: 'Issue detail', tags: ['activity'], response: IssueDetail })
+  getIssue(@CurrentUser() user: AuthUser, @ZodParams(IdParams) params: { id: string }) {
+    return this.activityService.issue(user.id, params.id);
   }
 }

@@ -5,6 +5,6 @@
   "promptVersion": 1,
   "model": "reference-writer",
   "source": "synthetic",
-  "recordedAt": "2026-11-17",
+  "recordedAt": "2026-11-25",
   "text": "{\"summary\":{\"text\":\"A focused week in Oct 19 – Oct 25, 2026.\",\"citations\":[\"PR-acme/infra#106\"]},\"highlights\":[{\"text\":\"Improved performance with the change to cut deploy time by caching Docker layers in acme/infra.\",\"citations\":[\"PR-acme/infra#106\"]},{\"text\":\"Resolved a defect: fix flaky integration test runner timeouts in acme/ci.\",\"citations\":[\"PR-acme/ci#115\"]},{\"text\":\"Strengthened security: rotate database credentials automatically in acme/infra.\",\"citations\":[\"PR-acme/infra#112\"]}]}"
 }

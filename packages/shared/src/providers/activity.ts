@@ -1,13 +1,29 @@
 /**
- * Provider abstraction for activity sources (ADR-0007 §Provider abstraction, D-018). The sync
- * orchestrator depends only on these types; `GitHubProvider` (apps/api/src/providers/github) is the
- * only v2.0 implementation; GitLab/Jira/Linear plug in here in v2.1.
+ * Provider abstraction for activity sources (ADR-0007 §Provider abstraction, D-029/D-030). The
+ * sync orchestrator depends only on these types. Code hosts (`GitHubProvider`, `GitLabProvider`)
+ * implement `ActivityProvider`; issue trackers (`JiraProvider`, `LinearProvider`) implement
+ * `IssueTrackerProvider`. Both share `ProviderBase` (token lifecycle, OAuth, webhooks).
  *
  * All timestamps are `Date`s in UTC. DTOs carry only what the data model stores (no third-party
  * review content, no bodies of other people's PRs — ARCHITECTURE_V2 §12).
  */
 
-export type ProviderKind = 'github';
+export const PROVIDER_KINDS = ['github', 'gitlab', 'jira', 'linear'] as const;
+export type ProviderKind = (typeof PROVIDER_KINDS)[number];
+/** `code` = repositories, PRs/MRs, reviews, commits; `issues` = issue-tracker work items. */
+export type ProviderCategory = 'code' | 'issues';
+export const PROVIDER_CATEGORY: Record<ProviderKind, ProviderCategory> = {
+  github: 'code',
+  gitlab: 'code',
+  jira: 'issues',
+  linear: 'issues',
+};
+export const PROVIDER_LABELS: Record<ProviderKind, string> = {
+  github: 'GitHub',
+  gitlab: 'GitLab',
+  jira: 'Jira',
+  linear: 'Linear',
+};
 export type NormalizedPrState = 'OPEN' | 'CLOSED' | 'MERGED';
 export type NormalizedReviewState = 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENTED' | 'DISMISSED';
 
@@ -21,6 +37,8 @@ export interface ProviderAccount {
   login: string;
   name: string | null;
   avatarUrl: string | null;
+  /** Emails the provider reports as verified for this account (identity linking, D-030). */
+  verifiedEmails?: string[];
 }
 
 export interface ProviderTokenSet {
@@ -191,6 +209,18 @@ export type ProviderWebhookEvent =
       repositoriesRemoved: NormalizedRepository[];
     }
   | { kind: 'authorization_revoked'; senderExternalId: string | null }
+  | {
+      /**
+       * GitLab / Jira / Linear: something changed for these accounts or projects; the worker runs
+       * an incremental sync of each matching integration (cheap: cursor − 1 h).
+       */
+      kind: 'activity_changed';
+      provider: Exclude<ProviderKind, 'github'>;
+      accountExternalIds: string[];
+      repositoryExternalIds: string[];
+      /** Jira cloudId / Linear organization id (narrows the match), else null. */
+      siteId: string | null;
+    }
   | { kind: 'ignored'; reason: string };
 
 export interface ProviderSessionOptions {
@@ -202,6 +232,12 @@ export interface ProviderSessionOptions {
   minRemaining?: number;
   /** Request-pacing key (one per token/integration), so users don't slow each other down. */
   key?: string;
+  /** Self-managed instance origin (GitLab); null/undefined = provider default. */
+  baseUrl?: string | null;
+  /** `Integration.config` (Jira sites + story points field, Linear organization, …). */
+  config?: Record<string, unknown>;
+  /** Linked identities used to match commits (GitLab author emails, D-030). */
+  identities?: { emails: string[]; usernames: string[] };
 }
 
 /** One authenticated conversation with a provider (one per job, ADR-0007). */
@@ -232,14 +268,104 @@ export interface ProviderSession {
   >;
 }
 
-export interface ActivityProvider {
+/** Token lifecycle + webhooks, common to every provider. */
+export interface ProviderBase {
   readonly kind: ProviderKind;
-  openSession(options: ProviderSessionOptions): ProviderSession;
-  refreshToken(refreshToken: string): Promise<ProviderTokenSet>;
-  revokeToken(accessToken: string): Promise<boolean>;
-  /** Repositories an installation grants (installation token; ADR-0004 metadata use). */
-  installationRepositories(installationId: string): Promise<NormalizedRepository[]>;
-  /** Timing-safe signature check over the raw body. */
+  readonly category: ProviderCategory;
+  /** `baseUrl` = self-managed GitLab origin; ignored by other providers. */
+  refreshToken(refreshToken: string, baseUrl?: string | null): Promise<ProviderTokenSet>;
+  /** Revokes at the provider where supported; false when not supported or it failed. */
+  revokeToken(accessToken: string, baseUrl?: string | null): Promise<boolean>;
+  /**
+   * Timing-safe authenticity check over the raw body. `signatureHeader` is the provider's header
+   * (GitHub/Jira `X-Hub-Signature(-256)`, Linear `Linear-Signature`, GitLab `X-Gitlab-Token`).
+   */
   verifyWebhook(rawBody: Uint8Array, signatureHeader: string | undefined): boolean;
   parseWebhook(event: string, payload: unknown): ProviderWebhookEvent;
+}
+
+export interface ActivityProvider extends ProviderBase {
+  readonly category: 'code';
+  openSession(options: ProviderSessionOptions): ProviderSession;
+  /** Repositories an installation grants (installation token; ADR-0004 metadata use). */
+  installationRepositories(installationId: string): Promise<NormalizedRepository[]>;
+}
+
+// ── Issue trackers (Jira, Linear — P13) ───────────────────────────────────────────────────────
+
+export type NormalizedIssueStatus = 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
+export type NormalizedIssuePriority = 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE';
+
+/** An issue assigned to the connected user. Titles only — descriptions/comments are never read. */
+export interface NormalizedIssue {
+  externalId: string;
+  /** Human key: Jira `ABC-123`, Linear `ENG-42`. */
+  key: string;
+  url: string | null;
+  title: string;
+  labels: string[];
+  storyPoints: number | null;
+  priority: NormalizedIssuePriority;
+  status: NormalizedIssueStatus;
+  statusName: string | null;
+  projectKey: string | null;
+  projectName: string | null;
+  cycleName: string | null;
+  siteId: string | null;
+  assigneeExternalId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  startedAt: Date | null;
+  /** Set only when `status = DONE` (KPI §3.6). */
+  completedAt: Date | null;
+  canceledAt: Date | null;
+}
+
+export interface IssueTrackerSession {
+  readonly stats: ProviderStats;
+  getAccount(): Promise<ProviderAccount>;
+  /**
+   * Discovers what the stream needs (Jira sites, status categories, story points field; Linear
+   * organization) and returns the config to persist on the integration.
+   */
+  prepare(): Promise<Record<string, unknown>>;
+  /** Issues assigned to `accountExternalId` updated within `window`, oldest update first. */
+  issues(accountExternalId: string, window: TimeWindow): AsyncIterable<SearchPage<NormalizedIssue>>;
+}
+
+export interface IssueTrackerProvider extends ProviderBase {
+  readonly category: 'issues';
+  openSession(options: ProviderSessionOptions): IssueTrackerSession;
+}
+
+export type AnyProvider = ActivityProvider | IssueTrackerProvider;
+
+// ── OAuth (GitLab, Jira, Linear; GitHub uses its App client) ─────────────────────────────────
+
+export interface OAuthAuthorizeRequest {
+  state: string;
+  codeChallenge: string;
+  redirectUri: string;
+  baseUrl?: string | null;
+}
+
+export interface OAuthExchangeRequest {
+  code: string;
+  codeVerifier: string;
+  redirectUri: string;
+  baseUrl?: string | null;
+}
+
+/** OAuth client of a provider (authorization code grant; PKCE where the provider supports it). */
+export interface ProviderOAuthClient {
+  readonly kind: Exclude<ProviderKind, 'github'>;
+  /** Whether the authorize URL carries an S256 challenge (Jira 3LO: signed state + secret only). */
+  readonly usesPkce: boolean;
+  configured(): boolean;
+  authorizeUrl(request: OAuthAuthorizeRequest): string;
+  exchangeCode(request: OAuthExchangeRequest): Promise<ProviderTokenSet>;
+  /** Account behind a fresh token (plus verified emails where the scope allows). */
+  account(accessToken: string, baseUrl?: string | null): Promise<ProviderAccount>;
+  /** Where the user manages the authorization at the provider (S19 "Manage"). */
+  manageUrl(baseUrl?: string | null): string;
 }

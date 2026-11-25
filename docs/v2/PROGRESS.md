@@ -19,7 +19,7 @@ Every phase session updates this file before opening its PR.
 | 10 | Frontend: Insights Pages | ✅ Done | (this PR) | 2026-11-18 | Dashboard, Activity (+ drawer), KPIs (+ explain), Impact, Career (+ print), Integrations; Recharts on tokens; Lighthouse mobile 96 / desktop 100, a11y 100 |
 | 11 | Frontend: AI Document Studio | ✅ Done | (this PR) | 2026-11-21 | Library, picker, 3 studios, streaming viewer/editor (structured fields), versions, citations, exports MD/TXT/PDF/DOCX (`@react-pdf/renderer` + `docx`), Documents nav spinner; axe-clean E2E |
 | 12 | Product Extensions | ✅ Done | (this PR) | 2026-11-25 | Achievements (+ evidence, `ACH-` citations), goals (engine progress), weekly digest + notification emails, unsubscribe, export, account deletion, plan & usage, entitlements; Could items → v2.1 |
-| 13 | Additional Integrations (optional) | ⏸ Deferred | | | Skipped for v2.0 → v2.1 (D-018) |
+| 13 | Additional Integrations | ✅ Done | (this PR) | 2026-11-25 | Pulled into v2.0 before P14 (D-029 amends D-018): GitLab, Jira, Linear sync + webhooks, identity linking, issue metrics (`metrics@2.1.0`), JIRA-/LIN-/MR- citations, live S19 cards; axe-clean E2E |
 | 14 | Hardening | ⏳ Not started | | | |
 | 15 | Release v2.0.0 | ⏳ Not started | | | |
 
@@ -1630,3 +1630,126 @@ GAP-18; DEBT-07 stays closed (nodemailer is used).
   digest fan-out at scale (it scans every opted-in `user_settings` row hourly; consider an index on
   `(digest_enabled, digest_day_of_week)` and batching), email header injection (subjects are built
   from fixed strings + cleaned titles), and token replay/expiry policy.
+
+### Phase 13 — Additional Integrations (2026-11-25)
+**Branch / PR:** `claude/modest-bell-4yk0t5` → `main` / PR "Phase 13: Additional Integrations"
+(branched from `main@ab09006` = P12 merged).
+
+**Scope decision (USER DECISION, D-029):** asked at the start whether to (a) reverse D-018 and pull
+P13 into v2.0 before P14 or (b) run it as the first v2.1 phase. Answer: **(a)**. README phase
+overview + dependency graph now list P13 as P14's prerequisite; P14/P15 scope otherwise unchanged.
+The P13 blueprint amendment ("skip for v2.0"), P14's "Prerequisites: P12 merged; P13 out of scope"
+and P15's "carry P13 into ROADMAP_V2_1.md" are superseded by D-029 (phase files are read-only).
+
+**Summary:**
+- **Schema (P13-1 `additional_integrations`):** Issue v2 (external id, key, url, status/priority/
+  points, project/cycle, site, remote created/updated/started/completed/canceled times),
+  `provider_identities`, `integrations.base_url` + `config`, `IntegrationMechanism.OAUTH2`,
+  `SyncStage.ISSUES`, `metric_snapshots.issues_completed/story_points/by_provider`. The migration
+  deletes the synthetic v0.1/seed issue placeholders before adding NOT NULL columns. No drift.
+- **Providers (`apps/api/src/providers/{gitlab,jira,linear}`, D-030):** OAuth clients (GitLab +
+  Linear PKCE S256; Jira 3LO with signed state + secret), refresh, revoke (GitLab, Linear; Jira has
+  no endpoint), pure mappers, sessions over `ProviderHttp` (plain `fetch`, refresh on 401, 429 /
+  budget → rate-limit pause, redirects refused), webhook verification + parsing to
+  `activity_changed`. `ProviderRegistry`; self-managed GitLab allow-list (`GITLAB_INSTANCES_JSON`).
+- **Orchestrator (justified change, see D-030):** `SyncEngine.run` dispatches on provider category;
+  issue trackers run prepare + `ISSUES` per slice with the same SyncRun/checkpoint/cursor/rate-limit/
+  NEEDS_REAUTH/rollup semantics; code hosts unchanged (GitLab reuses the GitHub stages). Token
+  service, scheduler fan-out (all providers), targeted webhook jobs and `requestSync` generalised.
+- **API:** `GET /integrations/providers`, `POST /integrations/:provider/connect|callback`,
+  `PATCH /integrations/:id` (Jira story points field), identities CRUD, `POST /webhooks/{gitlab,
+  jira,linear}`, `GET /activity/issues(/:id)`, feed `issue` type + `providers` filter, `GET
+  /metrics/providers`, KPIs `issues` section, career `issues`, provider-aware refs everywhere
+  (A-8). Entitlements: FREE 2 / PRO 4 sources, one per provider. Export includes
+  `providerIdentities`; disconnect drops identities; "Sync problems" emails name the provider.
+- **Metrics/AI:** `metrics@2.1.0` §3.6 issue metrics (pure engine, not scored), provider rollup
+  dimension, score cache keyed by metrics version. Evidence packs include completed issues (aliased
+  under redaction); prompts v2 (resume/appraisal/promotion/impact narrative) with `CORE_RULES_V2`;
+  evals re-recorded + `gitlab-issue-tracker` persona (48/48).
+- **Web:** S19 live cards (status, Sync now/Reconnect, Manage, Disconnect keep/purge, history,
+  repositories for GitLab, Jira sites + story points field, GitLab commit emails, connect tiles with
+  "not set up"/plan-limit reasons, "N of M sources connected"), `/integrations/:provider/callback`,
+  Activity Issues chip + Source filter + issue drawer ("Open on Jira/Linear/GitLab"), KPIs Issues
+  section (connect prompt when unavailable) + "By source" table, career "Issues completed",
+  MR/JIRA/LIN chips linking to the drawer.
+- **Seed:** GitLab (two group projects, MRs, a manual commit email), Jira (alternating issues incl.
+  cancelled and unestimated, detected story points field), Linear (needs reconnection), sync history
+  and identities — deterministic (separate PRNG; GitHub data unchanged), no tokens.
+- **Tests:** API unit **306** (mappers/status/priority tables, notes → reviews, webhook
+  verification incl. Linear replay window, ProviderHttp refresh/429/budget, SSRF origin parsing,
+  issue metrics, provider rollups, refs, packs), API integration **211** (+19
+  `providers.int-spec.ts`: per provider connect → backfill → incremental → webhook → disconnect,
+  refresh rotation, revoked → NEEDS_REAUTH + 409, rate-limit pause/resume, state bound to provider
+  and user, account in use, entitlements, identities ownership/conflicts, commit dedup by SHA,
+  self-managed allow-list, Jira field override, RefResolver ownership), shared **83**, web Vitest
+  **257** (41 files; new S19 sources, activity issues, KPIs issues, career issues, callback, chips),
+  Playwright **48** (+5 `e2e/integrations-p13.spec.ts`: reconnect Linear, reconnect Jira, connect a
+  new GitLab account through intercepted authorize pages against `npm run providers:mock` → issues
+  and MRs in Activity, Issues KPIs, an appraisal citing a JIRA-/LIN- ref; axe 0 serious/critical +
+  0 px overflow on S19 / Activity / KPIs / Career / issue drawer / disconnect dialog × 1440/390 ×
+  light/dark). Screenshots (32, quantized, 5.0 MB) in `docs/v2/screenshots/p13/`.
+- **Security review** (`security-review` skill; focus OAuth state/PKCE, tokens, webhooks + replay,
+  ownership, SSRF, injection): no HIGH/MEDIUM findings ≥ 8/10 confidence. Fixed during review:
+  provider calls now refuse redirects so a bearer token is never replayed to another origin.
+  Verified: state signed, single-use, bound to user + provider (+ GitLab instance), PKCE where
+  supported, `returnTo` validated; tokens AES-256-GCM with AAD, decrypted only at call time, never
+  logged; webhook checks are constant-time and fail closed without a secret, Linear timestamps
+  ±60 s, deliveries idempotent; every new query scoped by `userId`; GitLab origins allow-listed,
+  Jira/Linear hosts fixed; JQL account id sanitised; issue titles cleaned and delimited in prompts,
+  URLs http(s)-only, React escaping in the UI. Logged as LOW: shared deployment-wide webhook
+  secrets (SEC-19); manual-email 409 reveals that an email is already linked (accepted, D-030).
+
+**Acceptance criteria:**
+- [x] Each provider: connect → initial sync → incremental sync → webhook/poll update → disconnect,
+  covered by tests with fixtures (`providers.int-spec.ts`, E2E).
+- [x] Orchestrator core change justified (category dispatch, D-030); providers otherwise only
+  registered.
+- [x] Issue metrics appear in KPIs and evidence in generated documents (integration + E2E).
+- [x] Tokens encrypted; refresh flows tested; revoked tokens → `needs_reauth`.
+- [x] `npm run check`, `test:int` and `test:e2e` green locally (CI runs on the PR).
+
+**Deviations from the phase file:** Webhooks normalise to an incremental sync of matching
+integrations (not a per-record refetch like GitHub) — simpler, idempotent and cheap with cursors.
+Jira uses admin webhooks with a secret (or the daily poll) instead of dynamic OAuth webhooks.
+GitLab MR line counts are not read (GAP-22). Tests use in-process / HTTP fakes (P06 pattern), not
+MSW. PRs mirrored across GitHub/GitLab are not deduplicated (commits are) — GAP-24. Docker images
+not rebuilt locally (as P05–P12); compose passes the new env.
+
+**Deferred items:** GitLab MR sizes (GAP-22) → P14 budget / v2.1; Jira sprint, changelog paging,
+dynamic webhooks (GAP-23) → v2.1; cross-provider PR dedup (GAP-24) → v2.1; per-integration
+webhook tokens (SEC-19), provider budgets (OPS-19), "GitHub" wording (DEBT-13) → P14.
+
+**New issues found:** GAP-22, GAP-23, GAP-24, SEC-19, OPS-19, DEBT-13. Fixed: GAP-10.
+
+**Handoff notes for P14 / P15:**
+- *App registration:* README → "Additional integrations" (callback URLs
+  `${WEB_URL}/integrations/{gitlab,jira,linear}/callback`, scopes, webhook URLs/secrets,
+  self-managed GitLab). A provider is offered only when its client id + secret are set
+  (`GET /integrations/providers`).
+- *Env:* `GITLAB_URL`, `GITLAB_CLIENT_ID/SECRET`, `GITLAB_INSTANCES_JSON` (validated at startup),
+  `GITLAB_WEBHOOK_SECRET`, `JIRA_CLIENT_ID/SECRET`, `JIRA_AUTH_URL`, `JIRA_API_URL`,
+  `JIRA_WEBHOOK_SECRET`, `LINEAR_CLIENT_ID/SECRET`, `LINEAR_WEB_URL`, `LINEAR_API_URL`,
+  `LINEAR_WEBHOOK_SECRET`, `PROVIDER_REQUEST_TIMEOUT_MS` (30 s), `PROVIDER_REQUEST_RETRIES` (2).
+  P15: require webhook secrets in production when webhooks are configured (like SEC-18).
+- *Field mappings:* D-030 (MR → PR, notes → reviews, Jira status category / priority / story
+  points, Linear state type / priority / estimate). Refs: `MR-<project>!n`, `REV-<project>!n`,
+  `JIRA-<KEY>`, `LIN-<KEY>` (same key on two Jira sites: the newest wins in `RefResolver`).
+- *Entitlement counting:* `integrations` (FREE 2 / PRO 4) counts ACTIVE/SUSPENDED/ERROR sources
+  across providers; `integrationsPerProvider` = 1; reconnects need no slot.
+- *Known limitations:* GitLab — MR sizes unknown, reviews only on MRs where you are a reviewer,
+  commits matched by linked emails, 2,000-project membership cap (more are found via push events);
+  Jira — no sprint, changelog-based start time, no revoke endpoint; Linear — app-level webhook only;
+  issues never feed the impact score.
+- *P14 should load/security-test:* the three webhook endpoints (signature failure paths, replay,
+  bursts → one incremental sync per integration via `reuseActive`), token refresh concurrency
+  (row lock, rotating refresh tokens for GitLab/Jira/Linear), per-provider sync budgets on large
+  accounts (GitLab notes per MR, Jira per-site search + changelog, Linear complexity; OPS-19), the
+  identity uniqueness rules, and the self-managed GitLab allow-list (SSRF).
+- *Local fakes:* `npm run providers:mock --workspace=apps/api -- 4020` (GitLab :4021, Atlassian
+  auth :4022 / API :4023, Linear web :4024 / API :4025; reusable codes `e2e-gitlab|jira|linear`).
+  `installFakeProviders()` + builders in `test/utils/fake-providers.ts` for integration tests.
+- *View tests:* `test/fixtures-p13` captured with `apps/api/test/utils/capture-fixtures.ts`
+  (README → Web app). E2E: `e2e/integrations-p13.spec.ts` mutates the demo user's connections —
+  re-seed before rerunning (`npm run db:seed`). Screenshots:
+  `SCREENSHOTS=1 npm run test:e2e -- e2e/screenshots-p13.spec.ts`.
+

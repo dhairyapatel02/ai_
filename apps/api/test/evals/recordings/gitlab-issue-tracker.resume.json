@@ -1,0 +1,10 @@
+{
+  "persona": "gitlab-issue-tracker",
+  "generator": "resume",
+  "promptId": "resume",
+  "promptVersion": 2,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-25",
+  "text": "{\"summary\":{\"text\":\"Engineer who merged 4 pull requests across 2 repositories in October 2026.\",\"citations\":[\"PR-acme/web#103\"]},\"bullets\":[{\"text\":\"Delivered the change to retry webhook deliveries with jitter in acme/web.\",\"citations\":[\"PR-acme/web#103\"],\"theme\":\"Reliability\"},{\"text\":\"Resolved a defect: fix rounding in proration in acme/web.\",\"citations\":[\"PR-acme/web#109\"],\"theme\":\"Bugfix\"},{\"text\":\"Delivered the change to add idempotency keys to invoice generation in acme/platform/billing-service.\",\"citations\":[\"MR-acme/platform/billing-service!100\"],\"theme\":\"Reliability\"},{\"text\":\"Delivered the change to show proration preview in checkout in acme/platform/billing-service.\",\"citations\":[\"MR-acme/platform/billing-service!106\"],\"theme\":\"Feature\"},{\"text\":\"Reviewed the change \\\"Invoice email templates\\\" in acme/platform/billing-service, giving the author detailed feedback.\",\"citations\":[\"REV-acme/platform/billing-service!501\"],\"theme\":\"acme/platform/billing-service\"},{\"text\":\"Reviewed the change \\\"Usage-based billing meter\\\" in acme/web, giving the author detailed feedback.\",\"citations\":[\"REV-acme/web#500\"],\"theme\":\"acme/web\"}]}"
+}

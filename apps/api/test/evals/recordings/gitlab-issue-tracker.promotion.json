@@ -1,0 +1,10 @@
+{
+  "persona": "gitlab-issue-tracker",
+  "generator": "promotion",
+  "promptId": "promotion",
+  "promptVersion": 2,
+  "model": "reference-writer",
+  "source": "synthetic",
+  "recordedAt": "2026-11-25",
+  "text": "{\"whyReady\":{\"text\":\"Engineer who merged 4 pull requests across 2 repositories in October 2026.\",\"citations\":[\"PR-acme/web#103\"]},\"leadershipEvidence\":[{\"text\":\"Reviewed the change \\\"Invoice email templates\\\" in acme/platform/billing-service, giving the author detailed feedback.\",\"citations\":[\"REV-acme/platform/billing-service!501\"]},{\"text\":\"Reviewed the change \\\"Usage-based billing meter\\\" in acme/web, giving the author detailed feedback.\",\"citations\":[\"REV-acme/web#500\"]}],\"technicalImpact\":[{\"text\":\"Delivered the change to retry webhook deliveries with jitter in acme/web.\",\"citations\":[\"PR-acme/web#103\"]},{\"text\":\"Resolved a defect: fix rounding in proration in acme/web.\",\"citations\":[\"PR-acme/web#109\"]},{\"text\":\"Delivered the change to add idempotency keys to invoice generation in acme/platform/billing-service.\",\"citations\":[\"MR-acme/platform/billing-service!100\"]},{\"text\":\"Completed the tracked work item \\\"Support annual plans in billing\\\" in Payments.\",\"citations\":[\"JIRA-PAY-231\"]}],\"businessValue\":[{\"text\":\"Delivered the change to add idempotency keys to invoice generation in acme/platform/billing-service.\",\"citations\":[\"MR-acme/platform/billing-service!100\"]},{\"text\":\"Delivered the change to show proration preview in checkout in acme/platform/billing-service.\",\"citations\":[\"MR-acme/platform/billing-service!106\"]}],\"mentorship\":[]}"
+}

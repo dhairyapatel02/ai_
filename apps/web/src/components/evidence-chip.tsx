@@ -9,11 +9,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
-/** Short label for a ref: `PR-acme/api#42` → `api #42`, `C-acme/api@abc1234` → `api@abc1234`. */
+/**
+ * Short label for a ref: `PR-acme/api#42` → `api #42`, `MR-acme/platform/api!12` → `api !12`,
+ * `C-acme/api@abc1234` → `api@abc1234`, `JIRA-PAY-123` → `PAY-123`, `LIN-ENG-42` → `ENG-42`.
+ */
 export function shortRef(ref: string): string {
-  const body = ref.replace(/^(PR|REV|C|ACH)-/, '');
+  const issue = /^(JIRA|LIN)-(.+)$/.exec(ref);
+  if (issue?.[2]) return issue[2];
+  const body = ref.replace(/^(PR|MR|REV|C|ACH)-/, '');
   const repo = body.split('/').pop() ?? body;
-  return repo.replace('#', ' #');
+  return repo.replace('#', ' #').replace('!', ' !');
 }
 
 const KIND_LABEL: Record<EvidenceItem['kind'], string> = {
@@ -21,6 +26,7 @@ const KIND_LABEL: Record<EvidenceItem['kind'], string> = {
   review: 'Review',
   commit: 'Commit',
   achievement: 'Achievement',
+  issue: 'Issue',
 };
 
 /**
@@ -31,6 +37,7 @@ export function detailsHref(item: EvidenceItem): string | null {
   if (item.kind === 'pull_request') return `/activity?item=pr_merged:${item.id}`;
   if (item.kind === 'commit') return `/activity?item=commit:${item.id}`;
   if (item.kind === 'achievement') return `/achievements?item=achievement:${item.id}`;
+  if (item.kind === 'issue') return `/activity?item=issue:${item.id}`;
   return null;
 }
 

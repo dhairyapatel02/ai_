@@ -68,7 +68,8 @@ Legend for tables/endpoints: see [DATA_MODEL_V2](DATA_MODEL_V2.md) and [API_CONT
 | F-74 Onboarding wizard | M | — | UserSettings.onboarding* | `/me`, connect, repos, sync | `/onboarding` | P09 |
 | F-75 WCAG 2.2 AA | M | — | — | — | all | P04, P09–P14 |
 | F-76 Redact private repos in AI | S | ADR-0009 | UserSettings.aiRedactPrivateRepos | `/me/settings` | `/settings/privacy` | P08, P12 |
-| F-08, F-19, F-52, F-77 | W | ADR-0014 | — | — | — | v2.1 |
+| F-19 GitLab, Jira, Linear providers | W → in v2.0 (D-029) | ADR-0007, D-030 | Integration (+ base_url, config), Issue v2, ProviderIdentity, MetricSnapshot issue/provider counters | `/integrations/:provider/connect` · `/callback`, `/integrations/providers`, `/integrations/:id/identities`, `PATCH /integrations/:id`, `/webhooks/{gitlab,jira,linear}`, `/activity/issues`, `/metrics/providers` | `/settings/integrations`, `/activity`, `/kpis`, `/career`, `/integrations/:provider/callback` | P13 ✅ |
+| F-08, F-52, F-77 | W | ADR-0014 | — | — | — | v2.1 |
 
 **Must coverage check:** every **M** feature above has at least one implementing phase in P05–P12. ✅
 
@@ -160,7 +161,9 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | AI-09 | ⚪ | F-51 | P08 | ✅ fixed in P08 (`POST /ai/achievement-statement`) |
 | API-06 | ⚪ | ADR-0006 | P05 | `/health`, `/docs` |
 | UX-13 | ⚪ | F-15, F-16 | P10 | ✅ fixed in P10 |
-| GAP-10 | ⚪ | — | **WF (v2.1)** | GitLab/Jira/Linear out of v2.0 scope (ADR-0014, D-018); integrations page shows "planned" cards without connect buttons |
+| GAP-10 | ⚪ | F-19 | P13 | ✅ fixed in P13 (D-029 amends D-018): live GitLab / Jira / Linear cards, sync, webhooks, issue metrics |
+| GAP-22 · GAP-23 · GAP-24 | 🟡/⚪ | F-19 | P14 / v2.1 | added by P13: GitLab MR sizes, Jira sprint/changelog/webhooks, cross-provider PR dedup |
+| SEC-19 · OPS-19 · DEBT-13 | ⚪/🟡 | F-19 | P14 | added by P13: shared webhook secrets, provider budgets, "GitHub" copy |
 | SEC-16 | 🟡 | F-01, ADR-0003 | P09, P14 | added by P05: legacy-user linking policy |
 | SEC-17 | ⚪ | ADR-0006 (rate classes), ADR-0013 | P15 | added by P05: `trust proxy` per host |
 | OPS-17 | 🟡 | ADR-0007 | P06 | added by P05: per-environment queue prefix |
@@ -191,4 +194,4 @@ Issues targeting only P02 are P02's responsibility and not repeated here. "WF" =
 | GAP-20 | ⚪ | F-60 | v2.1 | added by P12: "Evidence removed" needs denormalised evidence refs |
 | GAP-21 | ⚪ | F-63 | P14/P15 | added by P12: bounces, one-click unsubscribe POST, SPF/DKIM |
 
-Every open ISSUES row with a target of P05 or later is mapped above; one (GAP-10) is won't-fix for v2.0.
+Every open ISSUES row with a target of P05 or later is mapped above (GAP-10 was won't-fix for v2.0 until D-029; fixed in P13).

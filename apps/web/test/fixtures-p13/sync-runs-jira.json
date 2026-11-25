@@ -1,0 +1,32 @@
+{
+  "data": [
+    {
+      "id": "cmwvkpemp00mzt47dkd293nkr",
+      "integrationId": "cmwvkpe9l0004t47dejxcusq2",
+      "trigger": "initial",
+      "kind": "backfill",
+      "status": "succeeded",
+      "stage": "done",
+      "progress": 100,
+      "counts": {
+        "issues": 13,
+        "created": 13,
+        "updated": 0
+      },
+      "windowFrom": "2025-11-25T00:00:00.000Z",
+      "windowTo": "2026-11-23T00:00:00.000Z",
+      "resumeAt": null,
+      "recentWindowCompletedAt": null,
+      "errorCode": null,
+      "errorMessage": null,
+      "errors": [],
+      "queuedAt": "2026-11-23T00:00:00.000Z",
+      "startedAt": "2026-11-23T00:00:01.000Z",
+      "finishedAt": "2026-11-23T00:01:04.000Z"
+    }
+  ],
+  "meta": {
+    "nextCursor": null,
+    "hasMore": false
+  }
+}

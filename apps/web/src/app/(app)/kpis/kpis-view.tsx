@@ -1,5 +1,6 @@
 'use client';
 
+import { PROVIDER_LABELS, type KpisResponse, type MetricDefinition } from '@devimpact/shared';
 import { Gauge } from 'lucide-react';
 import Link from 'next/link';
 
@@ -14,11 +15,10 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { isBackfilling, useMe, useSyncStatus } from '@/lib/api/hooks';
 import { useDefinitions, useImpact, useKpis, useTrends } from '@/lib/api/metrics-hooks';
+import { useProviderBreakdown } from '@/lib/api/provider-hooks';
 import { startsBeforeRecentWindow, usePeriod } from '@/lib/period';
 import { useSearchParamsState } from '@/lib/url-state';
 import { cn } from '@/lib/utils';
-
-import type { KpisResponse, MetricDefinition } from '@devimpact/shared';
 
 /** Section intros (prototype `SECTIONS`, S8). Titles come from the API. */
 export const SECTION_INTRO: Record<string, string> = {
@@ -27,6 +27,7 @@ export const SECTION_INTRO: Record<string, string> = {
   collaboration: "How you support teammates' work through reviews.",
   ownership: 'Where you both ship and review — shared ownership of code.',
   consistency: 'Steadiness over the period. Shown for reflection; mostly not scored.',
+  issues: 'Work items from Jira or Linear assigned to you. Shown for context; never scored.',
 };
 
 /** KPIs (S8): five sections, honest values, trends and explanations. */
@@ -160,6 +161,7 @@ function KpiPage() {
                 ))}
               </div>
             )}
+            {kpis.data ? <ProviderBreakdown period={period.apiParam} /> : null}
             <p className="text-caption text-subtle-foreground">
               Durations use business hours (weekends excluded; holidays are not modelled). Volume
               metrics stop adding to the score beyond healthy levels. Lines of code are never used
@@ -229,22 +231,100 @@ function SectionCard({
           </div>
         ) : section.key === 'consistency' ? (
           <span className="text-caption text-subtle-foreground">Active weeks feeds Delivery</span>
+        ) : section.key === 'issues' ? (
+          <span className="text-caption text-subtle-foreground">Not part of the impact score</span>
         ) : null}
       </div>
-      <ul>
-        {section.metrics.map((m) => (
-          <MetricRow
-            key={m.key}
-            value={m}
-            definition={definitionOf.get(m.key)}
-            trend={trendOf.get(m.key)}
-            comparison={comparison}
-            onExplain={() => {
-              onExplain(m.key);
-            }}
-          />
-        ))}
-      </ul>
+      {section.key === 'issues' && section.available === false ? (
+        <div
+          className="flex flex-col items-start gap-2 px-4 py-4"
+          data-testid="issues-not-connected"
+        >
+          <p className="text-sm text-muted-foreground">
+            Connect Jira or Linear to see the issues you completed, story points and issue cycle
+            time.
+          </p>
+          <Button size="sm" variant="secondary" asChild>
+            <Link href="/settings/integrations">Connect an issue tracker</Link>
+          </Button>
+        </div>
+      ) : (
+        <ul>
+          {section.metrics.map((m) => (
+            <MetricRow
+              key={m.key}
+              value={m}
+              definition={definitionOf.get(m.key)}
+              trend={trendOf.get(m.key)}
+              comparison={comparison}
+              onExplain={() => {
+                onExplain(m.key);
+              }}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** "By source" (P13): per-provider totals from the daily rollups; shown with ≥ 2 sources. */
+function ProviderBreakdown({ period }: { period: string | null | undefined }) {
+  const breakdown = useProviderBreakdown(period);
+  const rows = breakdown.data?.providers ?? [];
+  if (rows.length < 2) return null;
+  const num = (n: number) => n.toLocaleString('en-US');
+  return (
+    <section
+      aria-labelledby="by-source"
+      className="rounded-md border bg-card"
+      data-testid="by-source"
+    >
+      <h2 id="by-source" className="border-b px-4 py-3 text-base font-semibold">
+        By source
+      </h2>
+      {/* Focusable so keyboard users can scroll the table at 390 px (axe scrollable-region). */}
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Activity by source">
+        <table className="w-full text-sm">
+          <caption className="sr-only">Activity per connected source in this period</caption>
+          <thead>
+            <tr className="border-b text-left text-muted-foreground">
+              <th scope="col" className="px-4 py-2 font-medium">
+                Source
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                Commits
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                Merged
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                Reviewed
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                Issues
+              </th>
+              <th scope="col" className="px-4 py-2 text-right font-medium">
+                Points
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.provider} className="border-b last:border-b-0">
+                <th scope="row" className="px-4 py-2 text-left font-medium">
+                  {PROVIDER_LABELS[r.provider]}
+                </th>
+                <td className="px-2 py-2 text-right tabular-nums">{num(r.commits)}</td>
+                <td className="px-2 py-2 text-right tabular-nums">{num(r.prsMerged)}</td>
+                <td className="px-2 py-2 text-right tabular-nums">{num(r.prsReviewed)}</td>
+                <td className="px-2 py-2 text-right tabular-nums">{num(r.issuesCompleted)}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{num(r.storyPoints)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

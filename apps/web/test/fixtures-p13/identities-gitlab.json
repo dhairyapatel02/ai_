@@ -1,0 +1,44 @@
+{
+  "data": [
+    {
+      "id": "cmwvkpemj00mvt47dsvwo03ed",
+      "integrationId": "cmwvkpe9e0003t47d45ibe6ge",
+      "provider": "gitlab",
+      "kind": "account",
+      "value": "gitlab.com/7100001",
+      "source": "provider",
+      "verified": true,
+      "createdAt": "2026-11-25T03:37:53.995Z"
+    },
+    {
+      "id": "cmwvkpemj00mwt47d2lhun237",
+      "integrationId": "cmwvkpe9e0003t47d45ibe6ge",
+      "provider": "gitlab",
+      "kind": "username",
+      "value": "dana-demo",
+      "source": "provider",
+      "verified": true,
+      "createdAt": "2026-11-25T03:37:53.995Z"
+    },
+    {
+      "id": "cmwvkpemj00mxt47dj9efin39",
+      "integrationId": "cmwvkpe9e0003t47d45ibe6ge",
+      "provider": "gitlab",
+      "kind": "email",
+      "value": "demo@devimpact.dev",
+      "source": "provider",
+      "verified": true,
+      "createdAt": "2026-11-25T03:37:53.995Z"
+    },
+    {
+      "id": "cmwvkpemj00myt47d5wf74e79",
+      "integrationId": "cmwvkpe9e0003t47d45ibe6ge",
+      "provider": "gitlab",
+      "kind": "email",
+      "value": "dana@old-laptop.local",
+      "source": "manual",
+      "verified": false,
+      "createdAt": "2026-11-25T03:37:53.995Z"
+    }
+  ]
+}

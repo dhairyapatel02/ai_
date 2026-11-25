@@ -19,6 +19,8 @@
  * P12: achievements, goals, digest settings + a delivered digest (`seed-career-os.ts`), and the
  * disposable `delete-me@devimpact.dev` user for the account-deletion E2E.
  */
+import { createHash } from 'node:crypto';
+
 import {
   DocumentType,
   IssuePriority,
@@ -221,6 +223,52 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
       lastSuccessfulSyncAt: anchor,
     },
   });
+  // P13: display-only GitLab / Jira / Linear connections (no tokens; sync needs a real connect).
+  const demoGl = await prisma.integration.create({
+    data: {
+      userId: demo.id,
+      provider: Provider.GITLAB,
+      mechanism: 'OAUTH2',
+      externalAccountId: 'gitlab.com/7100001',
+      externalLogin: 'dana-demo',
+      displayName: 'Dana Demo',
+      lastSyncedAt: anchor,
+      lastSuccessfulSyncAt: anchor,
+    },
+  });
+  const demoJira = await prisma.integration.create({
+    data: {
+      userId: demo.id,
+      provider: Provider.JIRA,
+      mechanism: 'OAUTH2',
+      externalAccountId: 'seed-atlassian-5f0c1d',
+      externalLogin: 'Dana Demo',
+      displayName: 'Dana Demo',
+      lastSyncedAt: anchor,
+      lastSuccessfulSyncAt: anchor,
+      config: {
+        sites: [{ id: 'seed-cloud-acme', name: 'Acme', url: 'https://acme.atlassian.net' }],
+        storyPointsField: null,
+        storyPointsFieldDetected: 'customfield_10016',
+      },
+    },
+  });
+  const demoLinear = await prisma.integration.create({
+    data: {
+      userId: demo.id,
+      provider: Provider.LINEAR,
+      mechanism: 'OAUTH2',
+      externalAccountId: 'seed-linear-user-dana',
+      externalLogin: 'dana',
+      displayName: 'Dana Demo',
+      // Needs reconnecting: every S19 state exists in the seed (P13).
+      status: 'NEEDS_REAUTH',
+      statusReason: 'LINEAR_TOKEN_REVOKED',
+      lastSyncedAt: anchor,
+      lastSuccessfulSyncAt: anchor,
+      config: { organization: { id: 'seed-linear-org', name: 'Acme', urlKey: 'acme' } },
+    },
+  });
   const teammateGh = await prisma.integration.create({
     data: {
       userId: teammate.id,
@@ -418,17 +466,51 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
     }
 
     // Tracked issues (Jira/Linear-style) every few days.
+    // P13: alternate Jira / Linear by count (no extra RNG draws, so the rest of the seed is unchanged).
     if (rng.chance(0.2)) {
+      const n = issues.length;
+      const linear = n % 2 === 1;
+      const title = `${rng.pick(['Investigate', 'Implement', 'Fix', 'Document'])} ${rng.pick(COMMIT_TEMPLATES.feat ?? ['task'])}`;
+      const labels = [rng.pick(['backend', 'frontend', 'infra']), rng.pick(['p1', 'p2', 'p3'])];
+      const points = rng.pick([1, 2, 3, 5, 8]);
+      const priority = rng.pick([IssuePriority.HIGH, IssuePriority.MEDIUM, IssuePriority.LOW]);
+      const status =
+        daysAgo < 10
+          ? IssueStatus.IN_PROGRESS
+          : n % 9 === 4
+            ? IssueStatus.CANCELLED
+            : IssueStatus.DONE;
+      const key = linear ? `ENG-${100 + n}` : `PAY-${200 + n}`;
+      const startedAt = at(daysAgo + 2, 10);
       issues.push({
         userId: demo.id,
-        integrationId: demoGh.id,
-        title: `${rng.pick(['Investigate', 'Implement', 'Fix', 'Document'])} ${rng.pick(COMMIT_TEMPLATES.feat ?? ['task'])}`,
-        labels: [rng.pick(['backend', 'frontend', 'infra']), rng.pick(['p1', 'p2', 'p3'])],
-        storyPoints: rng.pick([1, 2, 3, 5, 8]),
-        priority: rng.pick([IssuePriority.HIGH, IssuePriority.MEDIUM, IssuePriority.LOW]),
-        status: daysAgo < 10 ? IssueStatus.IN_PROGRESS : IssueStatus.DONE,
-        projectName: 'Payments Platform',
-        timestamp: at(daysAgo, 11),
+        integrationId: linear ? demoLinear.id : demoJira.id,
+        externalId: linear ? `seed-linear-issue-${n}` : `seed-cloud-acme:${10_000 + n}`,
+        key,
+        url: linear
+          ? `https://linear.app/acme/issue/${key}`
+          : `https://acme.atlassian.net/browse/${key}`,
+        title,
+        labels,
+        // Some issues have no estimate (story_points_completed n < issues_completed).
+        storyPoints: n % 5 === 3 ? null : points,
+        priority,
+        status,
+        statusName:
+          status === IssueStatus.DONE
+            ? 'Done'
+            : status === IssueStatus.CANCELLED
+              ? "Won't Do"
+              : 'In Progress',
+        projectKey: linear ? 'ENG' : 'PAY',
+        projectName: linear ? 'Engineering' : 'Payments Platform',
+        cycleName: linear ? `Cycle ${Math.floor((DAYS - daysAgo) / 14) + 1}` : null,
+        siteId: linear ? 'seed-linear-org' : 'seed-cloud-acme',
+        createdAtRemote: at(daysAgo + 5, 9),
+        updatedAtRemote: at(daysAgo, 11),
+        startedAt,
+        completedAt: status === IssueStatus.DONE ? at(daysAgo, 11) : null,
+        canceledAt: status === IssueStatus.CANCELLED ? at(daysAgo, 11) : null,
       });
     }
   }
@@ -695,6 +777,22 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
 
   // Daily snapshots via the real rollup service (KPI §4); impact scores are computed lazily.
   const rollups = new RollupService(new MetricsRepository(prisma as PrismaService));
+  await seedGitLab(prisma, demo.id, demoGl.id, at);
+  await seedProviderExtras(prisma, demo.id, anchor, [
+    { id: demoGl.id, provider: Provider.GITLAB, login: 'dana-demo', account: 'gitlab.com/7100001' },
+    {
+      id: demoJira.id,
+      provider: Provider.JIRA,
+      login: 'Dana Demo',
+      account: 'seed-atlassian-5f0c1d',
+    },
+    {
+      id: demoLinear.id,
+      provider: Provider.LINEAR,
+      login: 'dana',
+      account: 'seed-linear-user-dana',
+    },
+  ]);
   const snapshot = await rollups.recompute(demo.id, at(DAYS + 7, 0), today, today);
 
   const sixMonthsAgo = new Date(anchor.getTime() - 182 * DAY_MS).toISOString();
@@ -810,6 +908,211 @@ export async function seed(prisma: PrismaClient, today: Date = new Date()) {
     goals,
     throwawayUser: throwaway.email,
   };
+}
+
+/**
+ * GitLab demo data (P13): one group project with merged MRs, an MR review and default-branch
+ * commits. Its own PRNG so the GitHub data above is unchanged.
+ */
+async function seedGitLab(
+  prisma: PrismaClient,
+  userId: string,
+  integrationId: string,
+  at: (daysAgo: number, hour: number, minute?: number) => Date,
+): Promise<void> {
+  const rng = createRng(1313);
+  const projects = ['acme/platform/billing-service', 'acme/platform/infra-modules'] as const;
+  for (const fullName of projects) {
+    const parts = fullName.split('/');
+    await prisma.repository.create({
+      data: {
+        userId,
+        integrationId,
+        externalId: `gitlab.com/${880000 + projects.indexOf(fullName)}`,
+        fullName,
+        ownerLogin: parts.slice(0, -1).join('/'),
+        name: parts[parts.length - 1] ?? fullName,
+        isPrivate: true,
+        defaultBranch: 'main',
+        htmlUrl: `https://gitlab.com/${fullName}`,
+        included: true,
+        lastSyncedAt: at(0, 6),
+        commitCursor: at(0, 6),
+      },
+    });
+  }
+  const repos = await prisma.repository.findMany({
+    where: { userId, integrationId },
+    select: { id: true, fullName: true },
+  });
+  const repoOf = (name: string) => repos.find((r) => r.fullName === name)?.id ?? '';
+  const titles = [
+    'Add idempotency keys to invoice generation',
+    'Terraform module for regional Redis',
+    'Retry webhook deliveries with jitter',
+    'Cut CI pipeline time with cached images',
+    'Fix rounding in proration',
+    'Document the billing runbook',
+  ];
+  const prs: Prisma.PullRequestCreateManyInput[] = [];
+  const commits: Prisma.CommitCreateManyInput[] = [];
+  let iid = 1;
+  for (let daysAgo = 120; daysAgo >= 3; daysAgo -= rng.int(9, 16)) {
+    const project = projects[iid % 2] ?? projects[0];
+    const createdAt = at(daysAgo + 2, 10);
+    const mergedAt = at(daysAgo, 15);
+    prs.push({
+      userId,
+      integrationId,
+      repositoryId: repoOf(project),
+      externalId: `gitlab.com/mr/${5_500_000 + iid}`,
+      number: iid,
+      title: titles[iid % titles.length] ?? 'Improve billing',
+      body: 'Merge request synced from GitLab (seed).',
+      url: `https://gitlab.com/${project}/-/merge_requests/${iid}`,
+      state: PRState.MERGED,
+      isAuthoredByUser: true,
+      authorLogin: 'dana-demo',
+      authorExternalId: 'gitlab.com/7100001',
+      labels: ['billing'],
+      createdAtRemote: createdAt,
+      updatedAtRemote: mergedAt,
+      mergedAt,
+      closedAt: mergedAt,
+      firstReviewAt: new Date(createdAt.getTime() + rng.int(2, 20) * 3_600_000),
+      reviewersCount: 1,
+      approvalsCount: 1,
+      changesRequestedCount: 0,
+    });
+    for (let c = 0; c < rng.int(1, 3); c++) {
+      const sha = createHash('sha1').update(`gitlab-${iid}-${c}`).digest('hex');
+      commits.push({
+        userId,
+        integrationId,
+        repositoryId: repoOf(project),
+        sha,
+        messageHeadline: `${titles[iid % titles.length] ?? 'Update'} (part ${c + 1})`,
+        branch: 'main',
+        authoredAt: at(daysAgo + 1, 11 + c),
+        additions: rng.int(5, 120),
+        deletions: rng.int(0, 40),
+        parentsCount: 1,
+        authorExternalId: 'gitlab.com/7100001',
+      });
+    }
+    iid++;
+  }
+  await prisma.pullRequest.createMany({ data: prs });
+  // skipDuplicates: commit SHAs are unique per user, so a mirrored commit is stored once.
+  await prisma.commit.createMany({ data: commits, skipDuplicates: true });
+  // Repository manager "last activity" (the GitHub update above ran before these rows existed).
+  for (const repo of repos) {
+    const last = prs
+      .filter((p) => p.repositoryId === repo.id)
+      .reduce<Date | null>((m, p) => {
+        const t = p.mergedAt instanceof Date ? p.mergedAt : null;
+        return t && (!m || t > m) ? t : m;
+      }, null);
+    if (last) {
+      await prisma.repository.update({ where: { id: repo.id }, data: { lastActivityAt: last } });
+    }
+  }
+}
+
+/** Sync history + linked identities for the P13 connections (S19 states). */
+async function seedProviderExtras(
+  prisma: PrismaClient,
+  userId: string,
+  anchor: Date,
+  rows: { id: string; provider: Provider; login: string; account: string }[],
+): Promise<void> {
+  for (const row of rows) {
+    await prisma.integration.update({
+      where: { id: row.id },
+      data: {
+        scheduleSlotMinute: scheduleSlotFor(row.id),
+        backfillFrom: new Date(anchor.getTime() - 365 * 86_400_000),
+        syncCursor:
+          row.provider === Provider.GITLAB
+            ? {
+                authoredPrsUpdatedAt: anchor.toISOString(),
+                reviewedPrsUpdatedAt: anchor.toISOString(),
+              }
+            : { issuesUpdatedAt: anchor.toISOString() },
+      },
+    });
+    const issueCount = await prisma.issue.count({ where: { userId, integrationId: row.id } });
+    await prisma.syncRun.create({
+      data: {
+        userId,
+        integrationId: row.id,
+        trigger: 'INITIAL',
+        kind: 'BACKFILL',
+        status: 'SUCCEEDED',
+        stage: 'DONE',
+        progress: 100,
+        windowFrom: new Date(anchor.getTime() - 365 * 86_400_000),
+        windowTo: new Date(anchor.getTime() - 2 * 86_400_000),
+        counts:
+          row.provider === Provider.GITLAB
+            ? {
+                repos: 2,
+                prsAuthored: 9,
+                prsReviewed: 0,
+                reviews: 0,
+                commits: 18,
+                created: 29,
+                updated: 0,
+              }
+            : { issues: issueCount, created: issueCount, updated: 0 },
+        apiCalls: row.provider === Provider.GITLAB ? 31 : 4,
+        queuedAt: new Date(anchor.getTime() - 2 * 86_400_000),
+        startedAt: new Date(anchor.getTime() - 2 * 86_400_000 + 1000),
+        finishedAt: new Date(anchor.getTime() - 2 * 86_400_000 + 64_000),
+      },
+    });
+    const identities: Prisma.ProviderIdentityCreateManyInput[] = [
+      {
+        userId,
+        integrationId: row.id,
+        provider: row.provider,
+        kind: 'ACCOUNT',
+        value: row.account,
+        source: 'PROVIDER',
+        verified: true,
+      },
+      {
+        userId,
+        integrationId: row.id,
+        provider: row.provider,
+        kind: 'USERNAME',
+        value: row.login,
+        source: 'PROVIDER',
+        verified: true,
+      },
+      {
+        userId,
+        integrationId: row.id,
+        provider: row.provider,
+        kind: 'EMAIL',
+        value: DEMO_EMAIL,
+        source: 'PROVIDER',
+        verified: true,
+      },
+    ];
+    if (row.provider === Provider.GITLAB) {
+      identities.push({
+        userId,
+        integrationId: row.id,
+        provider: row.provider,
+        kind: 'EMAIL',
+        value: 'dana@old-laptop.local',
+        source: 'MANUAL',
+        verified: false,
+      });
+    }
+    await prisma.providerIdentity.createMany({ data: identities });
+  }
 }
 
 async function main() {

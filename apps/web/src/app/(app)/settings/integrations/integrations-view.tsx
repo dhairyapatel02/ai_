@@ -1,6 +1,13 @@
 'use client';
 
 import {
+  PROVIDER_LABELS,
+  type IntegrationDto,
+  type OAuthProviderWire,
+  type RepositoryDto,
+  type SyncRunDto,
+} from '@devimpact/shared';
+import {
   ChevronDown,
   ExternalLink,
   Lock,
@@ -9,10 +16,11 @@ import {
   Search,
   TriangleAlert,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
 import { GitHubIcon } from '@/components/icons/github';
+import { ProviderIcon } from '@/components/icons/providers';
 import { startGitHubConnect } from '@/components/onboarding/use-onboarding';
 import {
   Banner,
@@ -43,6 +51,15 @@ import {
   useUpdateRepo,
   useUpdateRepos,
 } from '@/lib/api/hooks';
+import {
+  startProviderConnect,
+  useAddIdentity,
+  useIdentities,
+  useProviders,
+  useRemoveIdentity,
+  useUpdateIntegration,
+  type ProviderAvailability,
+} from '@/lib/api/provider-hooks';
 import { formatDate, formatDuration, formatRelative, formatTime, plural } from '@/lib/format';
 import {
   describeIntegration,
@@ -50,16 +67,22 @@ import {
   runDurationSeconds,
   type IntegrationBadge,
 } from '@/lib/integration-state';
-import { CONNECT_ERRORS } from '@/lib/onboarding';
+import { CONNECT_ERRORS, connectErrorsFor } from '@/lib/onboarding';
 import { cn } from '@/lib/utils';
 
-import type { IntegrationDto, RepositoryDto, SyncRunDto } from '@devimpact/shared';
-
-const PLANNED = [
-  { name: 'GitLab', text: 'Merge requests and reviews' },
-  { name: 'Jira', text: 'Issues and story points' },
-  { name: 'Linear', text: 'Issues and cycles' },
+/** GitLab / Jira / Linear cards (P13): what each source brings. */
+const SOURCES: { provider: OAuthProviderWire; text: string }[] = [
+  { provider: 'gitlab', text: 'Merge requests, reviews and commits' },
+  { provider: 'jira', text: 'Issues assigned to you and story points' },
+  { provider: 'linear', text: 'Issues, estimates and cycles' },
 ];
+
+const SUBTITLE: Record<IntegrationDto['provider'], string> = {
+  github: 'via GitHub App (read-only)',
+  gitlab: 'via GitLab OAuth (read-only)',
+  jira: 'via Atlassian OAuth (read-only)',
+  linear: 'via Linear OAuth (read-only)',
+};
 
 const BADGE: Record<IntegrationBadge, 'success' | 'accent' | 'warning' | 'danger' | 'neutral'> = {
   success: 'success',
@@ -77,11 +100,26 @@ const TRIGGER: Record<string, string> = {
   reconnect: 'Reconnect',
 };
 
-/** Settings → Integrations (S19): connection health, repositories, sync history, planned providers. */
-export function IntegrationsView({ connectError }: { connectError?: string }) {
+/**
+ * Settings → Integrations (S19): GitHub plus live GitLab / Jira / Linear cards (P13) — connection
+ * health, repositories (code hosts), provider settings, sync history and connect / disconnect.
+ */
+export function IntegrationsView({
+  connectError,
+  provider,
+}: {
+  connectError?: string;
+  provider?: string;
+}) {
   const integrations = useIntegrations();
-  const github = integrations.data?.find((i) => i.status !== 'disconnected');
-  const notice = connectError ? (CONNECT_ERRORS[connectError] ?? CONNECT_ERRORS.failed) : null;
+  const github = integrations.data?.find(
+    (i) => i.provider === 'github' && i.status !== 'disconnected',
+  );
+  const errors =
+    provider && provider in PROVIDER_LABELS && provider !== 'github'
+      ? connectErrorsFor(PROVIDER_LABELS[provider as OAuthProviderWire])
+      : CONNECT_ERRORS;
+  const notice = connectError ? (errors[connectError] ?? errors.failed) : null;
 
   return (
     <div className="flex max-w-[760px] flex-col gap-4">
@@ -107,31 +145,333 @@ export function IntegrationsView({ connectError }: { connectError?: string }) {
         </Card>
       ) : github ? (
         <>
-          <GitHubCard integration={github} />
+          <ConnectionCard integration={github} />
           <RepositoriesSection integrationId={github.id} manageUrl={github.manageUrl} />
           <SyncHistory integrationId={github.id} />
         </>
       ) : (
         <ConnectCard />
       )}
-      <section aria-labelledby="planned-title" className="mt-2 flex flex-col gap-3">
-        <h2 id="planned-title" className="text-base font-semibold">
-          Planned
+      {integrations.data ? <MoreSources integrations={integrations.data} /> : null}
+    </div>
+  );
+}
+
+/** GitLab / Jira / Linear (P13): a live card per connected source, else a connect tile. */
+function MoreSources({ integrations }: { integrations: IntegrationDto[] }) {
+  const providers = useProviders();
+  const me = useMe();
+  const limits = me.data?.entitlements.limits;
+  const used = me.data?.entitlements.usage.integrations ?? 0;
+  const atLimit = limits !== undefined && used >= limits.integrations;
+  return (
+    <section aria-labelledby="sources-title" className="mt-2 flex flex-col gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="sources-title" className="text-base font-semibold">
+          More sources
         </h2>
-        <ul className="grid gap-3 sm:grid-cols-3">
-          {PLANNED.map((p) => (
-            <li
-              key={p.name}
-              className="flex flex-col gap-1 rounded-md border border-dashed border-border-strong p-4"
-              data-testid="planned-provider"
-            >
-              <span className="font-medium">{p.name}</span>
-              <span className="text-sm text-muted-foreground">{p.text}</span>
-              <span className="text-caption text-subtle-foreground">Planned for v2.1</span>
+        {limits ? (
+          <p className="text-sm text-muted-foreground" data-testid="sources-usage">
+            {used} of {plural(limits.integrations, 'source')} connected
+          </p>
+        ) : null}
+      </div>
+      {SOURCES.map(({ provider, text }) => {
+        const integration = integrations.find(
+          (i) => i.provider === provider && i.status !== 'disconnected',
+        );
+        if (integration) return <ConnectedSource key={provider} integration={integration} />;
+        return (
+          <ConnectTile
+            key={provider}
+            provider={provider}
+            text={text}
+            availability={providers.data?.find((p) => p.provider === provider)}
+            loading={providers.isPending}
+            atLimit={atLimit}
+          />
+        );
+      })}
+    </section>
+  );
+}
+
+function ConnectedSource({ integration }: { integration: IntegrationDto }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <ConnectionCard integration={integration}>
+        {integration.provider === 'jira' ? <JiraSettings integration={integration} /> : null}
+        {integration.provider === 'linear' && integration.settings.workspace ? (
+          <p className="text-sm text-muted-foreground">
+            Workspace:{' '}
+            <span className="text-foreground">{integration.settings.workspace.name}</span>
+          </p>
+        ) : null}
+        {integration.provider === 'gitlab' ? <LinkedEmails integration={integration} /> : null}
+      </ConnectionCard>
+      {integration.category === 'code' ? (
+        <RepositoriesSection integrationId={integration.id} manageUrl={integration.manageUrl} />
+      ) : null}
+      <details className="group rounded-md border bg-card">
+        <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-medium">
+          <ChevronDown
+            className="size-4 transition-transform group-open:rotate-180"
+            aria-hidden="true"
+          />
+          {PROVIDER_LABELS[integration.provider]} sync history
+        </summary>
+        <SyncHistory integrationId={integration.id} />
+      </details>
+    </div>
+  );
+}
+
+function ConnectTile({
+  provider,
+  text,
+  availability,
+  loading,
+  atLimit,
+}: {
+  provider: OAuthProviderWire;
+  text: string;
+  availability: ProviderAvailability | undefined;
+  loading: boolean;
+  atLimit: boolean;
+}) {
+  const [starting, setStarting] = useState(false);
+  const instances = availability?.instances ?? [];
+  const [instance, setInstance] = useState<string | undefined>(undefined);
+  const label = PROVIDER_LABELS[provider];
+  const configured = availability?.configured ?? false;
+  const reasonId = `${provider}-connect-reason`;
+  const reason = loading
+    ? null
+    : !configured
+      ? `${label} isn't set up on this server yet. Ask your administrator to add its OAuth app.`
+      : atLimit
+        ? 'Your plan’s source limit is reached. Disconnect a source or see Plan & usage.'
+        : null;
+  return (
+    <div
+      className="flex flex-col gap-3 rounded-md border p-4 sm:flex-row sm:items-center"
+      data-testid={`${provider}-connect`}
+    >
+      <ProviderIcon provider={provider} className="size-6 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <h3 className="font-medium">{label}</h3>
+        <p className="text-sm text-muted-foreground">{text}</p>
+        {reason ? (
+          <p id={reasonId} className="mt-1 text-caption text-subtle-foreground">
+            {reason}
+          </p>
+        ) : null}
+      </div>
+      {provider === 'gitlab' && instances.length > 1 ? (
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="gitlab-instance" className="text-caption">
+            Instance
+          </Label>
+          <select
+            id="gitlab-instance"
+            className="h-9 rounded-md border bg-background px-2 text-sm"
+            value={instance ?? instances[0]?.url}
+            onChange={(e) => {
+              setInstance(e.target.value);
+            }}
+          >
+            {instances.map((i) => (
+              <option key={i.url} value={i.url}>
+                {i.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+      <Button
+        className="self-start sm:self-center"
+        variant="secondary"
+        loading={starting}
+        disabled={loading || reason !== null}
+        aria-describedby={reason ? reasonId : undefined}
+        onClick={() => {
+          setStarting(true);
+          const chosen = instance && instance !== instances[0]?.url ? instance : undefined;
+          startProviderConnect(provider, '/settings/integrations', chosen).catch(
+            (error: unknown) => {
+              toast.error(errorMessage(error, label));
+              setStarting(false);
+            },
+          );
+        }}
+      >
+        <Plug aria-hidden="true" />
+        Connect {label}
+      </Button>
+    </div>
+  );
+}
+
+/** Jira: sites read + story points field (detected or chosen; a change re-reads issues). */
+function JiraSettings({ integration }: { integration: IntegrationDto }) {
+  const update = useUpdateIntegration(integration.id);
+  const current = integration.settings.storyPointsField ?? '';
+  const [value, setValue] = useState(current);
+  const sites = integration.settings.sites ?? [];
+  const detected = integration.settings.storyPointsFieldDetected;
+  const valid = value === '' || /^customfield_\d{1,10}$/.test(value);
+  return (
+    <div className="flex flex-col gap-3 border-t pt-3">
+      {sites.length ? (
+        <p className="text-sm text-muted-foreground">
+          {sites.length === 1 ? 'Site' : 'Sites'}:{' '}
+          {sites.map((site, i) => (
+            <span key={site.id}>
+              {i > 0 ? ', ' : null}
+              <a
+                href={site.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-link underline underline-offset-2"
+              >
+                {site.name}
+              </a>
+            </span>
+          ))}
+        </p>
+      ) : null}
+      <form
+        className="flex flex-col gap-2 sm:flex-row sm:items-end"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!valid) return;
+          update.mutate(
+            { storyPointsField: value === '' ? null : value },
+            {
+              onSuccess: () => toast.success('Story points field saved. Re-reading your issues…'),
+              onError: (error) => toast.error(errorMessage(error, 'the story points field')),
+            },
+          );
+        }}
+      >
+        <div className="flex flex-1 flex-col gap-1">
+          <Label htmlFor={`sp-${integration.id}`}>Story points field</Label>
+          <Input
+            id={`sp-${integration.id}`}
+            value={value}
+            placeholder={detected ?? 'customfield_10016'}
+            aria-describedby={`sp-${integration.id}-hint`}
+            aria-invalid={!valid}
+            onChange={(e) => {
+              setValue(e.target.value.trim());
+            }}
+          />
+          <p id={`sp-${integration.id}-hint`} className="text-caption text-subtle-foreground">
+            {valid
+              ? detected
+                ? `Leave empty to use the detected field (${detected}).`
+                : 'No story points field was detected. Enter its id, e.g. customfield_10016.'
+              : 'Use a custom field id such as customfield_10016.'}
+          </p>
+        </div>
+        <Button
+          type="submit"
+          size="sm"
+          variant="secondary"
+          loading={update.isPending}
+          disabled={!valid || value === current}
+        >
+          Save
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+/** GitLab: emails used to match commits (verified by GitLab + added by you). */
+function LinkedEmails({ integration }: { integration: IntegrationDto }) {
+  const identities = useIdentities(integration.id);
+  const add = useAddIdentity(integration.id);
+  const remove = useRemoveIdentity(integration.id);
+  const [email, setEmail] = useState('');
+  const emails = (identities.data ?? []).filter((i) => i.kind === 'email');
+  const inputId = `email-${integration.id}`;
+  return (
+    <div className="flex flex-col gap-2 border-t pt-3">
+      <h3 className="text-sm font-medium">Commit emails</h3>
+      <p className="text-caption text-subtle-foreground">
+        Commits are matched to you by these addresses. Add one if you committed from another email;
+        it counts from the next full sync.
+      </p>
+      {identities.isPending ? (
+        <ListSkeleton rows={1} label="Loading emails…" />
+      ) : (
+        <ul className="flex flex-col gap-1" data-testid="linked-emails">
+          {emails.map((e) => (
+            <li key={e.id} className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="break-all">{e.value}</span>
+              {e.verified ? (
+                <Badge variant="success">Verified by GitLab</Badge>
+              ) : (
+                <Badge variant="neutral">Added by you</Badge>
+              )}
+              {e.source === 'manual' ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="ml-auto"
+                  aria-label={`Remove ${e.value}`}
+                  loading={remove.isPending && remove.variables === e.id}
+                  onClick={() => {
+                    remove.mutate(e.id, {
+                      onSuccess: () => toast.success('Email removed'),
+                      onError: (error) => toast.error(errorMessage(error, 'the email')),
+                    });
+                  }}
+                >
+                  Remove
+                </Button>
+              ) : null}
             </li>
           ))}
         </ul>
-      </section>
+      )}
+      <form
+        className="flex flex-col gap-2 sm:flex-row sm:items-end"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!email) return;
+          add.mutate(email, {
+            onSuccess: () => {
+              setEmail('');
+              toast.success('Email linked. Older commits arrive with the next full sync.');
+            },
+            onError: (error) => toast.error(errorMessage(error, 'the email')),
+          });
+        }}
+      >
+        <div className="flex flex-1 flex-col gap-1">
+          <Label htmlFor={inputId}>Add an email</Label>
+          <Input
+            id={inputId}
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+            }}
+          />
+        </div>
+        <Button
+          type="submit"
+          size="sm"
+          variant="secondary"
+          loading={add.isPending}
+          disabled={!email}
+        >
+          Add email
+        </Button>
+      </form>
     </div>
   );
 }
@@ -172,7 +512,15 @@ function ConnectCard() {
   );
 }
 
-function GitHubCard({ integration }: { integration: IntegrationDto }) {
+function ConnectionCard({
+  integration,
+  children,
+}: {
+  integration: IntegrationDto;
+  children?: ReactNode;
+}) {
+  const label = PROVIDER_LABELS[integration.provider];
+  const titleId = `${integration.provider}-title`;
   const me = useMe();
   const sync = useSyncStatus({ integrationId: integration.id });
   const start = useStartSync();
@@ -218,16 +566,23 @@ function GitHubCard({ integration }: { integration: IntegrationDto }) {
   };
 
   return (
-    <Card aria-labelledby="github-title" data-testid="github-card">
+    <Card aria-labelledby={titleId} data-testid={`${integration.provider}-card`}>
       <CardHeader className="flex flex-row flex-wrap items-center gap-3">
-        <GitHubIcon className="size-6" />
+        <ProviderIcon provider={integration.provider} className="size-6" />
         <div className="min-w-0 flex-1">
           <CardTitle>
-            <h2 id="github-title">GitHub</h2>
+            {integration.provider === 'github' ? (
+              <h2 id={titleId}>{label}</h2>
+            ) : (
+              <h3 id={titleId}>{label}</h3>
+            )}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            {integration.externalLogin ? `@${integration.externalLogin} · ` : ''}via GitHub App
-            (read-only)
+            {integration.externalLogin
+              ? `${integration.category === 'code' ? '@' : ''}${integration.externalLogin} · `
+              : ''}
+            {SUBTITLE[integration.provider]}
+            {integration.baseUrl ? ` · ${new URL(integration.baseUrl).host}` : ''}
           </p>
         </div>
         {sync.isPending ? (
@@ -250,6 +605,7 @@ function GitHubCard({ integration }: { integration: IntegrationDto }) {
             data-testid="sync-progress"
           />
         ) : null}
+        {children}
         {integration.installations.length ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -300,7 +656,7 @@ function GitHubCard({ integration }: { integration: IntegrationDto }) {
         <div className="flex flex-wrap items-center gap-2 border-t pt-3">
           {state.primary === 'reconnect' ? (
             <Button size="sm" loading={reconnecting} onClick={reconnect}>
-              Reconnect GitHub
+              Reconnect {label}
             </Button>
           ) : (
             <Button
@@ -318,7 +674,7 @@ function GitHubCard({ integration }: { integration: IntegrationDto }) {
           <Button size="sm" variant="ghost" asChild>
             <a href={integration.manageUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink aria-hidden="true" />
-              Manage on GitHub
+              Manage on {label}
             </a>
           </Button>
           <Button
@@ -341,8 +697,12 @@ function GitHubCard({ integration }: { integration: IntegrationDto }) {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Disconnect GitHub?"
-        description="DevImpact stops syncing and revokes its GitHub token. Choose what happens to the data already imported."
+        title={`Disconnect ${label}?`}
+        description={
+          integration.provider === 'jira'
+            ? 'DevImpact stops syncing and deletes its Jira token (remove the app at id.atlassian.com to revoke it there). Choose what happens to the data already imported.'
+            : `DevImpact stops syncing and revokes its ${label} token. Choose what happens to the data already imported.`
+        }
         confirmLabel="Disconnect"
         destructive
         loading={disconnect.isPending}
@@ -354,8 +714,8 @@ function GitHubCard({ integration }: { integration: IntegrationDto }) {
                 setConfirmOpen(false);
                 toast.success(
                   result.purged
-                    ? 'GitHub disconnected and imported activity deleted.'
-                    : 'GitHub disconnected. Your data is kept.',
+                    ? `${label} disconnected and imported activity deleted.`
+                    : `${label} disconnected. Your data is kept.`,
                 );
               },
               onError: (error) => toast.error(errorMessage(error, 'the disconnect')),
@@ -381,16 +741,22 @@ function GitHubCard({ integration }: { integration: IntegrationDto }) {
               [
                 'purge',
                 'Delete imported activity',
-                "Removes imported pull requests, reviews and commits. Documents and achievements are kept. This can't be undone.",
+                integration.category === 'issues'
+                  ? "Removes imported issues. Documents and achievements are kept. This can't be undone."
+                  : "Removes imported pull requests, reviews and commits. Documents and achievements are kept. This can't be undone.",
               ],
             ] as const
           ).map(([value, title, text]) => (
             <Label
               key={value}
-              htmlFor={`purge-${value}`}
+              htmlFor={`purge-${integration.provider}-${value}`}
               className="flex cursor-pointer items-start gap-3 rounded-md border p-3 font-normal has-[[data-state=checked]]:border-primary"
             >
-              <RadioGroupItem id={`purge-${value}`} value={value} className="mt-0.5" />
+              <RadioGroupItem
+                id={`purge-${integration.provider}-${value}`}
+                value={value}
+                className="mt-0.5"
+              />
               <span className="flex flex-col gap-0.5">
                 <span className="font-medium">{title}</span>
                 <span className="text-sm text-muted-foreground">{text}</span>

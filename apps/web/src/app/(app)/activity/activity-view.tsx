@@ -1,6 +1,13 @@
 'use client';
 
 import {
+  PROVIDER_LABELS,
+  type ActivityType,
+  type EvidenceItem,
+  type FeedItem,
+} from '@devimpact/shared';
+import {
+  CircleCheckBig,
   ExternalLink,
   GitCommitHorizontal,
   GitMerge,
@@ -27,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { isBackfilling, useMe, useRepos, useSyncStatus } from '@/lib/api/hooks';
+import { isBackfilling, useIntegrations, useMe, useRepos, useSyncStatus } from '@/lib/api/hooks';
 import {
   useActivityFeed,
   useDefinitions,
@@ -38,15 +45,20 @@ import { usePeriod } from '@/lib/period';
 import { useSearchParamsState } from '@/lib/url-state';
 import { cn } from '@/lib/utils';
 
-import type { ActivityType, EvidenceItem, FeedItem } from '@devimpact/shared';
-
 export const TYPE_FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'prs', label: 'Pull requests' },
   { key: 'review', label: 'Reviews' },
   { key: 'commit', label: 'Commits' },
+  { key: 'issue', label: 'Issues' },
   { key: 'achievement', label: 'Achievements' },
 ] as const;
+
+/** `?provider=` values (P13). The filter shows once a second source is connected. */
+export const PROVIDER_FILTERS = ['github', 'gitlab', 'jira', 'linear'] as const;
+export type ProviderFilter = (typeof PROVIDER_FILTERS)[number];
+export const parseProviderFilter = (value: string | null): ProviderFilter | null =>
+  (PROVIDER_FILTERS as readonly string[]).includes(value ?? '') ? (value as ProviderFilter) : null;
 export type TypeFilter = (typeof TYPE_FILTERS)[number]['key'];
 
 /** `?type=` → API `types` (undefined = every type). */
@@ -60,6 +72,8 @@ export function typesFor(filter: string | null): ActivityType[] | undefined {
       return ['commit'];
     case 'achievement':
       return ['achievement'];
+    case 'issue':
+      return ['issue'];
     default:
       return undefined;
   }
@@ -145,6 +159,13 @@ function ActivityFeed() {
   const repoParam = url.get('repo');
   const repo = repoParam && ID.test(repoParam) ? repoParam : null;
   const q = url.get('q') ?? '';
+  const provider = parseProviderFilter(url.get('provider'));
+  const integrations = useIntegrations();
+  const connected = [
+    ...new Set(
+      (integrations.data ?? []).filter((i) => i.status !== 'disconnected').map((i) => i.provider),
+    ),
+  ];
   const repos = useRepos({ limit: 100, sort: 'fullName' });
   const included = (repos.data?.items ?? []).filter((r) => r.included);
   const excluded = (repos.data?.items ?? []).filter((r) => !r.included);
@@ -153,6 +174,7 @@ function ActivityFeed() {
     period: period.apiParam,
     types: typesFor(type),
     repoIds: repo ? [repo] : undefined,
+    providers: provider ? [provider] : undefined,
     q: q.trim() || undefined,
     limit: 40,
   });
@@ -162,7 +184,7 @@ function ActivityFeed() {
   const sentinel = useInfiniteSentinel(feed.hasNextPage && !feed.isFetchingNextPage, () => {
     void feed.fetchNextPage();
   });
-  const filtered = type !== 'all' || repo !== null || q !== '';
+  const filtered = type !== 'all' || repo !== null || q !== '' || provider !== null;
   const currentYear = period.today ? Number(period.today.slice(0, 4)) : undefined;
 
   if (isInvalidPeriodError(feed.error)) {
@@ -201,6 +223,8 @@ function ActivityFeed() {
           q={q}
           repos={included}
           excluded={excluded.map((r) => r.fullName)}
+          provider={provider}
+          providers={connected}
         />
         <div
           className={cn(
@@ -297,12 +321,16 @@ function Filters({
   q,
   repos,
   excluded,
+  provider,
+  providers,
 }: {
   type: TypeFilter;
   repo: string | null;
   q: string;
   repos: { id: string; fullName: string }[];
   excluded: string[];
+  provider: ProviderFilter | null;
+  providers: ProviderFilter[];
 }) {
   const url = useSearchParamsState();
   const [text, setText] = useState(q);
@@ -348,6 +376,28 @@ function Filters({
           ))}
         </div>
         <div className="flex w-full flex-col gap-2 sm:flex-row md:ml-auto md:w-auto">
+          {providers.length > 1 || provider ? (
+            <Select
+              value={provider ?? 'all'}
+              onValueChange={(v) => {
+                url.set({ provider: v === 'all' ? null : v });
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-40" aria-label="Source">
+                <SelectValue placeholder="All sources" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All sources</SelectItem>
+                {PROVIDER_FILTERS.filter((p) => providers.includes(p) || p === provider).map(
+                  (p) => (
+                    <SelectItem key={p} value={p}>
+                      {PROVIDER_LABELS[p]}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectContent>
+            </Select>
+          ) : null}
           <Select
             value={repo ?? 'all'}
             onValueChange={(v) => {
@@ -404,11 +454,13 @@ const EVIDENCE_ICON = {
   review: MessageSquareText,
   commit: GitCommitHorizontal,
   achievement: GitMerge,
+  issue: CircleCheckBig,
 } as const;
 
 function evidenceItemParam(item: EvidenceItem): string | null {
   if (item.kind === 'pull_request') return `pr_merged:${item.id}`;
   if (item.kind === 'commit') return `commit:${item.id}`;
+  if (item.kind === 'issue') return `issue:${item.id}`;
   return null; // reviews open on GitHub (the evidence item has no PR id for the drawer)
 }
 

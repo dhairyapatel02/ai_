@@ -1,5 +1,13 @@
 'use client';
 
+import {
+  PROVIDER_LABELS,
+  type AchievementStatementResponse,
+  type IssueDetail,
+  type ProviderWire,
+  type PullRequestDetail,
+  type ReviewItem,
+} from '@devimpact/shared';
 import { ExternalLink, GitMerge, Plus, Sparkles } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
@@ -22,13 +30,8 @@ import { useHydrated } from '@/hooks/use-hydrated';
 import { useAchievement } from '@/lib/api/career-hooks';
 import { errorMessage, isApiError, quotaDetails } from '@/lib/api/errors';
 import { useAchievementStatement, useCommit, usePullRequest } from '@/lib/api/metrics-hooks';
+import { useIssue } from '@/lib/api/provider-hooks';
 import { formatDate, formatLocalDate, formatTime, localDateKey, plural } from '@/lib/format';
-
-import type {
-  AchievementStatementResponse,
-  PullRequestDetail,
-  ReviewItem,
-} from '@devimpact/shared';
 
 const REVIEW_STATE: Record<string, string> = {
   approved: 'Approved',
@@ -70,15 +73,93 @@ function Ref({ children }: { children: string }) {
   );
 }
 
-function GitHubLink({ url }: { url: string | null }) {
+function GitHubLink({ url, provider = 'github' }: { url: string | null; provider?: ProviderWire }) {
   if (!url) return null;
   return (
     <Button variant="secondary" asChild>
       <a href={url} target="_blank" rel="noopener noreferrer">
         <ExternalLink aria-hidden="true" />
-        Open on GitHub
+        Open on {PROVIDER_LABELS[provider]}
       </a>
     </Button>
+  );
+}
+
+const ISSUE_STATUS: Record<
+  IssueDetail['status'],
+  { text: string; variant: 'success' | 'accent' | 'neutral' }
+> = {
+  done: { text: 'Done', variant: 'success' },
+  in_progress: { text: 'In progress', variant: 'accent' },
+  todo: { text: 'To do', variant: 'neutral' },
+  cancelled: { text: 'Cancelled', variant: 'neutral' },
+};
+
+/** Jira / Linear issue (P13): status, points, cycle time — titles only, never descriptions. */
+function IssueDrawerContent({ id, timezone }: { id: string; timezone?: string }) {
+  const issue = useIssue(id);
+  if (issue.isPending) return <DrawerSkeleton />;
+  if (issue.isError) {
+    return (
+      <ErrorState
+        error={issue.error}
+        what="this issue"
+        headingLevel={3}
+        onRetry={() => void issue.refetch()}
+      />
+    );
+  }
+  const i = issue.data;
+  const label = PROVIDER_LABELS[i.provider];
+  const status = ISSUE_STATUS[i.status];
+  return (
+    <>
+      <SheetHeader className="pr-12">
+        <SheetDescription>
+          {[i.project.name, label, 'Issue'].filter(Boolean).join(' · ')}
+        </SheetDescription>
+        <SheetTitle className="text-lg">{i.title}</SheetTitle>
+      </SheetHeader>
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Ref>{i.ref}</Ref>
+          <Badge variant={status.variant}>{i.statusName ?? status.text}</Badge>
+          {i.cycleName ? <Badge variant="neutral">{i.cycleName}</Badge> : null}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Well
+            label="Story points"
+            value={i.storyPoints ?? '—'}
+            note={i.storyPoints === null ? 'No estimate' : 'Team-specific size'}
+          />
+          <Well
+            label="Cycle time"
+            value={hours(i.cycleTimeHours)}
+            note={i.startedAt ? 'Started → completed, business hours' : 'Never started'}
+          />
+          <Well
+            label={i.completedAt ? 'Completed' : 'Updated'}
+            value={formatDate(i.completedAt ?? i.updatedAt, { timeZone: timezone })}
+          />
+          <Well
+            label="Priority"
+            value={i.priority === 'none' ? '—' : i.priority.replace(/^./, (c) => c.toUpperCase())}
+          />
+        </div>
+        {i.labels.length ? (
+          <div className="flex flex-wrap gap-1.5">
+            {i.labels.map((l) => (
+              <Badge key={l} variant="neutral">
+                {l}
+              </Badge>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <div className="border-t p-4">
+        <GitHubLink url={i.url} provider={i.provider} />
+      </div>
+    </>
   );
 }
 
@@ -470,7 +551,7 @@ function PrDrawerContent({ item, timezone }: { item: ParsedItem; timezone?: stri
         )}
       </div>
       <div className="border-t p-4">
-        <GitHubLink url={pr.data.url} />
+        <GitHubLink url={pr.data.url} provider={pr.data.repo.provider} />
       </div>
     </>
   );
@@ -523,7 +604,7 @@ function CommitDrawerContent({ id, timezone }: { id: string; timezone?: string }
         />
       </div>
       <div className="border-t p-4">
-        <GitHubLink url={c.url} />
+        <GitHubLink url={c.url} provider={c.repo.provider} />
       </div>
     </>
   );
@@ -559,6 +640,8 @@ export function ItemDrawer({
           <CommitDrawerContent id={item.id} timezone={timezone} />
         ) : item.type === 'achievement' ? (
           <AchievementDrawerContent id={item.id} />
+        ) : item.type === 'issue' ? (
+          <IssueDrawerContent id={item.id} timezone={timezone} />
         ) : (
           <PrDrawerContent item={item} timezone={timezone} />
         )}

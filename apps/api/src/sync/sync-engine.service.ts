@@ -1,7 +1,18 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  PROVIDER_LABELS,
+  type CommitRequest,
+  type IssueTrackerSession,
+  type NormalizedRepository,
+  type ProviderSession,
+  type ProviderSessionOptions,
+  type SyncCounts,
+  type SyncRunError,
+} from '@devimpact/shared';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   IntegrationStatus,
+  Provider,
   type Prisma,
   SyncKind,
   SyncStage,
@@ -12,29 +23,23 @@ import {
 import { NotificationProducer } from '../email/notification-producer';
 import { MetricsQueueService } from '../metrics/metrics-queue.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProviderRegistry, kindOf } from '../providers/provider-registry';
 import {
   ProviderAuthError,
   ProviderRateLimitError,
   ProviderUnavailableError,
 } from '../providers/provider.errors';
-import { ACTIVITY_PROVIDER } from '../providers/providers.module';
 import { IntegrationTokensService } from './integration-tokens.service';
 import { type RepoRef, SyncWriter, type WriteScope } from './sync-writer';
 import { CURSOR_OVERLAP_MS, RECENT_WINDOW_DAYS } from './sync.constants';
 
 import type { Env } from '../config/env';
-import type {
-  ActivityProvider,
-  CommitRequest,
-  NormalizedRepository,
-  ProviderSession,
-  SyncCounts,
-  SyncRunError,
-} from '@devimpact/shared';
 
 const DAY_MS = 86_400_000;
-type ActivityStage = 'AUTHORED_PRS' | 'REVIEWED_PRS' | 'COMMITS';
-const STAGES: ActivityStage[] = ['AUTHORED_PRS', 'REVIEWED_PRS', 'COMMITS'];
+type ActivityStage = 'AUTHORED_PRS' | 'REVIEWED_PRS' | 'COMMITS' | 'ISSUES';
+/** Stages per slice by provider category (P13): code hosts vs issue trackers. */
+const CODE_STAGES: ActivityStage[] = ['AUTHORED_PRS', 'REVIEWED_PRS', 'COMMITS'];
+const ISSUE_STAGES: ActivityStage[] = ['ISSUES'];
 
 export interface Slice {
   from: Date;
@@ -61,6 +66,7 @@ const COUNT_KEYS = [
   'prsReviewed',
   'reviews',
   'commits',
+  'issues',
   'created',
   'updated',
 ] as const;
@@ -86,22 +92,46 @@ export function planSlices(kind: SyncKind, from: Date, to: Date): Slice[] {
 }
 
 /** Monotonic progress from planned work units; reaches 100 only when the run finishes. */
-export function progressOf(checkpoint: Checkpoint, previous: number, totalSlices: number): number {
+export function progressOf(
+  checkpoint: Checkpoint,
+  previous: number,
+  totalSlices: number,
+  stages: ActivityStage[] = CODE_STAGES,
+): number {
   const plan = checkpoint.plan ?? {};
-  let planned = 1; // repositories stage
+  let planned = 1; // repositories (code) / prepare (issues) stage
   for (let s = 0; s < totalSlices; s++) {
-    for (const stage of STAGES) planned += plan[`${s}:${stage}`] ?? 1;
+    for (const stage of stages) planned += plan[`${s}:${stage}`] ?? 1;
   }
   const value = Math.floor(((checkpoint.done ?? 0) / planned) * 100);
   return Math.max(previous, Math.min(99, value));
 }
 
-const SAFE_MESSAGES: Record<string, string> = {
-  GITHUB_REAUTH_REQUIRED:
-    'GitHub access was revoked or expired. Reconnect GitHub to resume syncing — nothing has been deleted.',
-  GITHUB_UNAVAILABLE: 'GitHub could not be reached. The sync will be retried.',
-  INTERNAL: 'The sync failed unexpectedly. Please try again.',
-};
+/**
+ * Safe, user-facing run errors. Codes stay `GITHUB_*` for GitHub (P06 contract) and are
+ * `<PROVIDER>_*` for GitLab / Jira / Linear (P13).
+ */
+export function safeError(
+  provider: Provider,
+  kind: 'REAUTH_REQUIRED' | 'UNAVAILABLE' | 'INTERNAL',
+) {
+  if (kind === 'INTERNAL') {
+    return {
+      errorCode: 'INTERNAL',
+      errorMessage: 'The sync failed unexpectedly. Please try again.',
+    };
+  }
+  const label = PROVIDER_LABELS[kindOf(provider)];
+  return kind === 'REAUTH_REQUIRED'
+    ? {
+        errorCode: `${provider}_REAUTH_REQUIRED`,
+        errorMessage: `${label} access was revoked or expired. Reconnect ${label} to resume syncing — nothing has been deleted.`,
+      }
+    : {
+        errorCode: `${provider}_UNAVAILABLE`,
+        errorMessage: `${label} could not be reached. The sync will be retried.`,
+      };
+}
 
 /**
  * The sync orchestrator (ADR-0007, ARCHITECTURE_V2 §6). Depends only on the `ActivityProvider`
@@ -118,17 +148,55 @@ export class SyncEngine {
     private readonly tokens: IntegrationTokensService,
     private readonly metrics: MetricsQueueService,
     private readonly config: ConfigService<Env, true>,
-    @Inject(ACTIVITY_PROVIDER) private readonly provider: ActivityProvider,
+    private readonly registry: ProviderRegistry,
     private readonly notifications: NotificationProducer,
   ) {}
 
-  openSession(userId: string, integrationId: string): ProviderSession {
-    return this.provider.openSession({
+  private sessionOptions(
+    userId: string,
+    integrationId: string,
+    extra: Partial<ProviderSessionOptions> = {},
+  ): ProviderSessionOptions {
+    return {
       getAccessToken: () => this.tokens.accessToken(userId, integrationId),
       onUnauthorized: () => this.tokens.afterUnauthorized(userId, integrationId),
       minRemaining: this.config.get('SYNC_RATE_LIMIT_MIN_REMAINING', { infer: true }),
       key: `integration-${integrationId}`,
+      ...extra,
+    };
+  }
+
+  /** GitHub session (targeted webhook jobs, P06). */
+  openSession(userId: string, integrationId: string): ProviderSession {
+    return this.registry
+      .code(Provider.GITHUB)
+      .openSession(this.sessionOptions(userId, integrationId));
+  }
+
+  /** Session for any code-host integration (GitHub, GitLab) with its instance + linked emails. */
+  private async codeSession(
+    userId: string,
+    integration: {
+      id: string;
+      provider: Provider;
+      baseUrl: string | null;
+      config: Prisma.JsonValue;
+    },
+  ): Promise<ProviderSession> {
+    const identities = await this.prisma.providerIdentity.findMany({
+      where: { userId, integrationId: integration.id },
+      select: { kind: true, value: true },
     });
+    return this.registry.code(integration.provider).openSession(
+      this.sessionOptions(userId, integration.id, {
+        baseUrl: integration.baseUrl,
+        config: (integration.config ?? {}) as Record<string, unknown>,
+        identities: {
+          emails: identities.filter((i) => i.kind === 'EMAIL').map((i) => i.value),
+          usernames: identities.filter((i) => i.kind === 'USERNAME').map((i) => i.value),
+        },
+      }),
+    );
   }
 
   async run(
@@ -144,23 +212,33 @@ export class SyncEngine {
       where: { id: run.integrationId, userId },
       select: {
         id: true,
+        provider: true,
         status: true,
         externalLogin: true,
         externalAccountId: true,
         syncCursor: true,
         backfillFrom: true,
+        baseUrl: true,
+        config: true,
       },
     });
     if (integration?.status !== IntegrationStatus.ACTIVE) {
-      const code =
+      await this.finish(
+        run,
+        SyncStatus.FAILED,
         integration?.status === IntegrationStatus.NEEDS_REAUTH
-          ? 'GITHUB_REAUTH_REQUIRED'
-          : 'INTERNAL';
-      await this.finish(run, SyncStatus.FAILED, {
-        errorCode: code,
-        errorMessage: SAFE_MESSAGES[code] ?? null,
-      });
+          ? safeError(integration.provider, 'REAUTH_REQUIRED')
+          : safeError(Provider.GITHUB, 'INTERNAL'),
+      );
       return { type: 'finished', status: SyncStatus.FAILED };
+    }
+    if (this.registry.get(integration.provider).category === 'issues') {
+      return this.runIssues(
+        run,
+        userId,
+        { ...integration, provider: integration.provider },
+        attempt,
+      );
     }
 
     const scope: WriteScope = { userId, integrationId: integration.id };
@@ -170,7 +248,8 @@ export class SyncEngine {
     const windowTo = run.windowTo ?? new Date();
     const windowFrom = run.windowFrom ?? new Date(windowTo.getTime() - DAY_MS);
     const slices = planSlices(run.kind, windowFrom, windowTo);
-    const session = this.openSession(userId, integration.id);
+    const session = await this.codeSession(userId, integration);
+    const STAGES = CODE_STAGES;
     const failedRepoIds = new Set<string>();
     let progress = run.progress;
 
@@ -340,7 +419,162 @@ export class SyncEngine {
       );
       return { type: 'finished', status };
     } catch (error) {
-      return this.handleFailure(run, userId, error, save, attempt);
+      return this.handleFailure(run, userId, integration.provider, error, save, attempt);
+    }
+  }
+
+  /**
+   * Issue-tracker run (Jira, Linear — P13). Same lifecycle as a code run (slices, checkpoints,
+   * rate-limit pause, NEEDS_REAUTH, cursors after commit, rollups); stages = prepare + ISSUES.
+   */
+  private async runIssues(
+    run: SyncRun,
+    userId: string,
+    integration: {
+      id: string;
+      provider: Provider;
+      externalLogin: string | null;
+      externalAccountId: string | null;
+      syncCursor: Prisma.JsonValue;
+      backfillFrom: Date | null;
+      baseUrl: string | null;
+      config: Prisma.JsonValue;
+    },
+    attempt: { number: number; max: number },
+  ): Promise<RunOutcome> {
+    const scope: WriteScope = { userId, integrationId: integration.id };
+    const checkpoint = (run.checkpoint ?? {}) as Checkpoint;
+    const counts = this.counts(run.counts);
+    const errors = (Array.isArray(run.errors) ? run.errors : []) as SyncRunError[];
+    const windowTo = run.windowTo ?? new Date();
+    const windowFrom = run.windowFrom ?? new Date(windowTo.getTime() - DAY_MS);
+    const slices = planSlices(run.kind, windowFrom, windowTo);
+    const config = (integration.config ?? {}) as Record<string, unknown>;
+    const session: IssueTrackerSession = this.registry
+      .issues(integration.provider)
+      .openSession(
+        this.sessionOptions(userId, integration.id, { baseUrl: integration.baseUrl, config }),
+      );
+    let progress = run.progress;
+    const save = async (data: Prisma.SyncRunUpdateManyMutationInput = {}) => {
+      progress = progressOf(checkpoint, progress, slices.length, ISSUE_STAGES);
+      await this.prisma.syncRun.updateMany({
+        where: { id: run.id, userId },
+        data: {
+          progress,
+          checkpoint: checkpoint as Prisma.InputJsonValue,
+          counts,
+          errors,
+          apiCalls: run.apiCalls + session.stats.requests,
+          rateLimitRemaining: session.stats.rateLimitRemaining,
+          ...data,
+        },
+      });
+    };
+    await save({
+      status: SyncStatus.RUNNING,
+      startedAt: run.startedAt ?? new Date(),
+      resumeAt: null,
+      errorCode: null,
+      errorMessage: null,
+    });
+
+    try {
+      let accountId = integration.externalAccountId;
+      if (!accountId) {
+        const account = await session.getAccount();
+        accountId = account.externalId;
+        await this.prisma.integration.updateMany({
+          where: { id: integration.id, userId },
+          data: { externalAccountId: account.externalId, externalLogin: account.login },
+        });
+      }
+      // Prepare (sites / status categories / story points field / organization) every run.
+      await save({ stage: SyncStage.PREPARE });
+      const prepared = await session.prepare();
+      await this.prisma.integration.updateMany({
+        where: { id: integration.id, userId },
+        data: { config: { ...config, ...prepared } as Prisma.InputJsonValue },
+      });
+      if (!checkpoint.reposDone) {
+        checkpoint.reposDone = true;
+        checkpoint.done = (checkpoint.done ?? 0) + 1;
+        await save();
+      }
+
+      const cursor = (integration.syncCursor ?? {}) as { issuesUpdatedAt?: string };
+      for (let s = checkpoint.slice ?? 0; s < slices.length; s++) {
+        const slice = slices[s];
+        checkpoint.slice = s;
+        checkpoint.stage = 'ISSUES';
+        await save({ stage: SyncStage.ISSUES });
+        const key = `${s}:ISSUES`;
+        const plan = (checkpoint.plan ??= {});
+        const from = this.streamFrom(run.kind, slice.from, cursor.issuesUpdatedAt);
+        let pages = 0;
+        for await (const page of session.issues(accountId, { from, to: slice.to })) {
+          const result = await this.writer.transaction((tx) =>
+            this.writer.upsertIssues(tx, scope, page.items),
+          );
+          counts.issues += page.items.length;
+          counts.created += result.created;
+          counts.updated += result.updated;
+          pages++;
+          if (pages === 1) plan[key] = Math.max(1, Math.ceil(page.total / 50));
+          checkpoint.done = (checkpoint.done ?? 0) + 1;
+          await save();
+        }
+        if (pages === 0) {
+          checkpoint.done = (checkpoint.done ?? 0) + 1;
+        }
+        checkpoint.stage = undefined;
+        checkpoint.slice = s + 1;
+        await save();
+        if (slice.recent && run.kind === SyncKind.BACKFILL) {
+          await this.metrics.enqueueRecompute({
+            userId,
+            from: slice.from.toISOString(),
+            to: slice.to.toISOString(),
+            reason: 'sync',
+          });
+          await save({ recentWindowCompletedAt: new Date() });
+        }
+      }
+
+      await save({ stage: SyncStage.PERSIST });
+      await this.prisma.integration.updateMany({
+        where: { id: integration.id, userId },
+        data: {
+          syncCursor: { issuesUpdatedAt: windowTo.toISOString() },
+          ...(run.kind === SyncKind.BACKFILL ? { backfillFrom: windowFrom } : {}),
+        },
+      });
+      await save({ stage: SyncStage.ROLLUPS });
+      await this.metrics.enqueueRecompute({
+        userId,
+        from: windowFrom.toISOString(),
+        to: windowTo.toISOString(),
+        reason: 'sync',
+      });
+      const status = errors.length > 0 ? SyncStatus.PARTIAL : SyncStatus.SUCCEEDED;
+      await this.finish(
+        run,
+        status,
+        {},
+        {
+          counts,
+          errors,
+          apiCalls: run.apiCalls + session.stats.requests,
+          rateLimitRemaining: session.stats.rateLimitRemaining,
+        },
+      );
+      this.logger.log(
+        { syncRunId: run.id, provider: integration.provider, status, counts },
+        'Sync run finished',
+      );
+      return { type: 'finished', status };
+    } catch (error) {
+      return this.handleFailure(run, userId, integration.provider, error, save, attempt);
     }
   }
 
@@ -353,6 +587,7 @@ export class SyncEngine {
   private async handleFailure(
     run: SyncRun,
     userId: string,
+    provider: Provider,
     error: unknown,
     save: (data?: Prisma.SyncRunUpdateManyMutationInput) => Promise<void>,
     attempt: { number: number; max: number },
@@ -369,34 +604,27 @@ export class SyncEngine {
       });
       this.logger.warn(
         { syncRunId: run.id, resumeAt: until.toISOString() },
-        'Sync paused by GitHub rate limit',
+        'Sync paused by provider rate limit',
       );
       return { type: 'delayed', until };
     }
     if (error instanceof ProviderAuthError) {
-      await this.tokens.markNeedsReauth(userId, run.integrationId, 'GITHUB_TOKEN_REVOKED');
+      await this.tokens.markNeedsReauth(userId, run.integrationId, `${provider}_TOKEN_REVOKED`);
       await save();
-      await this.finish(run, SyncStatus.FAILED, {
-        errorCode: 'GITHUB_REAUTH_REQUIRED',
-        errorMessage: SAFE_MESSAGES.GITHUB_REAUTH_REQUIRED ?? null,
-      });
+      await this.finish(run, SyncStatus.FAILED, safeError(provider, 'REAUTH_REQUIRED'));
       return { type: 'finished', status: SyncStatus.FAILED };
     }
-    const code = error instanceof ProviderUnavailableError ? 'GITHUB_UNAVAILABLE' : 'INTERNAL';
+    const failure = safeError(
+      provider,
+      error instanceof ProviderUnavailableError ? 'UNAVAILABLE' : 'INTERNAL',
+    );
     this.logger.error({ syncRunId: run.id, err: error, attempt: attempt.number }, 'Sync run error');
     if (attempt.number < attempt.max) {
-      await save({
-        status: SyncStatus.QUEUED,
-        errorCode: code,
-        errorMessage: SAFE_MESSAGES[code] ?? null,
-      });
+      await save({ status: SyncStatus.QUEUED, ...failure });
       throw error; // BullMQ retries with exponential backoff and resumes from the checkpoint
     }
     await save();
-    await this.finish(run, SyncStatus.FAILED, {
-      errorCode: code,
-      errorMessage: SAFE_MESSAGES[code] ?? null,
-    });
+    await this.finish(run, SyncStatus.FAILED, failure);
     return { type: 'finished', status: SyncStatus.FAILED };
   }
 

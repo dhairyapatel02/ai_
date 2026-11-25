@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { Id, IntegrationStatus, PeriodTypeWire, PlanWire, Timestamp } from './common';
+import { Id, IntegrationStatus, PeriodTypeWire, PlanWire, ProviderWire, Timestamp } from './common';
 
 /** API_CONTRACT_V2 §3.5 / §5. */
 export const UserDto = z.object({
@@ -85,18 +85,24 @@ export const Entitlements = z.object({
   plan: PlanWire,
   limits: z.object({
     integrations: z.number().int(),
+    /** P13 (D-030): one connection per provider. */
+    integrationsPerProvider: z.number().int().default(1),
     historyMonths: z.number().int(),
     aiGenerationsPerMonth: z.number().int(),
     aiQuickPerMonth: z.number().int(),
     weeklyDigest: z.boolean().default(true),
   }),
-  usage: z.object({ integrations: z.number().int() }),
+  usage: z.object({
+    integrations: z.number().int(),
+    /** Connected (non-disconnected) sources per provider (P13). */
+    byProvider: z.record(z.string(), z.number().int()).default({}),
+  }),
 });
 export type Entitlements = z.infer<typeof Entitlements>;
 
 export const IntegrationSummary = z.object({
   id: Id,
-  provider: z.literal('github'),
+  provider: ProviderWire,
   status: IntegrationStatus,
   externalLogin: z.string().nullable(),
   lastSuccessfulSyncAt: Timestamp.nullable(),

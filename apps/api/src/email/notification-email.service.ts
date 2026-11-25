@@ -1,3 +1,4 @@
+import { PROVIDER_LABELS, type ProviderKind } from '@devimpact/shared';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentStatus, DocumentType } from '@prisma/client';
@@ -70,20 +71,22 @@ export class NotificationEmailService {
       if (!(user.settings?.notifySyncFailures ?? true)) return 'opted_out';
       const integration = await this.prisma.integration.findFirst({
         where: { id: job.integrationId, userId: job.userId },
-        select: { status: true },
+        select: { status: true, provider: true },
       });
       if (!integration) return 'not_applicable';
+      // Provider-specific copy (P13): GitHub, GitLab, Jira or Linear.
+      const label = PROVIDER_LABELS[integration.provider.toLowerCase() as ProviderKind];
       message =
         job.problem === 'needs_reauth'
           ? {
-              subject: 'GitHub needs reconnecting',
-              lead: "DevImpact can't import new work until you reconnect GitHub. Nothing has been deleted.",
-              cta: 'Reconnect GitHub',
+              subject: `${label} needs reconnecting`,
+              lead: `DevImpact can't import new work until you reconnect ${label}. Nothing has been deleted.`,
+              cta: `Reconnect ${label}`,
               href: this.web('/settings/integrations'),
             }
           : {
               subject: 'A DevImpact sync failed',
-              lead: 'GitHub returned an error during the last sync. Your data is from the last successful sync.',
+              lead: `${label} returned an error during the last sync. Your data is from the last successful sync.`,
               cta: 'Review the sync',
               href: this.web('/settings/integrations'),
             };

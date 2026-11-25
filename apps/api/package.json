@@ -25,7 +25,8 @@
     "metrics:recompute": "tsx prisma/scripts/recompute-metrics.ts",
     "plan:set": "tsx prisma/scripts/set-plan.ts",
     "perf:metrics": "tsx prisma/scripts/measure-metrics-perf.ts",
-    "ai:mock": "tsx test/utils/serve-fake-anthropic.ts"
+    "ai:mock": "tsx test/utils/serve-fake-anthropic.ts",
+    "providers:mock": "tsx test/utils/serve-fake-providers.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.9.0",

@@ -5,6 +5,6 @@
   "promptVersion": 1,
   "model": "reference-writer",
   "source": "synthetic",
-  "recordedAt": "2026-11-17",
+  "recordedAt": "2026-11-25",
   "text": "{\"title\":\"Add loading state to profile page\",\"statement\":\"Delivered the change to add loading state to profile page in acme/api.\",\"category\":\"delivery\",\"citations\":[\"PR-acme/api#103\"]}"
 }

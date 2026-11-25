@@ -55,8 +55,8 @@ into the integration branch.
 | 10 | [Frontend: Insights Pages](phases/P10-frontend-insights.md) | Code | 07, 09 | Dashboard, Activity, KPIs, Career, Integrations |
 | 11 | [Frontend: AI Document Studio](phases/P11-frontend-document-studio.md) | Code | 08, 09 | Resume, Appraisal, Promotion, Documents library, exports |
 | 12 | [Product Extensions](phases/P12-product-extensions.md) | Code | 10, 11 | Achievements journal, goals, digests, settings, plan limits |
-| 13 | [Additional Integrations (optional)](phases/P13-additional-integrations.md) | Code | 06 (+12) | **Skipped for v2.0 → v2.1** (D-018). GitLab, Jira, Linear via provider abstraction |
-| 14 | [Hardening: QA, Security, Perf, A11y, Observability](phases/P14-hardening.md) | QA + Code | 12 | Full E2E suite, security & a11y audits fixed, monitoring |
+| 13 | [Additional Integrations](phases/P13-additional-integrations.md) | Code | 06, 12 | **In v2.0** (D-029 amends D-018). GitLab, Jira, Linear via provider abstraction; issue metrics |
+| 14 | [Hardening: QA, Security, Perf, A11y, Observability](phases/P14-hardening.md) | QA + Code | 12, 13 | Full E2E suite, security & a11y audits fixed, monitoring |
 | 15 | [Release: Deployment, Docs & v2.0.0](phases/P15-release.md) | Ops + Docs | 14 | Prod images, deploy guide, docs, changelog, `v2.0.0` tag |
 
 ### Dependency graph
@@ -64,13 +64,13 @@ into the integration branch.
 ```
 P01 ──► P02 ──────────────┐
   └───► P03 ──► P04 ──────┼──────────────► P09 ──┬──► P10 ──┐
-          └───────────────┴─► P05 ──► P06 ──► P07 ┤          ├──► P12 ──► P14 ──► P15
-                                       │          └► P08 ──► P11 ┘    ▲
-                                       └──────────────► P13 (optional)┘
+          └───────────────┴─► P05 ──► P06 ──► P07 ┤          ├──► P12 ──► P13 ──► P14 ──► P15
+                                       │          └► P08 ──► P11 ┘           ▲
+                                       └─────────────────────────────────────┘ (provider abstraction)
 ```
 
 Parallelisable pairs (once prerequisites merge): **P02 ∥ P03**, **P04 ∥ P05**,
-**P09 ∥ P06–P08**, **P10 ∥ P11**, **P13** any time after P06.
+**P09 ∥ P06–P08**, **P10 ∥ P11**. P13 runs after P12 and before P14 (D-029).
 
 ---
 

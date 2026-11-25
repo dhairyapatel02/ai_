@@ -1,0 +1,33 @@
+{
+  "data": [
+    {
+      "provider": "github",
+      "category": "code",
+      "configured": false,
+      "instances": []
+    },
+    {
+      "provider": "gitlab",
+      "category": "code",
+      "configured": true,
+      "instances": [
+        {
+          "url": "https://gitlab.com",
+          "label": "GitLab.com"
+        }
+      ]
+    },
+    {
+      "provider": "jira",
+      "category": "issues",
+      "configured": true,
+      "instances": []
+    },
+    {
+      "provider": "linear",
+      "category": "issues",
+      "configured": true,
+      "instances": []
+    }
+  ]
+}
